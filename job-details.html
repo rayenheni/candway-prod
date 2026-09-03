@@ -1,0 +1,275 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title id="page-title">Candway Job Details</title>
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+    <link rel="stylesheet" href="/css/public-glass.css">
+
+    <meta property="og:title" id="meta-og-title" content="Candway Job Opportunities">
+    <meta property="og:description" id="meta-og-description"
+        content="Explore global tech opportunities with Candway Intelligence.">
+    <meta property="og:image" id="meta-og-image" content="https://candway.io/assets/images/candway_preview.jpg">
+    <meta property="og:type" content="website">
+    <meta property="og:url" id="meta-og-url" content="https://candway.io/job-details">
+    <meta property="og:site_name" content="Candway">
+    <meta name="twitter:card" id="twitter-card" content="summary_large_image">
+    <meta name="twitter:title" id="twitter-title" content="Candway Job Opportunities">
+    <meta name="twitter:description" id="twitter-description"
+        content="Explore global tech opportunities with Candway Intelligence.">
+    <meta name="twitter:image" id="twitter-image" content="https://candway.io/assets/images/candway_preview.jpg">
+    <script type="application/ld+json" id="job-json-ld"></script>
+
+    <script src="/js/translations.js"></script>
+    <script src="/js/localization.js"></script>
+</head>
+
+<body>
+    <div class="pg-ambient"></div>
+
+    <nav class="pg-nav">
+        <div class="pg-nav-logo">
+            <a href="/"><img src="/assets/images/candway_logo_dark.png" alt="Candway" height="36"></a>
+        </div>
+        <div class="pg-nav-right">
+            <div class="pg-lang-switcher">
+                <button class="pg-lang-btn" onclick="setLanguage('en')">EN</button>
+                <button class="pg-lang-btn" onclick="setLanguage('fr')">FR</button>
+            </div>
+            <a href="/jobs" class="pg-nav-login" data-i18n="job_details.back_to_jobs"><i class="fas fa-arrow-left pg-mr-1"></i>Back to Jobs</a>
+        </div>
+    </nav>
+
+    <main class="pg-section" style="padding-top: 9rem; padding-bottom: 3rem;">
+        <div class="pg-container" style="max-width: 1024px;">
+            <div id="job-content">
+                <div class="pg-text-center pg-py-12">
+                    <div class="pg-spinner pg-mb-4"><div class="pg-spinner-ring"></div></div>
+                </div>
+            </div>
+        </div>
+    </main>
+
+    <footer class="pg-footer">
+        <div class="pg-container">
+            <div class="pg-footer-grid">
+                <div>
+                    <a href="/" class="pg-footer-brand"><img src="/assets/images/candway_logo_dark.png" alt="Candway" height="40"></a>
+                    <p class="pg-footer-desc" data-i18n="job_details.tagline">The global protocol for proof-of-skill.</p>
+                    <div class="pg-footer-socials">
+                        <a href="#"><i class="fab fa-twitter"></i></a>
+                        <a href="#"><i class="fab fa-linkedin-in"></i></a>
+                        <a href="#"><i class="fab fa-instagram"></i></a>
+                    </div>
+                </div>
+                <div>
+                    <h4 data-i18n="job_details.explore">Explore</h4>
+                    <ul class="pg-footer-links">
+                        <li><a href="/" data-i18n="job_details.for_candidates">For Candidates</a></li>
+                        <li><a href="/jobs" data-i18n="job_details.job_board">Job Board</a></li>
+                    </ul>
+                </div>
+                <div>
+                    <h4 data-i18n="job_details.platform">Platform</h4>
+                    <ul class="pg-footer-links">
+                        <li><a href="/signup" data-i18n="job_details.get_verified">Get Verified</a></li>
+                        <li><a href="/portal/login" data-i18n="job_details.signin">Sign In</a></li>
+                    </ul>
+                </div>
+            </div>
+            <div class="pg-footer-bottom">
+                <div data-i18n="landing_page.footer.rights">&copy; 2026 Candway Intelligence Inc.</div>
+            </div>
+        </div>
+    </footer>
+
+    <script src="/js/config.js"></script>
+    <script>
+    document.addEventListener('DOMContentLoaded', async () => {
+        const urlParams  = new URLSearchParams(window.location.search);
+        const jobId      = urlParams.get('id');
+        const container   = document.getElementById('job-content');
+        const titleEl     = document.getElementById('page-title');
+        const ogTitle     = document.getElementById('meta-og-title');
+        const ogDesc      = document.getElementById('meta-og-description');
+        const ogImage     = document.getElementById('meta-og-image');
+        const ogUrl       = document.getElementById('meta-og-url');
+        const twCard      = document.getElementById('twitter-card');
+        const twTitle     = document.getElementById('twitter-title');
+        const twDesc      = document.getElementById('twitter-description');
+        const twImage     = document.getElementById('twitter-image');
+        const jsonLdEl    = document.getElementById('job-json-ld');
+        const API_BASE    = window.CONFIG ? CONFIG.API_BASE_URL : window.location.origin;
+
+        if (!jobId) {
+            container.innerHTML = '<div class="pg-text-center py-10 pg-small" style="color:var(--pg-rose);">Job ID missing.</div>';
+            return;
+        }
+
+        try {
+            const res  = await fetch(`${API_BASE}/api/v1/jobs/public/${jobId}`);
+            if (!res.ok) throw new Error('Not found');
+            const job  = await res.json();
+
+            const pageUrl = window.location.href;
+            if (titleEl && job.title) titleEl.textContent = `${job.title} | ${job.company} on Candway`;
+            if (ogTitle && job.title)  ogTitle.content   = `${job.title} at ${job.company}`;
+            if (ogDesc && job.title)   ogDesc.content    = `${job.title} in ${job.location}. ${job.salary_range || ''}`.trim();
+            if (ogImage && job.logo_url) ogImage.content = job.logo_url;
+            if (ogUrl) ogUrl.content = pageUrl;
+            if (twCard) twCard.content = 'summary_large_image';
+            if (twTitle && job.title) twTitle.content = `${job.title} at ${job.company}`;
+            if (twDesc && job.title) twDesc.content = `${job.title} in ${job.location}. ${job.salary_range || ''}`.trim();
+            if (twImage && job.logo_url) twImage.content = job.logo_url;
+            if (jsonLdEl && job.json_ld) jsonLdEl.textContent = JSON.stringify(job.json_ld);
+
+            const reqs = job.requirements
+                ? job.requirements.split('\n').filter(Boolean).map(r =>
+                    `<li class="pg-flex pg-items-start pg-gap-2" style="margin-bottom:.45rem;"><i class="fas fa-check-circle" style="color:var(--pg-green); margin-top:3px; flex-shrink:0;"></i><span>${r}</span></li>`
+                  ).join('')
+                : '<li class="pg-small">No specific requirements listed.</li>';
+
+            const benefits = job.benefits
+                ? job.benefits.split('\n').filter(Boolean).map(b =>
+                    `<li class="pg-flex pg-items-start pg-gap-2" style="margin-bottom:.45rem;"><i class="fas fa-star" style="color:#f59e0b; margin-top:3px; flex-shrink:0;"></i><span>${b}</span></li>`
+                  ).join('')
+                : '<li class="pg-small">Standard benefits apply.</li>';
+
+            const skills = job.required_skills
+                ? job.required_skills.split(',').map(s => `<span class="pg-badge pg-badge-glass">${s.trim()}</span>`).join('')
+                : '<span class="pg-small" style="color:var(--pg-ink-d);">Not specified</span>';
+
+            container.innerHTML = `
+                <div class="pg-mb-6">
+                    <a href="/jobs" class="pg-small" style="color:var(--pg-primary);">Jobs</a>
+                    <span class="pg-small" style="color:var(--pg-ink-d);"> /</span>
+                    <span class="pg-small" style="font-weight:700; color:var(--pg-ink);">${job.category || 'Opportunity'}</span>
+                </div>
+
+                <div class="pg-grid-2" style="gap: 2rem; align-items: start;">
+
+                    <div style="display:flex; flex-direction:column; gap: 1.5rem;">
+                        <div class="pg-glass-card pg-p-8">
+                            <div class="pg-flex pg-items-center pg-gap-4">
+                                ${job.logo_url
+                                    ? `<img src="${job.logo_url}" style="width:64px; height:64px; border-radius:16px; object-fit:cover; border:1px solid var(--pg-glass-border);">`
+                                    : `<div style="width:64px; height:64px; border-radius:16px; background:var(--pg-grad); display:flex; align-items:center; justify-content:center; color:#fff; font-size:1.4rem;"><i class="fas fa-briefcase"></i></div>`}
+                                <div>
+                                    <p class="pg-small pg-mb-2" style="font-weight:700; text-transform:uppercase; letter-spacing:.08em; color:var(--pg-primary);">${job.type || 'Full-time'}</p>
+                                    <h1 class="pg-display" style="font-size: clamp(1.3rem, 3vw, 1.7rem); line-height:1.15; margin-bottom:.4rem;">${job.title}</h1>
+                                    <p class="pg-small" style="font-weight:600; color:var(--pg-ink-2);"><i class="fas fa-building pg-mr-1" style="color:var(--pg-ink-d);"></i> ${job.company} <span style="color:var(--pg-ink-d);">&bull;</span> <i class="fas fa-map-marker-alt pg-mr-1" style="color:var(--pg-primary);"></i> ${job.location || 'Remote'}</p>
+                                </div>
+                            </div>
+                        </div>
+
+                        <div class="pg-glass-card pg-p-8">
+                            <div class="pg-flex pg-items-center pg-gap-3 pg-mb-4">
+                                <div class="pg-section-icon"><i class="fas fa-align-left"></i></div>
+                                <h2 class="pg-h3" style="margin-bottom:0;">Overview</h2>
+                            </div>
+                            <div class="pg-prose">${job.description || '<p>No description provided.</p>'}</div>
+                        </div>
+
+                        <div class="pg-glass-card pg-p-8">
+                            <div class="pg-flex pg-items-center pg-gap-3 pg-mb-4">
+                                <div class="pg-section-icon" style="background:rgba(16,185,129,.1); color:var(--pg-green); border-color:rgba(16,185,129,.14);"><i class="fas fa-list-check"></i></div>
+                                <h2 class="pg-h3" style="margin-bottom:0;">Key Requirements</h2>
+                            </div>
+                            <ul style="list-style:none; padding:0; display:flex; flex-direction:column; gap:.55rem;">${reqs}</ul>
+                        </div>
+                    </div>
+
+                    <aside style="display:flex; flex-direction:column; gap:1.25rem; position:sticky; top:96px;">
+
+                        <div class="pg-glass-card pg-p-6">
+                            <div style="display:flex; flex-direction:column; gap:.5rem; margin-bottom:1.25rem;">
+                                <div class="pg-flex pg-justify-between pg-items-center" style="padding:.65rem .85rem; background:var(--pg-bg2); border-radius:10px;">
+                                    <span class="pg-tiny" style="font-weight:700; text-transform:uppercase; letter-spacing:.1em; color:var(--pg-ink-d);">Salary</span>
+                                    <span style="font-weight:700; color:var(--pg-ink);">${job.salary_range || 'Competitive'}</span>
+                                </div>
+                                <div class="pg-flex pg-justify-between pg-items-center" style="padding:.65rem .85rem; background:var(--pg-bg2); border-radius:10px;">
+                                    <span class="pg-tiny" style="font-weight:700; text-transform:uppercase; letter-spacing:.1em; color:var(--pg-ink-d);">Type</span>
+                                    <span style="font-weight:700; color:var(--pg-ink);">${job.type || 'Full-time'}</span>
+                                </div>
+                                <div class="pg-flex pg-justify-between pg-items-center" style="padding:.65rem .85rem; background:var(--pg-bg2); border-radius:10px;">
+                                    <span class="pg-tiny" style="font-weight:700; text-transform:uppercase; letter-spacing:.1em; color:var(--pg-ink-d);">Posted</span>
+                                    <span style="font-weight:700; color:var(--pg-ink);">Recently</span>
+                                </div>
+                            </div>
+                            <a href="/signup" class="pg-btn pg-btn-primary pg-btn-lg pg-w-full pg-mb-2" style="justify-content:center;">
+                                Apply for this Job <i class="fas fa-arrow-right pg-ml-1"></i>
+                            </a>
+                            <button onclick="shareJob()" class="pg-btn pg-btn-secondary pg-btn-lg pg-w-full" style="justify-content:center;">
+                                <i class="fas fa-share-nodes pg-mr-1"></i> Share
+                            </button>
+                        </div>
+
+                        <div class="pg-glass-card pg-p-6">
+                            <h4 class="pg-h4 pg-mb-3" style="font-size:.78rem; text-transform:uppercase; letter-spacing:.09em; color:var(--pg-ink-d);">Tech Stack</h4>
+                            <div class="pg-flex pg-flex-wrap pg-gap-2">${skills}</div>
+                        </div>
+
+                        <div style="background:var(--pg-grad); border-radius:20px; overflow:hidden; position:relative;">
+                            <div style="position:absolute; inset:0; background:rgba(0,0,0,.12);"></div>
+                            <div class="pg-p-6" style="position:relative;">
+                                <h4 class="pg-h4 pg-mb-3" style="font-size:.78rem; text-transform:uppercase; letter-spacing:.09em; color:rgba(255,255,255,.75);">Perks & Benefits</h4>
+                                <ul style="list-style:none; padding:0; display:flex; flex-direction:column; gap:.5rem;">${benefits}</ul>
+                            </div>
+                        </div>
+                    </aside>
+                </div>
+
+                <div id="similar-jobs-wrapper" class="pg-hidden pg-mt-12">
+                    <div class="pg-flex pg-items-center pg-gap-2 pg-mb-6">
+                        <div class="pg-section-icon"><i class="fas fa-layer-group"></i></div>
+                        <h2 class="pg-h3" style="margin-bottom:0;">Similar Opportunities</h2>
+                    </div>
+                    <div class="pg-grid-3" id="similar-jobs-list"></div>
+                </div>
+            `;
+
+            if (job.category_id) loadSimilarJobs(API_BASE, job.category_id, job.id);
+        } catch (e) {
+            container.innerHTML = '<div class="pg-text-center py-10 pg-small" style="color:var(--pg-rose);">Failed to load job details.</div>';
+        }
+    });
+
+    async function loadSimilarJobs(apiBase, categoryId, currentJobId) {
+        try {
+            const res = await fetch(`${apiBase}/api/v1/jobs/public?category_id=${categoryId}`);
+            if (!res.ok) return;
+            const jobs = await res.json();
+            const similar = jobs.filter(j => j.id !== currentJobId).slice(0, 3);
+            if (!similar.length) return;
+
+            const list = document.getElementById('similar-jobs-list');
+            if (!list) return;
+
+            list.innerHTML = similar.map(j => `
+                <div class="pg-glass-card pg-p-6 pg-clickable" onclick="location.href='job-details.html?id=${j.id}'">
+                    <div class="pg-flex pg-items-center pg-gap-3 pg-mb-3">
+                        ${j.logo_url
+                            ? `<img src="${j.logo_url}" style="width:40px; height:40px; border-radius:10px; object-fit:cover;">`
+                            : `<div class="pg-icon-box-sm"><i class="fas fa-briefcase"></i></div>`}
+                        <span class="pg-badge pg-badge-glass">${j.type || 'Job'}</span>
+                    </div>
+                    <h3 class="pg-h4 pg-mb-2">${j.title}</h3>
+                    <p class="pg-small pg-mb-3">${j.company} &bull; ${j.location || 'Remote'}</p>
+                    <span class="pg-tiny" style="color:var(--pg-ink-d);"><i class="fas fa-clock pg-mr-1"></i>Recently</span>
+                </div>
+            `).join('');
+        } catch (e) { console.warn('Similar jobs error', e); }
+    }
+
+    function shareJob() {
+        navigator.clipboard.writeText(window.location.href);
+    }
+    </script>
+    <script src="/js/csrf.js"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/dompurify/3.0.8/purify.min.js"></script>
+    <script src="/js/xss-protection.js"></script>
+    <script src="/js/career-chat-widget.js" defer></script>
+</body>
+</html>

@@ -1,0 +1,3610 @@
+<!DOCTYPE html>
+<html lang="fr">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Candway — Turn applicants into qualified shortlists</title>
+    <meta name="description"
+        content="Candway prouve tes compétences réelles aux employeurs via interviews IA. Talent Graph 5D, matching intelligent, 100% gratuit.">
+
+    <link rel="icon" type="image/png" href="assets/images/favicon.png">
+    <meta property="og:type" content="website">
+    <meta property="og:url" content="https://candway.com/">
+    <meta property="og:title" content="Candway — Turn applicants into qualified shortlists">
+    <meta property="og:description" content="Candway prouve tes compétences réelles aux employeurs via interviews IA. Talent Graph 5D, matching intelligent, 100% gratuit.">
+    <meta property="og:image" content="assets/images/og-image.png">
+
+    <!-- Twitter -->
+    <meta property="twitter:card" content="summary_large_image">
+    <meta property="twitter:url" content="https://candway.com/">
+    <meta property="twitter:title" content="Candway — Turn applicants into qualified shortlists">
+    <meta property="twitter:description" content="Candway prouve tes compétences réelles aux employeurs via interviews IA. Talent Graph 5D, matching intelligent, 100% gratuit.">
+    <meta property="twitter:image" content="assets/images/og-image.png">
+
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link
+        href="https://fonts.googleapis.com/css2?family=Cabinet+Grotesk:wght@400;500;700;800;900&family=Instrument+Sans:wght@400;500;600&family=JetBrains+Mono:wght@400;500;600&display=swap"
+        rel="stylesheet">
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.0/css/all.min.css">
+    <script src="/js/translations.js"></script>
+    <script src="/js/localization.js"></script>
+    <script src="js/gdpr.js"></script>
+    <script src="/js/career-chat-widget.js" defer></script>
+
+
+    <style>
+        /* ═══════════════════════════════════
+   DESIGN TOKENS
+═══════════════════════════════════ */
+        :root {
+            --indigo: #6366F1;
+            --indigo-light: #818CF8;
+            --indigo-dark: #4F46E5;
+            --indigo-ghost: rgba(99, 102, 241, .08);
+            --indigo-glow: rgba(99, 102, 241, .22);
+            --purple: #9333EA;
+            --purple-light: #A855F7;
+            --rose: #F43F5E;
+            --rose-light: #FB7185;
+            --green: #10B981;
+            --amber: #F59E0B;
+
+            --bg: #F8FAFC;
+            --bg2: #F1F5F9;
+            --bg3: #E2E8F0;
+            --surface: rgba(255, 255, 255, .82);
+            --surface-s: rgba(255, 255, 255, .95);
+            --glass-border: rgba(255, 255, 255, .6);
+            --glass-hi: rgba(255, 255, 255, .9);
+
+            --ink: #0F172A;
+            --ink-2: #334155;
+            --ink-m: #64748B;
+            --ink-d: #94A3B8;
+
+            --grad: linear-gradient(135deg, var(--indigo) 0%, var(--purple) 100%);
+            --grad-r: linear-gradient(135deg, var(--rose) 0%, var(--purple) 100%);
+
+            --f-disp: 'Cabinet Grotesk', 'Georgia', sans-serif;
+            --f-body: 'Instrument Sans', -apple-system, sans-serif;
+            --f-mono: 'JetBrains Mono', monospace;
+
+            --ease: cubic-bezier(.16, 1, .3, 1);
+            --spring: cubic-bezier(.34, 1.56, .64, 1);
+            --tr: .4s var(--ease);
+            --glass: blur(20px) saturate(180%);
+
+            --sh-sm: 0 1px 3px rgba(0, 0, 0, .08), 0 1px 2px rgba(0, 0, 0, .04);
+            --sh-md: 0 4px 12px rgba(0, 0, 0, .08), 0 2px 4px rgba(0, 0, 0, .04);
+            --sh-lg: 0 16px 48px rgba(0, 0, 0, .1), 0 4px 12px rgba(0, 0, 0, .05);
+            --sh-xl: 0 32px 80px rgba(0, 0, 0, .12);
+            --sh-glow: 0 0 40px rgba(99, 102, 241, .25);
+        }
+
+        /* ═══════════════════════════════════
+   RESET
+═══════════════════════════════════ */
+        *,
+        *::before,
+        *::after {
+            box-sizing: border-box;
+            margin: 0;
+            padding: 0
+        }
+
+        html {
+            scroll-behavior: smooth;
+            font-size: 16px
+        }
+
+        body {
+            font-family: var(--f-body);
+            background: var(--bg);
+            color: var(--ink);
+            line-height: 1.65;
+            overflow-x: hidden;
+            -webkit-font-smoothing: antialiased;
+        }
+
+        /* Ambient background */
+        .amb {
+            position: fixed;
+            inset: 0;
+            z-index: -2;
+            background: var(--bg);
+            overflow: hidden;
+        }
+
+        .amb::before {
+            content: '';
+            position: absolute;
+            inset: -50%;
+            background:
+                radial-gradient(circle at 18% 78%, rgba(99, 102, 241, .12) 0%, transparent 50%),
+                radial-gradient(circle at 82% 22%, rgba(147, 51, 234, .08) 0%, transparent 48%),
+                radial-gradient(circle at 52% 50%, rgba(244, 63, 94, .04) 0%, transparent 38%);
+            animation: ambMove 22s ease-in-out infinite alternate;
+        }
+
+        @keyframes ambMove {
+            0% {
+                transform: translate(0, 0) scale(1)
+            }
+
+            100% {
+                transform: translate(4%, 4%) scale(1.05)
+            }
+        }
+
+        /* Dot grid */
+        .dot-grid {
+            position: fixed;
+            inset: 0;
+            z-index: -1;
+            pointer-events: none;
+            background-image: radial-gradient(circle, rgba(99, 102, 241, .08) 1px, transparent 1px);
+            background-size: 40px 40px;
+        }
+
+        /* ═══════════════════════════════════
+   LAYOUT
+═══════════════════════════════════ */
+        .w {
+            max-width: 1240px;
+            margin: 0 auto;
+            padding: 0 48px
+        }
+
+        .wm {
+            max-width: 900px;
+            margin: 0 auto;
+            padding: 0 48px
+        }
+
+        .wn {
+            max-width: 720px;
+            margin: 0 auto;
+            padding: 0 48px
+        }
+
+        section {
+            padding: 112px 0;
+            position: relative
+        }
+
+        /* ═══════════════════════════════════
+   TYPOGRAPHY
+═══════════════════════════════════ */
+        .disp {
+            font-family: var(--f-disp);
+            font-size: clamp(2.2rem, 4.2vw, 4rem);
+            font-weight: 900;
+            line-height: 1.04;
+            letter-spacing: -.04em;
+        }
+
+        .h2 {
+            font-family: var(--f-disp);
+            font-size: clamp(2rem, 4vw, 3.4rem);
+            font-weight: 800;
+            line-height: 1.08;
+            letter-spacing: -.03em;
+        }
+
+        .h3 {
+            font-family: var(--f-disp);
+            font-size: clamp(1.15rem, 1.8vw, 1.5rem);
+            font-weight: 700;
+            letter-spacing: -.02em;
+            margin-bottom: 10px;
+        }
+
+        .h4 {
+            font-family: var(--f-disp);
+            font-size: 1.15rem;
+            font-weight: 700;
+            letter-spacing: -.015em
+        }
+
+        .lead {
+            font-size: 18px;
+            line-height: 1.75;
+            color: var(--ink-m)
+        }
+
+        .small {
+            font-size: 14px;
+            line-height: 1.65;
+            color: var(--ink-m)
+        }
+
+        .tiny {
+            font-size: 12px;
+            line-height: 1.55;
+            color: var(--ink-d)
+        }
+
+        .grad-t {
+            background: linear-gradient(135deg, var(--indigo) 0%, var(--purple) 60%, var(--rose) 100%);
+            -webkit-background-clip: text;
+            -webkit-text-fill-color: transparent;
+            background-clip: text;
+        }
+
+        .indigo-t {
+            color: var(--indigo)
+        }
+
+        /* Section kicker */
+        .kicker {
+            font-family: var(--f-mono);
+            font-size: 11px;
+            font-weight: 600;
+            text-transform: uppercase;
+            letter-spacing: .18em;
+            color: var(--indigo);
+            margin-bottom: 14px;
+            display: block;
+        }
+
+        .kicker-pill {
+            display: inline-flex;
+            align-items: center;
+            gap: 7px;
+            padding: 6px 14px;
+            background: var(--indigo-ghost);
+            border: 1px solid rgba(99, 102, 241, .18);
+            border-radius: 100px;
+            font-family: var(--f-mono);
+            font-size: 11px;
+            color: var(--indigo);
+            margin-bottom: 16px;
+            font-weight: 600;
+            letter-spacing: .12em;
+            text-transform: uppercase;
+        }
+
+        .kp-dot {
+            width: 5px;
+            height: 5px;
+            border-radius: 50%;
+            background: var(--indigo);
+            animation: blink 2s infinite
+        }
+
+        @keyframes blink {
+
+            0%,
+            100% {
+                opacity: 1
+            }
+
+            50% {
+                opacity: .35
+            }
+        }
+
+        /* Section header centered */
+        .sec-hdr {
+            text-align: center;
+            margin-bottom: 72px
+        }
+
+        .sec-hdr .lead {
+            max-width: 580px;
+            margin: 16px auto 0
+        }
+
+        /* ═══════════════════════════════════
+   ANIMATIONS
+═══════════════════════════════════ */
+        .rv {
+            opacity: 0;
+            transform: translateY(36px);
+            transition: opacity .85s var(--ease), transform .85s var(--ease)
+        }
+
+        .rv.in {
+            opacity: 1;
+            transform: none
+        }
+
+        .rv.l {
+            transform: translateX(-28px)
+        }
+
+        .rv.l.in {
+            transform: none
+        }
+
+        .rv.r {
+            transform: translateX(28px)
+        }
+
+        .rv.r.in {
+            transform: none
+        }
+
+        .d1 {
+            transition-delay: .08s
+        }
+
+        .d2 {
+            transition-delay: .18s
+        }
+
+        .d3 {
+            transition-delay: .28s
+        }
+
+        .d4 {
+            transition-delay: .38s
+        }
+
+        .d5 {
+            transition-delay: .48s
+        }
+
+        .d6 {
+            transition-delay: .58s
+        }
+
+        @keyframes fadeUp {
+            from {
+                opacity: 0;
+                transform: translateY(28px)
+            }
+
+            to {
+                opacity: 1;
+                transform: none
+            }
+        }
+
+        @keyframes float {
+
+            0%,
+            100% {
+                transform: translateY(0)
+            }
+
+            50% {
+                transform: translateY(-18px)
+            }
+        }
+
+        @keyframes floatX {
+
+            0%,
+            100% {
+                transform: translate(0, 0)
+            }
+
+            50% {
+                transform: translate(-8px, -14px)
+            }
+        }
+
+        @keyframes pulse {
+
+            0%,
+            100% {
+                opacity: 1;
+                transform: scale(1)
+            }
+
+            50% {
+                opacity: .5;
+                transform: scale(.7)
+            }
+        }
+
+        @keyframes spin {
+            to {
+                transform: rotate(360deg)
+            }
+        }
+
+        @keyframes fillBar {
+            to {
+                width: var(--w)
+            }
+        }
+
+        @keyframes shimmer {
+            0% {
+                transform: translateX(-100%)
+            }
+
+            100% {
+                transform: translateX(200%)
+            }
+        }
+
+        @keyframes marquee {
+            0% {
+                transform: translateX(0)
+            }
+
+            100% {
+                transform: translateX(-50%)
+            }
+        }
+
+        @keyframes countUp {
+            from {
+                opacity: 0
+            }
+
+            to {
+                opacity: 1
+            }
+        }
+
+        /* ═══════════════════════════════════
+   BUTTONS
+═══════════════════════════════════ */
+        .btn {
+            display: inline-flex;
+            align-items: center;
+            gap: 9px;
+            font-family: var(--f-disp);
+            font-weight: 700;
+            letter-spacing: -.01em;
+            text-decoration: none;
+            transition: var(--tr);
+            cursor: pointer;
+            border: 1px solid transparent;
+            border-radius: 14px;
+            white-space: nowrap;
+        }
+
+        .btn-xl {
+            padding: 17px 40px;
+            font-size: 17px
+        }
+
+        .btn-lg {
+            padding: 14px 32px;
+            font-size: 15px
+        }
+
+        .btn-sm {
+            padding: 9px 20px;
+            font-size: 13px;
+            border-radius: 10px
+        }
+
+        .btn-pri {
+            background: var(--grad);
+            color: #fff;
+            box-shadow: 0 4px 18px var(--indigo-glow);
+        }
+
+        .btn-pri:hover {
+            transform: translateY(-3px);
+            box-shadow: 0 10px 32px var(--indigo-glow)
+        }
+
+        .btn-sec {
+            background: var(--surface);
+            color: var(--ink);
+            border-color: var(--glass-border);
+            backdrop-filter: var(--glass);
+            box-shadow: var(--sh-sm);
+        }
+
+        .btn-sec:hover {
+            background: var(--surface-s);
+            transform: translateY(-3px);
+            box-shadow: var(--sh-lg)
+        }
+
+        .btn-ghost {
+            background: transparent;
+            color: var(--indigo);
+            border-color: rgba(99, 102, 241, .3);
+        }
+
+        .btn-ghost:hover {
+            background: var(--indigo-ghost);
+            transform: translateY(-2px)
+        }
+
+        /* ═══════════════════════════════════
+   GLASS CARDS
+═══════════════════════════════════ */
+        .card {
+            background: var(--surface);
+            backdrop-filter: var(--glass);
+            border: 1px solid var(--glass-border);
+            border-radius: 24px;
+            padding: 32px;
+            position: relative;
+            overflow: hidden;
+            transition: var(--tr);
+        }
+
+        .card::before {
+            content: '';
+            position: absolute;
+            inset: 0;
+            border-radius: inherit;
+            background: linear-gradient(135deg, rgba(255, 255, 255, .5) 0%, transparent 70%);
+            opacity: 0;
+            transition: opacity var(--tr);
+            pointer-events: none;
+        }
+
+        .card:hover {
+            transform: translateY(-8px);
+            box-shadow: var(--sh-lg);
+            border-color: rgba(99, 102, 241, .22)
+        }
+
+        .card:hover::before {
+            opacity: 1
+        }
+
+        .card-ico {
+            width: 54px;
+            height: 54px;
+            border-radius: 16px;
+            background: linear-gradient(135deg, rgba(99, 102, 241, .12), rgba(147, 51, 234, .06));
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            color: var(--indigo);
+            font-size: 22px;
+            margin-bottom: 20px;
+            transition: var(--tr);
+        }
+
+        .card:hover .card-ico {
+            background: var(--grad);
+            color: #fff;
+            transform: scale(1.1) rotate(-5deg);
+            box-shadow: 0 8px 20px var(--indigo-glow);
+        }
+
+        /* ═══════════════════════════════════
+   NAVIGATION
+═══════════════════════════════════ */
+        nav {
+            position: fixed;
+            top: 20px;
+            left: 50%;
+            transform: translateX(-50%);
+            width: calc(100% - 32px);
+            max-width: 1200px;
+            z-index: 1000;
+            height: 68px;
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+            padding: 0 24px;
+            background: rgba(255, 255, 255, 0.72);
+            backdrop-filter: blur(20px) saturate(160%);
+            -webkit-backdrop-filter: blur(20px) saturate(160%);
+            border: 1px solid rgba(255, 255, 255, 0.5);
+            border-radius: 20px;
+            box-shadow: 
+                0 10px 40px -10px rgba(0, 0, 0, 0.1),
+                inset 0 0 0 1px rgba(255, 255, 255, 0.4);
+            transition: all 0.5s cubic-bezier(0.23, 1, 0.32, 1);
+        }
+
+        nav.scrolled {
+            top: 10px;
+            height: 60px;
+            width: calc(100% - 24px);
+            background: rgba(255, 255, 255, 0.92);
+            box-shadow: 0 20px 50px -15px rgba(0, 0, 0, 0.15);
+        }
+
+        /* Progress Bar */
+        .scroll-progress {
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 0%;
+            height: 3px;
+            background: var(--grad);
+            z-index: 2000;
+            transition: width 0.1s ease-out;
+            box-shadow: 0 0 10px var(--indigo-glow);
+        }
+
+        .nav-logo {
+            display: flex;
+            align-items: center;
+            gap: 11px;
+            text-decoration: none;
+            color: var(--ink);
+            font-family: var(--f-disp);
+            font-size: 22px;
+            font-weight: 800;
+            letter-spacing: -.04em;
+        }
+
+        .nav-logo-ico {
+            width: 40px;
+            height: 40px;
+            background: var(--grad);
+            border-radius: 12px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            color: #fff;
+            font-size: 18px;
+            box-shadow: 0 6px 16px var(--indigo-glow);
+            transition: all 0.4s cubic-bezier(0.34, 1.56, 0.64, 1);
+        }
+
+        .nav-logo:hover .nav-logo-ico {
+            transform: scale(1.1) rotate(-8deg);
+            box-shadow: 0 10px 24px var(--indigo-glow);
+            filter: brightness(1.1);
+        }
+
+        .nav-links {
+            display: flex;
+            gap: 4px;
+            list-style: none;
+            padding: 4px;
+            background: rgba(0, 0, 0, 0.03);
+            border-radius: 16px;
+        }
+
+        .nav-links a {
+            position: relative;
+            padding: 8px 16px;
+            border-radius: 12px;
+            font-size: 14px;
+            font-weight: 600;
+            color: var(--ink-2);
+            text-decoration: none;
+            transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+        }
+
+        .nav-links a:hover {
+            color: var(--indigo);
+            background: rgba(99, 102, 241, 0.05);
+        }
+
+        .nav-links a::after {
+            content: '';
+            position: absolute;
+            bottom: 6px;
+            left: 50%;
+            width: 0;
+            height: 2px;
+            background: var(--grad);
+            border-radius: 2px;
+            transform: translateX(-50%);
+            transition: width 0.3s var(--ease);
+        }
+
+        .nav-links a:hover::after {
+            width: 12px;
+        }
+
+        .nav-r {
+            display: flex;
+            align-items: center;
+            gap: 10px
+        }
+
+        .nav-login {
+            font-size: 13.5px;
+            font-weight: 500;
+            color: var(--ink-m);
+            text-decoration: none;
+            transition: color .25s
+        }
+
+        .nav-login:hover {
+            color: var(--ink)
+        }
+
+        .nav-cta {
+            position: relative;
+            overflow: hidden;
+            padding: 10px 24px;
+            background: var(--grad);
+            color: #fff;
+            border-radius: 14px;
+            font-size: 13.5px;
+            font-weight: 700;
+            font-family: var(--f-disp);
+            text-decoration: none;
+            box-shadow: 0 6px 20px var(--indigo-glow);
+            transition: all 0.4s cubic-bezier(0.175, 0.885, 0.32, 1.275);
+            display: flex;
+            align-items: center;
+            gap: 8px;
+        }
+
+        .nav-cta::before {
+            content: '';
+            position: absolute;
+            top: -50%;
+            left: -150%;
+            width: 50%;
+            height: 200%;
+            background: rgba(255, 255, 255, 0.2);
+            transform: rotate(45deg);
+            transition: all 0.6s ease;
+        }
+
+        .nav-cta:hover {
+            transform: translateY(-3px) scale(1.05);
+            box-shadow: 0 10px 25px var(--indigo-glow);
+        }
+
+        .nav-cta:hover::before {
+            left: 150%;
+        }
+
+        /* Lang dropdown */
+        .lang-wrap {
+            position: relative
+        }
+
+        .lang-btn {
+            display: flex;
+            align-items: center;
+            gap: 6px;
+            background: rgba(255, 255, 255, .5);
+            border: 1px solid rgba(255, 255, 255, .6);
+            padding: 7px 14px;
+            border-radius: 10px;
+            cursor: pointer;
+            font-size: 13px;
+            color: var(--ink-2);
+            transition: all .3s var(--ease);
+        }
+
+        .lang-btn:hover {
+            background: rgba(255, 255, 255, .9);
+            border-color: var(--indigo-light);
+            transform: translateY(-1px);
+        }
+
+        .lang-btn img {
+            width: 17px;
+            border-radius: 2px
+        }
+
+        .lang-menu {
+            position: absolute;
+            top: calc(100%+10px);
+            right: 0;
+            width: 145px;
+            background: var(--surface-s);
+            backdrop-filter: var(--glass);
+            border: 1px solid var(--glass-border);
+            border-radius: 14px;
+            padding: 6px;
+            display: none;
+            flex-direction: column;
+            gap: 3px;
+            box-shadow: var(--sh-lg);
+            z-index: 1000;
+        }
+
+        .lang-menu.show {
+            display: flex
+        }
+
+        .lang-opt {
+            display: flex;
+            align-items: center;
+            gap: 9px;
+            padding: 9px 13px;
+            border-radius: 8px;
+            cursor: pointer;
+            font-size: 13px;
+            color: var(--ink-2);
+            transition: background .2s;
+        }
+
+        .lang-opt:hover {
+            background: var(--indigo-ghost);
+            color: var(--indigo)
+        }
+
+        .lang-opt.active {
+            color: var(--indigo);
+            font-weight: 600
+        }
+
+        .lang-opt img {
+            width: 17px;
+            border-radius: 2px
+        }
+
+        /* Burger */
+        .burger {
+            display: none;
+            flex-direction: column;
+            gap: 5px;
+            background: none;
+            border: none;
+            cursor: pointer;
+            padding: 5px
+        }
+
+        .burger span {
+            display: block;
+            width: 21px;
+            height: 1.5px;
+            background: var(--ink);
+            border-radius: 2px;
+            transition: var(--tr)
+        }
+
+        /* Mobile drawer */
+        .drawer {
+            position: fixed;
+            inset: 0;
+            background: var(--bg);
+            z-index: 2000;
+            transform: translateX(100%);
+            transition: transform .5s var(--ease);
+            padding: 32px;
+            display: flex;
+            flex-direction: column;
+            gap: 28px;
+        }
+
+        .drawer.open {
+            transform: none
+        }
+
+        .drawer-top {
+            display: flex;
+            justify-content: space-between;
+            align-items: center
+        }
+
+        .drawer-close {
+            background: none;
+            border: none;
+            font-size: 22px;
+            cursor: pointer;
+            color: var(--ink);
+            padding: 6px
+        }
+
+        .drawer ul {
+            list-style: none;
+            display: flex;
+            flex-direction: column;
+            gap: 20px
+        }
+
+        .drawer ul a {
+            font-family: var(--f-disp);
+            font-size: 24px;
+            font-weight: 700;
+            text-decoration: none;
+            color: var(--ink);
+            transition: color .25s
+        }
+
+        .drawer ul a:hover {
+            color: var(--indigo)
+        }
+
+        .drawer-btns {
+            margin-top: auto;
+            display: flex;
+            flex-direction: column;
+            gap: 12px
+        }
+
+        /* ═══════════════════════════════════
+   HERO
+═══════════════════════════════════ */
+        #hero {
+            min-height: 100vh;
+            display: flex;
+            align-items: center;
+            padding: 120px 0 64px;
+        }
+
+        .hero-grid {
+            display: grid;
+            grid-template-columns: 1fr 1fr;
+            gap: 56px;
+            align-items: center
+        }
+
+        .hero-badge {
+            display: inline-flex;
+            align-items: center;
+            gap: 8px;
+            padding: 7px 15px;
+            background: var(--indigo-ghost);
+            border: 1px solid rgba(99, 102, 241, .2);
+            border-radius: 100px;
+            font-family: var(--f-mono);
+            font-size: 11.5px;
+            color: var(--indigo);
+            margin-bottom: 18px;
+            animation: fadeUp .8s var(--ease) forwards;
+            opacity: 0;
+        }
+
+        .hero-badge i {
+            animation: pulse 2s infinite
+        }
+
+        h1.disp {
+            animation: fadeUp .8s var(--ease) .1s forwards;
+            opacity: 0;
+            margin-bottom: 18px;
+        }
+
+        .hero-sub {
+            font-size: 1.05rem;
+            color: var(--ink-m);
+            line-height: 1.7;
+            max-width: 480px;
+            margin-bottom: 28px;
+            animation: fadeUp .8s var(--ease) .2s forwards;
+            opacity: 0;
+        }
+
+        .hero-btns {
+            display: flex;
+            gap: 12px;
+            flex-wrap: wrap;
+            margin-bottom: 32px;
+            animation: fadeUp .8s var(--ease) .3s forwards;
+            opacity: 0;
+        }
+
+        .hero-sp {
+            display: flex;
+            align-items: center;
+            gap: 14px;
+            flex-wrap: wrap;
+            animation: fadeUp .8s var(--ease) .4s forwards;
+            opacity: 0;
+        }
+
+        .sp-avs {
+            display: flex
+        }
+
+        .sp-av {
+            width: 30px;
+            height: 30px;
+            border-radius: 50%;
+            border: 2.5px solid #fff;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-size: 9px;
+            font-weight: 700;
+            color: #fff;
+            margin-left: -7px;
+            flex-shrink: 0;
+        }
+
+        .sp-av:first-child {
+            margin-left: 0
+        }
+
+        .sp-div {
+            width: 1px;
+            height: 18px;
+            background: var(--bg3)
+        }
+
+        .sp-stars {
+            color: var(--amber);
+            font-size: 13px;
+            letter-spacing: 2px
+        }
+
+        /* Hero Visual */
+        .hero-visual {
+            position: relative;
+            padding: 44px 56px 28px 28px;
+            animation: fadeUp .8s var(--ease) .5s forwards;
+            opacity: 0;
+        }
+
+        .hero-card-wrap {
+            perspective: 1200px;
+        }
+
+        .hero-card-3d {
+            transform: rotateY(-4deg) rotateX(3deg);
+            transition: transform .6s var(--ease);
+        }
+
+        .hero-card-3d:hover {
+            transform: none
+        }
+
+        .hero-card {
+            background: var(--surface-s);
+            backdrop-filter: var(--glass);
+            border: 1px solid rgba(99, 102, 241, .2);
+            border-radius: 24px;
+            padding: 28px;
+            box-shadow: 0 20px 60px rgba(99, 102, 241, .12), 0 8px 24px rgba(0, 0, 0, .08), inset 0 1px 0 var(--glass-hi);
+            position: relative;
+            overflow: hidden;
+        }
+
+        .hero-card::before {
+            content: '';
+            position: absolute;
+            top: 0;
+            left: 0;
+            right: 0;
+            height: 1px;
+            background: linear-gradient(90deg, transparent, rgba(255, 255, 255, .9), transparent);
+        }
+
+        .hc-hdr {
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+            margin-bottom: 22px
+        }
+
+        .hc-title {
+            font-family: var(--f-disp);
+            font-size: 15px;
+            font-weight: 700;
+            letter-spacing: -.02em
+        }
+
+        .hc-ok {
+            display: flex;
+            align-items: center;
+            gap: 5px;
+            padding: 4px 10px;
+            background: rgba(16, 185, 129, .1);
+            border: 1px solid rgba(16, 185, 129, .2);
+            border-radius: 100px;
+            font-size: 10.5px;
+            font-weight: 600;
+            color: var(--green);
+        }
+
+        .skill-row {
+            margin-bottom: 14px
+        }
+
+        .skill-row:last-child {
+            margin-bottom: 0
+        }
+
+        .skill-lbl {
+            display: flex;
+            justify-content: space-between;
+            font-size: 13px;
+            font-weight: 500;
+            margin-bottom: 6px;
+            color: var(--ink-2);
+        }
+
+        .skill-lbl span:last-child {
+            font-weight: 700;
+            color: var(--ink)
+        }
+
+        .skill-track {
+            height: 7px;
+            background: var(--bg3);
+            border-radius: 4px;
+            overflow: hidden;
+            position: relative
+        }
+
+        .skill-fill {
+            height: 100%;
+            border-radius: 4px;
+            width: 0;
+            position: relative;
+            overflow: hidden;
+            animation: fillBar 1.4s var(--ease) .8s forwards;
+        }
+
+        .skill-fill::after {
+            content: '';
+            position: absolute;
+            inset: 0;
+            background: linear-gradient(90deg, transparent, rgba(255, 255, 255, .4), transparent);
+            animation: shimmer 2.5s 1.5s infinite;
+        }
+
+        .sf-i {
+            background: linear-gradient(90deg, var(--indigo), var(--indigo-light))
+        }
+
+        .sf-p {
+            background: linear-gradient(90deg, var(--purple), var(--purple-light))
+        }
+
+        .sf-r {
+            background: linear-gradient(90deg, var(--rose), var(--rose-light))
+        }
+
+        .sf-g {
+            background: linear-gradient(90deg, #059669, var(--green))
+        }
+
+        /* Floating chips */
+        .fc {
+            position: absolute;
+            background: var(--surface-s);
+            backdrop-filter: var(--glass);
+            border: 1px solid rgba(99, 102, 241, .18);
+            border-radius: 16px;
+            padding: 12px 16px;
+            box-shadow: var(--sh-lg);
+            z-index: 10;
+        }
+
+        .fc1 {
+            top: 6px;
+            right: 4px;
+            animation: float 5.5s ease-in-out infinite
+        }
+
+        .fc2 {
+            bottom: 0;
+            left: 0;
+            animation: float 7s ease-in-out infinite;
+            animation-delay: -2s
+        }
+
+        .fc-ico {
+            font-size: 18px;
+            margin-bottom: 5px
+        }
+
+        .fc-val {
+            font-family: var(--f-disp);
+            font-size: 14px;
+            font-weight: 700
+        }
+
+        .fc-sub {
+            font-size: 11px;
+            color: var(--ink-m)
+        }
+
+        /* ═══════════════════════════════════
+   TICKER MARQUEE
+═══════════════════════════════════ */
+        .ticker {
+            border-top: 1px solid var(--bg3);
+            border-bottom: 1px solid var(--bg3);
+            background: rgba(255, 255, 255, .5);
+            overflow: hidden;
+        }
+
+        .ticker-track {
+            display: flex;
+            animation: marquee 34s linear infinite
+        }
+
+        .ticker:hover .ticker-track {
+            animation-play-state: paused
+        }
+
+        .tick-item {
+            display: flex;
+            align-items: center;
+            gap: 10px;
+            padding: 17px 36px;
+            border-right: 1px solid var(--bg3);
+            white-space: nowrap;
+            flex-shrink: 0;
+            font-size: 12px;
+            font-weight: 600;
+            color: var(--ink-d);
+            letter-spacing: .02em;
+        }
+
+        .tick-item i {
+            color: var(--indigo);
+            font-size: 11px
+        }
+
+        /* ═══════════════════════════════════
+   PROBLEM SECTION
+═══════════════════════════════════ */
+        .prob-section {
+            background: linear-gradient(to bottom, var(--bg), var(--bg2))
+        }
+
+        .prob-intro {
+            display: grid;
+            grid-template-columns: 1fr 1fr;
+            gap: 72px;
+            align-items: center;
+            margin-bottom: 64px
+        }
+
+        .prob-stats-row {
+            display: grid;
+            grid-template-columns: repeat(3, 1fr);
+            gap: 20px
+        }
+
+        .prob-card {
+            background: rgba(244, 63, 94, .04);
+            border: 1px solid rgba(244, 63, 94, .12);
+            border-radius: 22px;
+            padding: 36px;
+            text-align: center;
+            transition: var(--tr);
+            position: relative;
+            overflow: hidden;
+        }
+
+        .prob-card::before {
+            content: '';
+            position: absolute;
+            inset: 0;
+            background: radial-gradient(ellipse at top, rgba(244, 63, 94, .1), transparent 65%);
+            opacity: 0;
+            transition: opacity .4s;
+        }
+
+        .prob-card:hover {
+            border-color: rgba(244, 63, 94, .28);
+            transform: translateY(-7px)
+        }
+
+        .prob-card:hover::before {
+            opacity: 1
+        }
+
+        .prob-num {
+            font-family: var(--f-disp);
+            font-size: clamp(2.8rem, 5vw, 4.4rem);
+            font-weight: 900;
+            color: var(--rose);
+            line-height: 1;
+            margin-bottom: 14px;
+            letter-spacing: -.04em;
+        }
+
+        .prob-lbl {
+            font-size: 14px;
+            color: var(--ink-m);
+            line-height: 1.55
+        }
+
+        /* Pain points list */
+        .pain-list {
+            list-style: none;
+            display: flex;
+            flex-direction: column;
+            gap: 14px;
+            margin-top: 8px
+        }
+
+        .pain-list li {
+            display: flex;
+            align-items: flex-start;
+            gap: 12px;
+            padding: 16px 18px;
+            background: rgba(244, 63, 94, .04);
+            border: 1px solid rgba(244, 63, 94, .1);
+            border-radius: 14px;
+            font-size: 14.5px;
+            color: var(--ink-2);
+            line-height: 1.5;
+            transition: var(--tr);
+        }
+
+        .pain-list li:hover {
+            border-color: rgba(244, 63, 94, .22);
+            background: rgba(244, 63, 94, .07)
+        }
+
+        .pain-list li i {
+            color: var(--rose);
+            flex-shrink: 0;
+            margin-top: 2px
+        }
+
+        /* ═══════════════════════════════════
+   FOR WHO
+═══════════════════════════════════ */
+        .who-grid {
+            display: grid;
+            grid-template-columns: repeat(3, 1fr);
+            gap: 20px
+        }
+
+        .who-card {
+            background: var(--surface);
+            backdrop-filter: var(--glass);
+            border: 1px solid var(--glass-border);
+            border-radius: 22px;
+            padding: 34px;
+            transition: var(--tr);
+            position: relative;
+            overflow: hidden;
+            cursor: pointer;
+        }
+
+        .who-card::after {
+            content: '';
+            position: absolute;
+            inset: 0;
+            border-radius: inherit;
+            background: radial-gradient(ellipse at top left, var(--indigo-ghost), transparent 65%);
+            opacity: 0;
+            transition: opacity .4s;
+        }
+
+        .who-card:hover {
+            transform: translateY(-8px);
+            border-color: rgba(99, 102, 241, .24);
+            box-shadow: var(--sh-lg)
+        }
+
+        .who-card:hover::after {
+            opacity: 1
+        }
+
+        .who-num {
+            font-family: var(--f-mono);
+            font-size: 10.5px;
+            font-weight: 600;
+            color: var(--indigo);
+            letter-spacing: .14em;
+            text-transform: uppercase;
+            margin-bottom: 16px;
+        }
+
+        .who-icon {
+            width: 52px;
+            height: 52px;
+            background: var(--grad);
+            border-radius: 15px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            color: #fff;
+            font-size: 21px;
+            margin-bottom: 18px;
+            box-shadow: 0 6px 16px var(--indigo-glow);
+            transition: var(--tr);
+        }
+
+        .who-card:hover .who-icon {
+            transform: scale(1.1) rotate(-5deg)
+        }
+
+        .who-list {
+            list-style: none;
+            margin-top: 14px;
+            display: flex;
+            flex-direction: column;
+            gap: 9px
+        }
+
+        .who-list li {
+            display: flex;
+            align-items: flex-start;
+            gap: 8px;
+            font-size: 13.5px;
+            color: var(--ink-m);
+            line-height: 1.5;
+        }
+
+        .who-list li i {
+            color: var(--indigo);
+            font-size: 10px;
+            margin-top: 4px;
+            flex-shrink: 0
+        }
+
+        /* ═══════════════════════════════════
+   FEATURES BENTO
+═══════════════════════════════════ */
+        .bento {
+            display: grid;
+            grid-template-columns: repeat(6, 1fr);
+            gap: 20px
+        }
+
+        .bento .top {
+            grid-column: span 3
+        }
+
+        .bento .bot {
+            grid-column: span 2
+        }
+
+        .feat-tags {
+            display: flex;
+            flex-wrap: wrap;
+            gap: 7px;
+            margin-top: 20px
+        }
+
+        .feat-tag {
+            padding: 4px 11px;
+            background: var(--indigo-ghost);
+            border: 1px solid rgba(99, 102, 241, .14);
+            border-radius: 100px;
+            font-family: var(--f-mono);
+            font-size: 10px;
+            color: var(--indigo);
+        }
+
+        /* Interview mock */
+        .interview-mock {
+            margin-top: 18px;
+            background: var(--bg2);
+            border: 1px solid var(--bg3);
+            border-radius: 14px;
+            padding: 16px;
+            font-size: 13.5px;
+        }
+
+        .im-line {
+            display: flex;
+            gap: 9px;
+            margin-bottom: 10px;
+            align-items: flex-start
+        }
+
+        .im-line:last-child {
+            margin-bottom: 0
+        }
+
+        .im-tag {
+            padding: 2px 8px;
+            border-radius: 5px;
+            flex-shrink: 0;
+            margin-top: 2px;
+            font-family: var(--f-mono);
+            font-size: 9.5px;
+            font-weight: 700;
+        }
+
+        .t-ai {
+            background: rgba(99, 102, 241, .12);
+            color: var(--indigo)
+        }
+
+        .t-you {
+            background: rgba(16, 185, 129, .1);
+            color: var(--green)
+        }
+
+        .im-txt {
+            font-size: 13px;
+            color: var(--ink-2);
+            line-height: 1.55
+        }
+
+        /* ═══════════════════════════════════
+   COMPARISON TABLE
+═══════════════════════════════════ */
+        .cmp-section {
+            background: linear-gradient(to bottom, var(--bg2), var(--bg))
+        }
+
+        .cmp-table {
+            background: var(--surface-s);
+            backdrop-filter: var(--glass);
+            border: 1px solid var(--glass-border);
+            border-radius: 24px;
+            overflow: hidden;
+            box-shadow: var(--sh-lg);
+        }
+
+        .cmp-hdr {
+            display: grid;
+            grid-template-columns: 1fr 1fr 1fr;
+            background: linear-gradient(135deg, rgba(99, 102, 241, .06), rgba(147, 51, 234, .04));
+            border-bottom: 1px solid var(--bg3);
+        }
+
+        .cmp-hdr-cell {
+            padding: 22px 28px;
+            font-family: var(--f-disp);
+            font-size: 15px;
+            font-weight: 700;
+            letter-spacing: -.02em;
+            display: flex;
+            align-items: center;
+            gap: 10px;
+        }
+
+        .cmp-hdr-cell:not(:first-child) {
+            border-left: 1px solid var(--bg3);
+            justify-content: center
+        }
+
+        .cmp-badge {
+            padding: 4px 12px;
+            border-radius: 100px;
+            font-size: 11px;
+            font-weight: 700;
+            font-family: var(--f-mono);
+            text-transform: uppercase;
+            letter-spacing: .08em;
+        }
+
+        .cmp-badge-p {
+            background: var(--grad);
+            color: #fff
+        }
+
+        .cmp-badge-n {
+            background: var(--bg3);
+            color: var(--ink-m)
+        }
+
+        .cmp-row {
+            display: grid;
+            grid-template-columns: 1fr 1fr 1fr;
+            border-bottom: 1px solid var(--bg3)
+        }
+
+        .cmp-row:last-child {
+            border-bottom: none
+        }
+
+        .cmp-cell {
+            padding: 18px 28px;
+            font-size: 14px;
+            color: var(--ink-2);
+            display: flex;
+            align-items: center;
+            gap: 10px;
+            transition: background .2s;
+        }
+
+        .cmp-row:hover .cmp-cell {
+            background: rgba(99, 102, 241, .025)
+        }
+
+        .cmp-cell:not(:first-child) {
+            border-left: 1px solid var(--bg3);
+            justify-content: center
+        }
+
+        .cmp-cell:first-child {
+            font-weight: 500;
+            color: var(--ink)
+        }
+
+        .cmp-yes {
+            color: var(--green);
+            font-size: 16px
+        }
+
+        .cmp-no {
+            color: var(--rose);
+            font-size: 16px
+        }
+
+        .cmp-part {
+            color: var(--amber);
+            font-size: 13px;
+            font-weight: 600
+        }
+
+        /* ═══════════════════════════════════
+   PROCESS
+═══════════════════════════════════ */
+        .proc-grid {
+            display: grid;
+            grid-template-columns: repeat(3, 1fr);
+            gap: 28px;
+            position: relative;
+            margin-top: 56px;
+        }
+
+        .proc-line {
+            position: absolute;
+            top: 38px;
+            left: calc(16.66% + 34px);
+            right: calc(16.66% + 34px);
+            height: 2px;
+            background: linear-gradient(90deg, var(--indigo), var(--purple), var(--rose));
+            opacity: .18;
+        }
+
+        .proc-line::before,
+        .proc-line::after {
+            content: '';
+            position: absolute;
+            top: -4px;
+            width: 10px;
+            height: 10px;
+            border-radius: 50%;
+            background: var(--indigo);
+            box-shadow: 0 0 8px var(--indigo-glow);
+        }
+
+        .proc-line::before {
+            left: 33.33%
+        }
+
+        .proc-line::after {
+            left: 66.66%
+        }
+
+        .step {
+            background: var(--surface);
+            backdrop-filter: var(--glass);
+            border: 1px solid var(--glass-border);
+            border-radius: 22px;
+            padding: 32px;
+            padding-top: 50px;
+            position: relative;
+            z-index: 1;
+            transition: var(--tr);
+        }
+
+        .step:hover {
+            transform: translateY(-8px);
+            box-shadow: var(--sh-lg);
+            border-color: rgba(99, 102, 241, .22)
+        }
+
+        .step-n {
+            position: absolute;
+            top: -22px;
+            left: 30px;
+            width: 46px;
+            height: 46px;
+            border-radius: 14px;
+            background: var(--grad);
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-family: var(--f-mono);
+            font-size: 17px;
+            font-weight: 700;
+            color: #fff;
+            box-shadow: 0 8px 22px var(--indigo-glow);
+            transition: var(--tr);
+        }
+
+        .step:hover .step-n {
+            transform: scale(1.1) rotate(-4deg)
+        }
+
+        .step-desc {
+            font-size: 14px;
+            color: var(--ink-m);
+            line-height: 1.7;
+            margin-top: 8px
+        }
+
+        /* Step extras */
+        .step-extra {
+            margin-top: 18px;
+            padding: 12px 14px;
+            background: var(--bg2);
+            border-radius: 10px;
+            font-size: 12.5px;
+            color: var(--ink-m);
+            display: flex;
+            align-items: center;
+            gap: 8px;
+        }
+
+        .step-extra i {
+            color: var(--indigo);
+            flex-shrink: 0
+        }
+
+        /* ═══════════════════════════════════
+   TESTIMONIALS
+═══════════════════════════════════ */
+        .testi-outer {
+            overflow: hidden;
+            margin: 0 -48px;
+            padding: 0 48px
+        }
+
+        .testi-track {
+            display: flex;
+            gap: 18px;
+            animation: marquee 44s linear infinite
+        }
+
+        .testi-outer:hover .testi-track {
+            animation-play-state: paused
+        }
+
+        .t-card {
+            background: var(--surface-s);
+            backdrop-filter: var(--glass);
+            border: 1px solid var(--glass-border);
+            border-radius: 20px;
+            padding: 28px;
+            min-width: 345px;
+            max-width: 345px;
+            flex-shrink: 0;
+            transition: var(--tr);
+        }
+
+        .t-card:hover {
+            transform: translateY(-5px);
+            box-shadow: var(--sh-lg);
+            border-color: rgba(99, 102, 241, .22)
+        }
+
+        .t-stars {
+            color: var(--amber);
+            font-size: 13px;
+            letter-spacing: 2px;
+            margin-bottom: 12px
+        }
+
+        .t-q {
+            font-size: 15px;
+            line-height: 1.66;
+            color: var(--ink-2);
+            font-style: italic;
+            margin-bottom: 20px
+        }
+
+        .t-per {
+            display: flex;
+            align-items: center;
+            gap: 11px
+        }
+
+        .t-av {
+            width: 38px;
+            height: 38px;
+            border-radius: 10px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-size: 12px;
+            font-weight: 700;
+            color: #fff;
+            flex-shrink: 0;
+        }
+
+        .t-name {
+            font-family: var(--f-disp);
+            font-size: 14px;
+            font-weight: 700;
+            letter-spacing: -.01em
+        }
+
+        .t-role {
+            font-size: 11.5px;
+            color: var(--ink-d);
+            margin-top: 1px
+        }
+
+        /* ═══════════════════════════════════
+   ADVANTAGES (no international)
+═══════════════════════════════════ */
+        .adv-grid {
+            display: grid;
+            grid-template-columns: repeat(4, 1fr);
+            gap: 18px
+        }
+
+        .adv {
+            background: var(--surface);
+            backdrop-filter: var(--glass);
+            border: 1px solid var(--glass-border);
+            border-radius: 22px;
+            padding: 28px;
+            display: flex;
+            flex-direction: column;
+            gap: 14px;
+            min-height: 210px;
+            transition: var(--tr);
+            position: relative;
+            overflow: hidden;
+        }
+
+        .adv::before {
+            content: '';
+            position: absolute;
+            inset: 0;
+            background: radial-gradient(ellipse at top left, var(--indigo-ghost), transparent 60%);
+            opacity: 0;
+            transition: opacity .4s;
+        }
+
+        .adv:hover::before {
+            opacity: 1
+        }
+
+        .adv:hover {
+            transform: translateY(-7px);
+            box-shadow: var(--sh-lg);
+            border-color: rgba(99, 102, 241, .22)
+        }
+
+        .s2 {
+            grid-column: span 2
+        }
+
+        .adv-ico {
+            width: 46px;
+            height: 46px;
+            background: var(--indigo-ghost);
+            border-radius: 13px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            color: var(--indigo);
+            font-size: 19px;
+            transition: var(--tr);
+            flex-shrink: 0;
+        }
+
+        .adv:hover .adv-ico {
+            background: var(--grad);
+            color: #fff;
+            box-shadow: 0 6px 16px var(--indigo-glow)
+        }
+
+        .adv-title {
+            font-family: var(--f-disp);
+            font-size: 17px;
+            font-weight: 700;
+            letter-spacing: -.02em;
+            margin-top: auto
+        }
+
+        .adv-desc {
+            font-size: 13px;
+            color: var(--ink-m);
+            line-height: 1.6;
+            margin-top: 0
+        }
+
+        /* ═══════════════════════════════════
+   TRUST LOGOS
+═══════════════════════════════════ */
+        .trust-strip {
+            padding: 64px 0;
+            border-top: 1px solid var(--bg3);
+            border-bottom: 1px solid var(--bg3);
+            background: rgba(255, 255, 255, .5);
+            overflow: hidden;
+        }
+
+        .trust-hdr {
+            text-align: center;
+            margin-bottom: 40px
+        }
+
+        .logo-scroll-wrap {
+            overflow: hidden
+        }
+
+        .logo-scroll {
+            display: flex;
+            gap: 80px;
+            animation: marquee 28s linear infinite;
+            width: max-content;
+            opacity: .45
+        }
+
+        .logo-item {
+            font-family: var(--f-disp);
+            font-size: 22px;
+            font-weight: 700;
+            color: var(--ink-m);
+            white-space: nowrap;
+            display: flex;
+            align-items: center;
+            gap: 8px;
+        }
+
+        /* ═══════════════════════════════════
+   FAQ
+═══════════════════════════════════ */
+        .faq-list {
+            display: flex;
+            flex-direction: column;
+            gap: 14px
+        }
+
+        .faq-item {
+            background: var(--surface);
+            backdrop-filter: var(--glass);
+            border: 1px solid var(--glass-border);
+            border-radius: 16px;
+            overflow: hidden;
+            transition: var(--tr);
+        }
+
+        .faq-item:hover {
+            border-color: rgba(99, 102, 241, .22)
+        }
+
+        .faq-q {
+            width: 100%;
+            padding: 20px 24px;
+            background: none;
+            border: none;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            cursor: pointer;
+            font-family: var(--f-disp);
+            font-size: 16px;
+            font-weight: 600;
+            color: var(--ink);
+            text-align: left;
+            gap: 20px;
+            letter-spacing: -.01em;
+        }
+
+        .faq-q i {
+            color: var(--indigo);
+            transition: transform .3s;
+            flex-shrink: 0
+        }
+
+        .faq-item.open .faq-q i {
+            transform: rotate(180deg)
+        }
+
+        .faq-a {
+            max-height: 0;
+            overflow: hidden;
+            transition: max-height .4s var(--ease), padding .3s;
+            font-size: 15px;
+            color: var(--ink-m);
+            line-height: 1.68;
+        }
+
+        .faq-item.open .faq-a {
+            max-height: 220px;
+            padding: 0 24px 22px
+        }
+
+        /* ═══════════════════════════════════
+   STATS STRIP
+═══════════════════════════════════ */
+        .stats-strip {
+            background: var(--bg2);
+            border-top: 1px solid var(--bg3);
+            border-bottom: 1px solid var(--bg3);
+        }
+
+        .stats-grid {
+            display: grid;
+            grid-template-columns: repeat(4, 1fr);
+            border: 1px solid var(--bg3);
+            border-radius: 20px;
+            overflow: hidden;
+            gap: 1px;
+            background: var(--bg3);
+        }
+
+        .stat-cell {
+            padding: 40px 24px;
+            background: var(--bg);
+            text-align: center;
+            transition: background .25s;
+        }
+
+        .stat-cell:hover {
+            background: rgba(99, 102, 241, .04)
+        }
+
+        .stat-n {
+            font-family: var(--f-disp);
+            font-size: clamp(2rem, 3.5vw, 3.2rem);
+            font-weight: 900;
+            line-height: 1;
+            margin-bottom: 9px;
+            letter-spacing: -.04em;
+        }
+
+        .stat-l {
+            font-size: 13px;
+            color: var(--ink-m);
+            line-height: 1.45
+        }
+
+        /* ═══════════════════════════════════
+   CTA
+═══════════════════════════════════ */
+        .cta-box {
+            background: var(--grad);
+            border-radius: 32px;
+            padding: 88px 72px;
+            text-align: center;
+            position: relative;
+            overflow: hidden;
+            box-shadow: 0 40px 100px var(--indigo-glow);
+        }
+
+        .cta-box::before {
+            content: '';
+            position: absolute;
+            inset: 0;
+            pointer-events: none;
+            background: url("data:image/svg+xml,%3Csvg width='60' height='60' viewBox='0 0 60 60' xmlns='http://www.w3.org/2000/svg'%3E%3Cg fill='none' fill-rule='evenodd'%3E%3Cg fill='%23fff' fill-opacity='.06'%3E%3Cpath d='M36 34v-4h-2v4h-4v2h4v4h2v-4h4v-2h-4zm0-30V0h-2v4h-4v2h4v4h2V6h4V4h-4zM6 34v-4H4v4H0v2h4v4h2v-4h4v-2H6zM6 4V0H4v4H0v2h4v4h2V6h4V4H6z'/%3E%3C/g%3E%3C/g%3E%3C/svg%3E");
+        }
+
+        .cta-box::after {
+            content: '';
+            position: absolute;
+            width: 480px;
+            height: 480px;
+            border-radius: 50%;
+            background: rgba(255, 255, 255, .06);
+            filter: blur(60px);
+            top: -140px;
+            right: -120px;
+            pointer-events: none;
+        }
+
+        .cta-box>* {
+            position: relative;
+            z-index: 1
+        }
+
+        .cta-h {
+            font-family: var(--f-disp);
+            font-size: clamp(2.2rem, 5vw, 4rem);
+            font-weight: 900;
+            color: #fff;
+            letter-spacing: -.04em;
+            margin-bottom: 14px;
+            line-height: 1.04;
+        }
+
+        .cta-sub {
+            font-size: 18px;
+            color: rgba(255, 255, 255, .76);
+            margin-bottom: 42px
+        }
+
+        .wl-form {
+            display: flex;
+            gap: 10px;
+            max-width: 460px;
+            margin: 0 auto
+        }
+
+        .wl-inp {
+            flex: 1;
+            background: rgba(255, 255, 255, .14);
+            border: 1px solid rgba(255, 255, 255, .24);
+            border-radius: 13px;
+            padding: 15px 22px;
+            color: #fff;
+            font-family: var(--f-body);
+            font-size: 15px;
+            outline: none;
+            transition: border-color .25s;
+        }
+
+        .wl-inp::placeholder {
+            color: rgba(255, 255, 255, .45)
+        }
+
+        .wl-inp:focus {
+            border-color: rgba(255, 255, 255, .5)
+        }
+
+        .wl-btn {
+            padding: 15px 28px;
+            background: #fff;
+            color: var(--indigo);
+            border: none;
+            border-radius: 13px;
+            font-family: var(--f-disp);
+            font-size: 15px;
+            font-weight: 800;
+            cursor: pointer;
+            transition: var(--tr);
+            flex-shrink: 0;
+            letter-spacing: -.01em;
+        }
+
+        .wl-btn:hover {
+            transform: translateY(-3px);
+            box-shadow: 0 10px 28px rgba(0, 0, 0, .18)
+        }
+
+        .cta-note {
+            margin-top: 18px;
+            font-size: 12.5px;
+            color: rgba(255, 255, 255, .5);
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            gap: 6px;
+        }
+
+        /* ═══════════════════════════════════
+   FOOTER
+═══════════════════════════════════ */
+        footer {
+            padding: 72px 0 36px;
+            border-top: 1px solid var(--bg3)
+        }
+
+        .foot-grid {
+            display: grid;
+            grid-template-columns: 2fr 1fr 1fr 1fr;
+            gap: 52px;
+            margin-bottom: 56px
+        }
+
+        .foot-brand {
+            font-family: var(--f-disp);
+            font-size: 22px;
+            font-weight: 800;
+            letter-spacing: -.04em;
+            display: flex;
+            align-items: center;
+            gap: 10px;
+            margin-bottom: 14px;
+        }
+
+        .foot-brand-ico {
+            width: 34px;
+            height: 34px;
+            background: var(--grad);
+            border-radius: 9px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            color: #fff;
+            font-size: 14px;
+        }
+
+        .foot-desc {
+            font-size: 13.5px;
+            color: var(--ink-d);
+            line-height: 1.72;
+            margin-bottom: 20px
+        }
+
+        .socials {
+            display: flex;
+            gap: 8px
+        }
+
+        .soc {
+            width: 34px;
+            height: 34px;
+            background: var(--bg2);
+            border: 1px solid var(--bg3);
+            border-radius: 9px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            color: var(--ink-m);
+            text-decoration: none;
+            font-size: 13px;
+            transition: var(--tr);
+        }
+
+        .soc:hover {
+            background: var(--indigo);
+            color: #fff;
+            border-color: var(--indigo);
+            transform: translateY(-2px)
+        }
+
+        .foot-col h5 {
+            font-family: var(--f-disp);
+            font-size: 13px;
+            font-weight: 700;
+            text-transform: uppercase;
+            letter-spacing: .06em;
+            margin-bottom: 18px;
+            color: var(--ink);
+        }
+
+        .flnk {
+            display: block;
+            color: var(--ink-d);
+            text-decoration: none;
+            font-size: 14px;
+            margin-bottom: 10px;
+            transition: color .25s, transform .25s
+        }
+
+        .flnk:hover {
+            color: var(--indigo);
+            transform: translateX(3px)
+        }
+
+        .foot-bot {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            border-top: 1px solid var(--bg3);
+            padding-top: 28px;
+            font-size: 12px;
+            color: var(--ink-d);
+            flex-wrap: wrap;
+            gap: 12px;
+        }
+
+        .foot-cities {
+            display: flex;
+            gap: 14px;
+            font-family: var(--f-mono);
+            font-size: 10.5px;
+            letter-spacing: .07em
+        }
+
+        /* ═══════════════════════════════════
+   RESPONSIVE
+═══════════════════════════════════ */
+        @media(max-width:1100px) {
+            .hero-grid {
+                grid-template-columns: 1fr;
+                gap: 56px
+            }
+
+            .fc1,
+            .fc2 {
+                display: none
+            }
+
+            .cmp-hdr,
+            .cmp-row {
+                grid-template-columns: 1fr 1fr 1fr
+            }
+
+            .adv-grid {
+                grid-template-columns: repeat(2, 1fr)
+            }
+
+            .s2 {
+                grid-column: span 2
+            }
+
+            .foot-grid {
+                grid-template-columns: 1fr 1fr;
+                gap: 36px
+            }
+        }
+
+        @media(max-width:800px) {
+
+            .w,
+            .wm,
+            .wn {
+                padding: 0 22px
+            }
+
+            nav {
+                width: calc(100% - 36px);
+                padding: 0 16px;
+                height: 62px
+            }
+
+            .nav-links,
+            .nav-login,
+            .lang-wrap {
+                display: none
+            }
+
+            .burger {
+                display: flex
+            }
+
+            section {
+                padding: 80px 0
+            }
+
+            #hero {
+                padding: 120px 0 60px
+            }
+
+            .hero-visual {
+                padding: 32px 16px 16px 16px
+            }
+
+            .hero-grid,
+            .who-grid,
+            .prob-intro,
+            .prob-stats-row,
+            .proc-grid {
+                grid-template-columns: 1fr
+            }
+
+            .bento {
+                grid-template-columns: 1fr
+            }
+
+            .bento .top,
+            .bento .bot {
+                grid-column: span 1
+            }
+
+            .adv-grid {
+                grid-template-columns: 1fr
+            }
+
+            .s2 {
+                grid-column: span 1
+            }
+
+            .stats-grid {
+                grid-template-columns: repeat(2, 1fr)
+            }
+
+            .cta-box {
+                padding: 52px 24px
+            }
+
+            .wl-form {
+                flex-direction: column
+            }
+
+            .cmp-table {
+                overflow-x: auto
+            }
+
+            .cmp-hdr,
+            .cmp-row {
+                min-width: 600px
+            }
+
+            .testi-outer {
+                margin: 0 -22px;
+                padding: 0 22px
+            }
+
+            .t-card {
+                min-width: 295px;
+                max-width: 295px
+            }
+
+            .foot-grid {
+                grid-template-columns: 1fr
+            }
+
+            .tick-item {
+                padding: 14px 24px
+            }
+        }
+
+        @media(max-width:480px) {
+            .stats-grid {
+                grid-template-columns: 1fr
+            }
+
+            .disp {
+                font-size: 2.8rem
+            }
+        }
+
+        /* Talent Graph dimension pills */
+        .tg-dim {
+            border-radius: 10px;
+            padding: 8px 6px;
+            text-align: center;
+            display: flex;
+            flex-direction: column;
+            gap: 3px;
+            transition: var(--tr);
+        }
+
+        .tg-dim:hover {
+            transform: translateY(-2px);
+            box-shadow: var(--sh-sm)
+        }
+
+        .tg-dim-val {
+            font-family: var(--f-disp);
+            font-size: 15px;
+            font-weight: 800;
+            line-height: 1;
+            letter-spacing: -.02em
+        }
+
+        .tg-dim-lbl {
+            font-family: var(--f-mono);
+            font-size: 9.5px;
+            color: var(--ink-d);
+            letter-spacing: .04em;
+            text-transform: uppercase
+        }
+    </style>
+</head>
+
+<body>
+    <div class="scroll-progress" id="sp"></div>
+    <div class="amb"></div>
+    <div class="dot-grid"></div>
+
+    <!-- DRAWER -->
+    <div class="drawer" id="drawer">
+        <div class="drawer-top">
+            <div class="nav-logo">
+                <img src="/assets/images/candway_logo.png" alt="Candway Logo" style="height: 32px; width: auto; margin-right: 10px;">
+                <span data-i18n="brand_name">Candway</span>
+            </div>
+            <button class="drawer-close" onclick="cd()"><i class="fa-solid fa-xmark"></i></button>
+        </div>
+        <ul>
+            <li><a href="#problem" onclick="cd()" data-i18n="landing_nav.how_it_works">Comment ça marche</a></li>
+            <li><a href="/jobs" onclick="cd()" data-i18n="landing_nav.jobs">Jobs</a></li>
+            <li><a href="/courses" onclick="cd()" data-i18n="landing_nav.courses">Courses</a></li>
+            <li><a href="/recruiter/landing" onclick="cd()" data-i18n="landing_nav.recruitment">Recrutement</a></li>
+        </ul>
+        <div class="drawer-btns">
+            <a href="/login" class="btn btn-sec" style="justify-content:center" data-i18n="landing_nav.login">Se connecter</a>
+            <a href="#cta" class="btn btn-pri" onclick="cd()" style="justify-content:center" data-i18n="landing_nav.join_free">Rejoindre gratuitement</a>
+        </div>
+    </div>
+
+    <!-- NAV -->
+    <nav id="nav">
+        <a href="/" class="nav-logo">
+            <img src="/assets/images/candway_logo.png" alt="Candway Logo" style="height: 36px; width: auto; margin-right: 12px;">
+            <span data-i18n="brand_name">Candway</span>
+        </a>
+        <ul class="nav-links">
+            <li><a href="#problem" data-i18n="landing_nav.how_it_works">Comment ça marche</a></li>
+            <li><a href="/jobs" data-i18n="landing_nav.jobs">Jobs</a></li>
+            <li><a href="/courses" data-i18n="landing_nav.courses">Courses</a></li>
+            <li><a href="/recruiter/landing" class="nav-extra" data-i18n="landing_nav.recruitment">Recrutement</a></li>
+        </ul>
+        <div class="nav-r">
+            <div class="lang-wrap" id="lw">
+                <button class="lang-btn" id="lbtn" onclick="tl(event)">
+                    <img src="https://flagcdn.com/w40/fr.png" id="lflag" alt="FR">
+                    <span id="lcode" style="font-size:12px;font-weight:600">FR</span>
+                    <i class="fa-solid fa-chevron-down" style="font-size:9px;opacity:.5"></i>
+                </button>
+                <div class="lang-menu" id="lm">
+                    <div class="lang-opt active" data-lang="fr" onclick="sl('fr','https://flagcdn.com/w40/fr.png','FR', event)">
+                        <img src="https://flagcdn.com/w40/fr.png" alt="">Français
+                    </div>
+                    <div class="lang-opt" data-lang="en" onclick="sl('en','https://flagcdn.com/w40/gb.png','EN', event)">
+                        <img src="https://flagcdn.com/w40/gb.png" alt="">English
+                    </div>
+
+                </div>
+            </div>
+            <a href="/login" class="nav-login" data-i18n="landing_nav.login">Se connecter</a>
+            <a href="#cta" class="nav-cta" data-i18n="landing_nav.join_free">Rejoindre gratuitement</a>
+            <button class="burger" onclick="od()"><span></span><span></span><span></span></button>
+        </div>
+    </nav>
+
+    <main>
+
+        <!-- ═══════════════ HERO ═══════════════ -->
+        <section id="hero">
+            <div class="w">
+                <div class="hero-grid">
+
+                    <!-- Left -->
+                    <div>
+                        <div class="hero-badge" data-i18n="landing_page.hero.badge"><i class="fa-solid fa-sparkles"></i>Propulsé par l'IA · Beta Privée
+                            Ouverte</div>
+                        <h1 class="disp"><span data-i18n="landing_page.hero.title_start">L'IA révèle</span><br><span data-i18n="landing_page.hero.title_end">ton potentiel.</span></h1>
+                        <p class="hero-sub" data-i18n="landing_page.hero.subtitle">
+                            Prouve tes compétences réelles aux employeurs grâce à nos interviews IA adaptatives. Obtiens
+                            ton Talent Graph 5D et démarque-toi pour de bon.
+                        </p>
+                        <div class="hero-btns">
+                            <a href="#cta" class="btn btn-xl btn-pri" data-i18n="landing_page.hero.btn_create"><i class="fa-solid fa-rocket"></i>Créer mon profil
+                                gratuitement</a>
+                            <a href="#process" class="btn btn-xl btn-sec" data-i18n="landing_page.hero.btn_how"><i class="fa-solid fa-play"></i>Voir comment
+                                ça marche</a>
+                        </div>
+                        <div class="hero-sp">
+                            <div class="sp-avs">
+                                <div class="sp-av" style="background:var(--indigo)">AH</div>
+                                <div class="sp-av" style="background:var(--purple)">SK</div>
+                                <div class="sp-av" style="background:var(--rose)">MR</div>
+                                <div class="sp-av" style="background:var(--green)">YB</div>
+                            </div>
+                            <span class="small" data-i18n="landing_page.hero.talents_count">500+ talents inscrits</span>
+                            <div class="sp-div"></div>
+                            <div class="sp-stars">★★★★★</div>
+                            <span class="small" style="font-weight:600">4.9 / 5</span>
+                            <div class="sp-div"></div>
+                            <span class="small"><i class="fa-solid fa-shield-halved" style="color:var(--green)"></i>
+                                <span data-i18n="landing_page.hero.free_label">100% gratuit</span></span>
+                        </div>
+                    </div>
+
+                    <!-- Right visual -->
+                    <div class="hero-visual">
+                        <div class="fc fc1">
+                            <div class="fc-ico"><i class="fa-solid fa-briefcase" style="color:var(--indigo)"></i></div>
+                            <div class="fc-val">3 offres</div>
+                            <div class="fc-sub">reçues aujourd'hui</div>
+                        </div>
+                        <div class="fc fc2">
+                            <div class="fc-ico"><i class="fa-solid fa-star" style="color:var(--amber)"></i></div>
+                            <div class="fc-val">Top 5%</div>
+                            <div class="fc-sub">des candidats</div>
+                        </div>
+                        <div class="hero-card-wrap">
+                            <div class="hero-card-3d">
+                                <div class="hero-card">
+                                    <div class="hc-hdr">
+                                        <span class="hc-title">Talent Graph™</span>
+                                        <span class="hc-ok"><i class="fa-solid fa-circle-check"></i>Vérifié par
+                                            IA</span>
+                                    </div>
+                                    <div class="skill-row">
+                                        <div class="skill-lbl"><span>Technique</span><span>94%</span></div>
+                                        <div class="skill-track">
+                                            <div class="skill-fill sf-i" style="--w:94%"></div>
+                                        </div>
+                                    </div>
+                                    <div class="skill-row">
+                                        <div class="skill-lbl"><span>Communication</span><span>88%</span></div>
+                                        <div class="skill-track">
+                                            <div class="skill-fill sf-p" style="--w:88%"></div>
+                                        </div>
+                                    </div>
+                                    <div class="skill-row">
+                                        <div class="skill-lbl"><span>Résolution de problèmes</span><span>91%</span>
+                                        </div>
+                                        <div class="skill-track">
+                                            <div class="skill-fill sf-r" style="--w:91%"></div>
+                                        </div>
+                                    </div>
+                                    <div class="skill-row">
+                                        <div class="skill-lbl"><span>Adaptabilité</span><span>85%</span></div>
+                                        <div class="skill-track">
+                                            <div class="skill-fill sf-g" style="--w:85%"></div>
+                                        </div>
+                                    </div>
+                                    <div
+                                        style="margin-top:16px;padding-top:14px;border-top:1px solid var(--bg3);display:flex;align-items:center;justify-content:space-between">
+                                        <span style="font-size:12.5px;color:var(--ink-m);font-weight:500">Score global
+                                            certifié</span>
+                                        <span
+                                            style="font-family:var(--f-disp);font-size:20px;font-weight:900;background:var(--grad);-webkit-background-clip:text;-webkit-text-fill-color:transparent">92/100</span>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </section>
+
+        <!-- TICKER -->
+        <div class="ticker">
+            <div class="ticker-track">
+                <div class="tick-item"><i class="fa-solid fa-circle-check"></i><span data-i18n="landing_page.ticker.free">100% Gratuit Candidats</span></div>
+                <div class="tick-item"><i class="fa-solid fa-bolt"></i><span data-i18n="landing_page.ticker.matching">Matching basé sur tes compétences</span></div>
+                <div class="tick-item"><i class="fa-solid fa-chart-simple"></i><span data-i18n="landing_page.ticker.talent_graph">Talent Graph 5D unique</span></div>
+                <div class="tick-item"><i class="fa-solid fa-microphone-lines"></i><span data-i18n="landing_page.ticker.ai_interview">Interview IA adaptative</span></div>
+                <div class="tick-item"><i class="fa-solid fa-shield-halved"></i><span data-i18n="landing_page.ticker.anti_cheat">Anti-triche & proctoring intégré</span></div>
+                <div class="tick-item"><i class="fa-solid fa-comment-slash"></i><span data-i18n="landing_page.ticker.no_ghosting">Zéro ghosting garanti</span></div>
+                <div class="tick-item"><i class="fa-solid fa-rocket"></i><span data-i18n="landing_page.ticker.launch">Lancement T2 2025</span></div>
+                <div class="tick-item"><i class="fa-solid fa-lock"></i><span data-i18n="landing_page.ticker.rgpd">RGPD compliant</span></div>
+                <div class="tick-item"><i class="fa-solid fa-location-dot"></i><span data-i18n="landing_page.ticker.locations">Tunis · Sousse · Sfax · Paris</span></div>
+                <!-- dup -->
+                <div class="tick-item"><i class="fa-solid fa-circle-check"></i><span data-i18n="landing_page.ticker.free">100% Gratuit Candidats</span></div>
+                <div class="tick-item"><i class="fa-solid fa-bolt"></i><span data-i18n="landing_page.ticker.matching">Matching basé sur tes compétences</span></div>
+                <div class="tick-item"><i class="fa-solid fa-chart-simple"></i><span data-i18n="landing_page.ticker.talent_graph">Talent Graph 5D unique</span></div>
+                <div class="tick-item"><i class="fa-solid fa-microphone-lines"></i><span data-i18n="landing_page.ticker.ai_interview">Interview IA adaptative</span></div>
+                <div class="tick-item"><i class="fa-solid fa-shield-halved"></i><span data-i18n="landing_page.ticker.anti_cheat">Anti-triche & proctoring intégré</span></div>
+                <div class="tick-item"><i class="fa-solid fa-comment-slash"></i><span data-i18n="landing_page.ticker.no_ghosting">Zéro ghosting garanti</span></div>
+                <div class="tick-item"><i class="fa-solid fa-rocket"></i><span data-i18n="landing_page.ticker.launch">Lancement T2 2025</span></div>
+                <div class="tick-item"><i class="fa-solid fa-lock"></i><span data-i18n="landing_page.ticker.rgpd">RGPD compliant</span></div>
+                <div class="tick-item"><i class="fa-solid fa-location-dot"></i><span data-i18n="landing_page.ticker.locations">Tunis · Sousse · Sfax · Paris</span></div>
+            </div>
+        </div>
+
+        <!-- ═══════════════ STATS STRIP ═══════════════ -->
+        <section class="stats-strip" style="padding:72px 0">
+            <div class="w">
+                <div class="stats-grid rv">
+                    <div class="stat-cell">
+                        <div class="stat-n grad-t" data-to="500" data-suf="+">0</div>
+                        <div class="stat-l"><span data-i18n="landing_page.stats.waitlist">Talents inscrits sur la waitlist</span></div>
+                    </div>
+                    <div class="stat-cell">
+                        <div class="stat-n" style="color:var(--indigo)" data-to="92" data-suf="/100">0</div>
+                        <div class="stat-l"><span data-i18n="landing_page.stats.avg_score">Score moyen obtenu par les candidats</span></div>
+                    </div>
+                    <div class="stat-cell">
+                        <div class="stat-n" style="color:var(--rose)" data-to="78" data-suf="%">0</div>
+                        <div class="stat-l"><span data-i18n="landing_page.stats.unjust_recruitment">trouvent le recrutement injuste</span></div>
+                    </div>
+                    <div class="stat-cell">
+                        <div class="stat-n" style="color:var(--green)" data-to="3" data-suf="×">0</div>
+                        <div class="stat-l"><span data-i18n="landing_page.stats.verified_chance">plus de chances avec un profil Candway validé</span></div>
+                    </div>
+                </div>
+            </div>
+        </section>
+
+        <!-- ═══════════════ PROBLEM ═══════════════ -->
+        <section id="problem" class="prob-section">
+            <div class="w">
+                <div class="prob-intro">
+                    <div class="rv l">
+                        <div class="kicker-pill"><span class="kp-dot"></span><span data-i18n="landing_page.problem.kicker">Le Constat</span></div>
+                        <h2 class="h2" style="margin-bottom:18px"><span data-i18n="landing_page.problem.title_start">Le recrutement est</span> <span style="color:var(--rose)" data-i18n="landing_page.problem.title_end">fondamentalement cassé.</span></h2>
+                        <p class="lead" style="margin-bottom:28px"><span data-i18n="landing_page.problem.subtitle">Le CV traditionnel ne reflète que 10 % de ton potentiel réel. Les recruteurs passent à côté des meilleurs talents — dont toi — chaque jour.</span></p>
+                        <ul class="pain-list">
+                            <li data-i18n="landing_page.problem.cv_ignored"><i class="fa-solid fa-triangle-exclamation"></i><span><strong>CVs ignorés :</strong> Ton
+                                    dossier est éliminé en moins de 7 secondes avant qu'un humain ne te lise
+                                    vraiment.</span></li>
+                            <li data-i18n="landing_page.problem.ghosting"><i class="fa-solid fa-triangle-exclamation"></i><span><strong>Ghosting systématique
+                                        :</strong> Tu postules, tu attends… en silence. Aucun retour, aucun
+                                    feedback.</span></li>
+                            <li data-i18n="landing_page.problem.biased"><i class="fa-solid fa-triangle-exclamation"></i><span><strong>Processus biaisés
+                                        :</strong> Les recruteurs font confiance aux diplômes et au réseau plutôt qu'aux
+                                    compétences réelles.</span></li>
+                            <li data-i18n="landing_page.problem.undervalued"><i class="fa-solid fa-triangle-exclamation"></i><span><strong>Sous-évaluation :</strong>
+                                    Sans preuve concrète, tu négocie ton salaire à l'aveugle, souvent à la
+                                    baisse.</span></li>
+                        </ul>
+                    </div>
+                    <div class="rv r d2">
+                        <div class="prob-stats-row" style="grid-template-columns:1fr 1fr;gap:14px">
+                            <div class="prob-card">
+                                <div class="prob-num">78<span style="font-size:.45em;font-weight:400">%</span></div>
+                                <div class="prob-lbl" data-i18n="landing_page.problem.card_unfair">des candidats jugent le processus injuste ou opaque</div>
+                            </div>
+                            <div class="prob-card">
+                                <div class="prob-num">42<span style="font-size:.38em;font-weight:400"> j</span></div>
+                                <div class="prob-lbl" data-i18n="landing_page.problem.card_delay">délai moyen d'un recrutement tech en Tunisie sans retour</div>
+                            </div>
+                            <div class="prob-card">
+                                <div class="prob-num">10<span style="font-size:.45em;font-weight:400">%</span></div>
+                                <div class="prob-lbl">seulement de ton potentiel visible via un CV classique</div>
+                            </div>
+                            <div class="prob-card">
+                                <div class="prob-num" style="font-size:3rem">7<span
+                                        style="font-size:.45em;font-weight:400"> s</span></div>
+                                <div class="prob-lbl">c'est tout ce qu'un recruteur prend pour lire ton CV</div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </section>
+
+        <!-- ═══════════════ FOR WHO ═══════════════ -->
+        <section id="for-who">
+            <div class="w">
+                <div class="sec-hdr rv">
+                    <div class="kicker-pill"><span class="kp-dot"></span><span data-i18n="landing_page.who.kicker">Pour qui</span></div>
+                    <h2 class="h2"><span data-i18n="landing_page.who.title">Conçu pour chaque profil</span></h2>
+                    <p class="lead"><span data-i18n="landing_page.who.subtitle">Développeurs, designers, marketers, data scientists — Candway s'adapte à ton domaine et ton niveau.</span></p>
+                </div>
+                <div class="who-grid">
+                    <div class="who-card rv d1">
+                        <div class="who-num">// 01</div>
+                        <div class="who-icon"><i class="fa-solid fa-code"></i></div>
+                        <h3 class="h3" data-i18n="landing_page.who.tech_title">Talents Tech</h3>
+                        <p class="small" data-i18n="landing_page.who.tech_desc">Dev, DevOps, Data, Cloud, QA, Cybersécurité...</p>
+                        <ul class="who-list">
+                            <li><i class="fa-solid fa-check"></i><span data-i18n="landing_page.who.tech_f1">Questions par langage & framework précis</span></li>
+                            <li><i class="fa-solid fa-check"></i><span data-i18n="landing_page.who.tech_f2">Exercices de problem solving en live</span></li>
+                            <li><i class="fa-solid fa-check"></i><span data-i18n="landing_page.who.tech_f3">Score certifié visible par les recruteurs tech</span></li>
+                            <li><i class="fa-solid fa-check"></i><span data-i18n="landing_page.who.tech_f4">Matching avec startups & entreprises tech</span></li>
+                        </ul>
+                    </div>
+                    <div class="who-card rv d2">
+                        <div class="who-num">// 02</div>
+                        <div class="who-icon"><i class="fa-solid fa-pen-nib"></i></div>
+                        <h3 class="h3" data-i18n="landing_page.who.design_title">Créatifs & Design</h3>
+                        <p class="small" data-i18n="landing_page.who.design_desc">UI/UX, Product Design, Motion, Branding...</p>
+                        <ul class="who-list">
+                            <li><i class="fa-solid fa-check"></i><span data-i18n="landing_page.who.design_f1">Évaluation portfolio + raisonnement UX</span></li>
+                            <li><i class="fa-solid fa-check"></i><span data-i18n="landing_page.who.design_f2">Questions sur Figma, Adobe, Framer</span></li>
+                            <li><i class="fa-solid fa-check"></i><span data-i18n="landing_page.who.design_f3">Cas pratiques de design thinking</span></li>
+                            <li><i class="fa-solid fa-check"></i><span data-i18n="landing_page.who.design_f4">Matching avec agences & scale-ups</span></li>
+                        </ul>
+                    </div>
+                    <div class="who-card rv d3">
+                        <div class="who-num">// 03</div>
+                        <div class="who-icon"><i class="fa-solid fa-chart-pie"></i></div>
+                        <h3 class="h3" data-i18n="landing_page.who.biz_title">Business & Marketing</h3>
+                        <p class="small" data-i18n="landing_page.who.biz_desc">Product, Marketing, Sales, Finance, RH...</p>
+                        <ul class="who-list">
+                            <li><i class="fa-solid fa-check"></i><span data-i18n="landing_page.who.biz_f1">Entretiens comportementaux & situationnels</span></li>
+                            <li><i class="fa-solid fa-check"></i><span data-i18n="landing_page.who.biz_f2">Évaluation analytique et stratégique</span></li>
+                            <li><i class="fa-solid fa-check"></i><span data-i18n="landing_page.who.biz_f3">Simulation de présentation client</span></li>
+                            <li><i class="fa-solid fa-check"></i><span data-i18n="landing_page.who.biz_f4">Matching avec PME & grands comptes</span></li>
+                        </ul>
+                    </div>
+                </div>
+            </div>
+        </section>
+
+        <!-- ═══════════════ FEATURES BENTO ═══════════════ -->
+        <section id="features" style="background:linear-gradient(to bottom,var(--bg2),var(--bg))">
+            <div class="w">
+                <div class="sec-hdr rv">
+                    <div class="kicker-pill"><span class="kp-dot"></span><span data-i18n="landing_page.features.kicker">Fonctionnalités</span></div>
+                    <h2 class="h2"><span data-i18n="landing_page.features.title">Conçu pour prouver ta valeur</span></h2>
+                    <p class="lead"><span data-i18n="landing_page.features.subtitle">Chaque fonctionnalité résout un problème réel du marché de l'emploi — côté candidat comme recruteur.</span></p>
+                </div>
+                <div class="bento">
+
+                    <!-- Top left: Interview -->
+                    <div class="card top rv d1" style="display:flex;flex-direction:column">
+                        <div class="card-ico"><i class="fa-solid fa-microphone-lines"></i></div>
+                        <h3 class="h3" data-i18n="landing_page.features.ai_title">Interview IA Personnalisée</h3>
+                        <p class="small" data-i18n="landing_page.features.ai_desc">Notre agent IA analyse ton CV et génère des questions précises à ton profil. 15
+                            minutes depuis chez toi, en FR / EN / AR. Elle s'adapte en temps réel à tes réponses.</p>
+                        <div class="interview-mock">
+                            <div class="im-line">
+                                <span class="im-tag t-ai">IA</span>
+                                <span class="im-txt">Décris une architecture que tu as conçue sous contrainte de
+                                    performance en production.</span>
+                            </div>
+                            <div class="im-line">
+                                <span class="im-tag t-you">Toi</span>
+                                <span class="im-txt">J'ai migré un monolithe vers des microservices en zero-downtime
+                                    avec Kubernetes...</span>
+                            </div>
+                            <div class="im-line">
+                                <span class="im-tag t-ai">IA</span>
+                                <span class="im-txt">Excellent. Comment as-tu géré la cohérence des données lors de la
+                                    migration ?</span>
+                            </div>
+                        </div>
+                        <div class="feat-tags" style="margin-top:auto;padding-top:18px">
+                            <span class="feat-tag">Questions dynamiques</span>
+                            <span class="feat-tag">Feedback immédiat</span>
+                            <span class="feat-tag">FR · EN · AR</span>
+                            <span class="feat-tag">Anti-triche intégré</span>
+                            <span class="feat-tag">S'adapte à ton niveau</span>
+                        </div>
+                    </div>
+
+                    <!-- Top right: Talent Graph -->
+                    <div class="card top rv d2" style="display:flex;flex-direction:column">
+                        <div
+                            style="display:flex;align-items:flex-start;justify-content:space-between;gap:16px;margin-bottom:4px">
+                            <div>
+                                <div class="card-ico" style="margin-bottom:14px"><i
+                                        class="fa-solid fa-chart-simple"></i></div>
+                                <h3 class="h3" data-i18n="landing_page.features.graph_title">Talent Graph 5D</h3>
+                                <p class="small" style="margin-top:6px" data-i18n="landing_page.features.graph_desc">Ta carte de visite data-driven — 5 dimensions certifiées par IA, partagée instantanément avec les recruteurs.</p>
+                            </div>
+                            <div
+                                style="flex-shrink:0;display:flex;flex-direction:column;gap:5px;align-items:flex-end;padding-top:4px">
+                                <div
+                                    style="display:flex;align-items:center;gap:5px;padding:4px 10px;background:rgba(16,185,129,.1);border:1px solid rgba(16,185,129,.2);border-radius:100px;font-size:10.5px;font-weight:700;color:#10B981;white-space:nowrap">
+                                    <i class="fa-solid fa-circle-check"></i> Score validé
+                                </div>
+                                <div
+                                    style="font-family:'JetBrains Mono',monospace;font-size:22px;font-weight:700;background:linear-gradient(135deg,#6366F1,#9333EA);-webkit-background-clip:text;-webkit-text-fill-color:transparent;line-height:1.1;text-align:right">
+                                    92<span style="font-size:13px;opacity:.6">/100</span></div>
+                            </div>
+                        </div>
+
+                        <!-- Radar chart -->
+                        <div
+                            style="flex:1;display:flex;align-items:center;justify-content:center;padding:8px 0 4px;min-height:220px;position:relative">
+                            <canvas id="talentRadar" style="max-width:100%;max-height:240px"></canvas>
+                        </div>
+
+                        <!-- Dimension scores row -->
+                        <div style="display:grid;grid-template-columns:repeat(5,1fr);gap:8px;margin-bottom:16px">
+                            <div class="tg-dim"
+                                style="background:rgba(99,102,241,.06);border:1px solid rgba(99,102,241,.14)">
+                                <span class="tg-dim-val" style="color:#6366F1">94%</span>
+                                <span class="tg-dim-lbl">Technique</span>
+                            </div>
+                            <div class="tg-dim"
+                                style="background:rgba(147,51,234,.06);border:1px solid rgba(147,51,234,.14)">
+                                <span class="tg-dim-val" style="color:#9333EA">88%</span>
+                                <span class="tg-dim-lbl">Comm.</span>
+                            </div>
+                            <div class="tg-dim"
+                                style="background:rgba(244,63,94,.06);border:1px solid rgba(244,63,94,.14)">
+                                <span class="tg-dim-val" style="color:#F43F5E">91%</span>
+                                <span class="tg-dim-lbl">Logique</span>
+                            </div>
+                            <div class="tg-dim"
+                                style="background:rgba(16,185,129,.06);border:1px solid rgba(16,185,129,.14)">
+                                <span class="tg-dim-val" style="color:#10B981">85%</span>
+                                <span class="tg-dim-lbl">Adapt.</span>
+                            </div>
+                            <div class="tg-dim"
+                                style="background:rgba(245,158,11,.06);border:1px solid rgba(245,158,11,.14)">
+                                <span class="tg-dim-val" style="color:#F59E0B">89%</span>
+                                <span class="tg-dim-lbl">Stress</span>
+                            </div>
+                        </div>
+
+                        <div class="feat-tags" style="padding-top:14px;border-top:1px solid var(--bg3)">
+                            <span class="feat-tag">Score certifié</span>
+                            <span class="feat-tag">Visible recruteurs</span>
+                            <span class="feat-tag">Export PDF</span>
+                        </div>
+                    </div>
+
+                    <!-- Bottom 1: Matching -->
+                    <div class="card bot rv d1" style="display:flex;flex-direction:column">
+                        <div class="card-ico"><i class="fa-solid fa-bolt"></i></div>
+                        <h3 class="h3" data-i18n="landing_page.features.matching_title">Matching Intelligent</h3>
+                        <p class="small" data-i18n="landing_page.features.matching_desc">Une seule interview pour des dizaines d'offres. Notre algorithme est basé sur
+                            tes compétences réelles — pas ton titre LinkedIn ou tes diplômes.</p>
+                        <div class="feat-tags" style="margin-top:auto;padding-top:18px">
+                            <span class="feat-tag">1 interview → N offres</span>
+                            <span class="feat-tag">Alertes personnalisées</span>
+                        </div>
+                    </div>
+
+                    <!-- Bottom 2: Privacy -->
+                    <div class="card bot rv d2" style="display:flex;flex-direction:column">
+                        <div class="card-ico"><i class="fa-solid fa-shield-halved"></i></div>
+                        <h3 class="h3" data-i18n="landing_page.features.privacy_title">Contrôle Total de ta Vie Privée</h3>
+                        <p class="small" data-i18n="landing_page.features.privacy_desc">Tu décides qui voit ton profil, ton score et tes résultats. Les recruteurs ne
+                            voient que ce que tu autorises — zéro fuite de données, <span data-i18n="landing_page.ticker.rgpd">RGPD compliant</span>, chiffrement
+                            end-to-end.</p>
+                        <div class="feat-tags" style="margin-top:auto;padding-top:18px">
+                            <span class="feat-tag" data-i18n="landing_page.ticker.rgpd">RGPD compliant</span>
+                            <span class="feat-tag">Contrôle granulaire</span>
+                            <span class="feat-tag">Chiffrement E2E</span>
+                            <span class="feat-tag">Zéro tracking tiers</span>
+                            <span class="feat-tag">Audit log</span>
+                        </div>
+                    </div>
+
+                    <!-- Bottom 3: Dashboard -->
+                    <div class="card bot rv d3" style="display:flex;flex-direction:column">
+                        <div class="card-ico"><i class="fa-solid fa-chart-line"></i></div>
+                        <h3 class="h3" data-i18n="landing_page.features.dash_title">Dashboard Candidat</h3>
+                        <p class="small" data-i18n="landing_page.features.dash_desc">Suis tes scores, consulte tes interviews passées et reçois des recommandations
+                            IA pour progresser continuellement vers le profil que les recruteurs recherchent.</p>
+                        <div class="feat-tags" style="margin-top:auto;padding-top:18px">
+                            <span class="feat-tag">Historique complet</span>
+                            <span class="feat-tag">Recommandations IA</span>
+                        </div>
+                    </div>
+
+                </div>
+            </div>
+        </section>
+
+        <!-- ═══════════════ PROCESS ═══════════════ -->
+        <section id="process">
+            <div class="w">
+                <div class="sec-hdr rv">
+                    <div class="kicker-pill"><span class="kp-dot"></span><span data-i18n="landing_page.process.kicker">Le Parcours</span></div>
+                    <h2 class="h2"><span data-i18n="landing_page.process.title">3 étapes pour changer de dimension</span></h2>
+                    <p class="lead"><span data-i18n="landing_page.process.subtitle">Simple, rapide, efficace. Une seule session pour accéder à des dizaines d'opportunités.</span></p>
+                </div>
+                <div class="proc-grid">
+                    <div class="proc-line"></div>
+                    <div class="step rv d1">
+                        <div class="step-n">01</div>
+                        <h3 class="h3" data-i18n="landing_page.process.s1_title">Passe l'Interview IA</h3>
+                        <p class="step-desc" data-i18n="landing_page.process.s1_desc">Notre IA analyse ton CV puis te pose des questions techniques et
+                            comportementales adaptées à ton domaine. 15 min, depuis chez toi.</p>
+                        <div class="step-extra"><i class="fa-solid fa-clock"></i>Durée moyenne : 12 à 18 minutes</div>
+                    </div>
+                    <div class="step rv d2">
+                        <div class="step-n">02</div>
+                        <h3 class="h3" data-i18n="landing_page.process.s2_title">Reçois ton Talent Graph</h3>
+                        <p class="step-desc" data-i18n="landing_page.process.s2_desc">Ton analyse complète est générée immédiatement : scores certifiés, points
+                            forts identifiés, axes d'amélioration concrets. Zéro biais humain.</p>
+                        <div class="step-extra"><i class="fa-solid fa-bolt"></i>Résultats disponibles en moins d'une
+                            minute</div>
+                    </div>
+                    <div class="step rv d3">
+                        <div class="step-n">03</div>
+                        <h3 class="h3" data-i18n="landing_page.process.s3_title">Accès Direct aux Offres</h3>
+                        <p class="step-desc" data-i18n="landing_page.process.s3_desc">Les entreprises qui cherchent exactement ton profil te contactent
+                            directement. Fini d'envoyer des CVs dans le vide sans jamais de réponse.</p>
+                        <div class="step-extra"><i class="fa-solid fa-envelope"></i>Première mise en relation sous 48h
+                            en moyenne</div>
+                    </div>
+                </div>
+            </div>
+        </section>
+
+        <!-- ═══════════════ COMPARISON TABLE ═══════════════ -->
+        <section id="compare" class="cmp-section">
+            <div class="w">
+                <div class="sec-hdr rv">
+                    <div class="kicker-pill"><span class="kp-dot"></span><span data-i18n="landing_page.comparison.kicker">Comparatif</span></div>
+                    <h2 class="h2"><span data-i18n="landing_page.comparison.title_start">Candway vs.</span> <span style="color:var(--ink-m)" data-i18n="landing_page.comparison.title_end">le CV traditionnel</span></h2>
+                    <p class="lead"><span data-i18n="landing_page.comparison.subtitle">Pourquoi continuer à postuler à l'aveugle quand tu peux prouver ta valeur avec des données ?</span></p>
+                </div>
+                <div class="cmp-table rv d1">
+                    <div class="cmp-hdr">
+                        <div class="cmp-hdr-cell">Critère</div>
+                        <div class="cmp-hdr-cell"><span class="cmp-badge cmp-badge-p">Candway</span></div>
+                        <div class="cmp-hdr-cell"><span class="cmp-badge cmp-badge-n">CV Traditionnel</span></div>
+                    </div>
+                    <div class="cmp-row">
+                        <div class="cmp-cell"><i class="fa-solid fa-check-circle indigo-t"></i>Compétences réelles
+                            prouvées</div>
+                        <div class="cmp-cell"><i class="fa-solid fa-check cmp-yes"></i></div>
+                        <div class="cmp-cell"><i class="fa-solid fa-xmark cmp-no"></i></div>
+                    </div>
+                    <div class="cmp-row">
+                        <div class="cmp-cell"><i class="fa-solid fa-check-circle indigo-t"></i>Feedback immédiat et
+                            clair</div>
+                        <div class="cmp-cell"><i class="fa-solid fa-check cmp-yes"></i></div>
+                        <div class="cmp-cell"><i class="fa-solid fa-xmark cmp-no"></i></div>
+                    </div>
+                    <div class="cmp-row">
+                        <div class="cmp-cell"><i class="fa-solid fa-check-circle indigo-t"></i>Matching automatique aux
+                            offres</div>
+                        <div class="cmp-cell"><i class="fa-solid fa-check cmp-yes"></i></div>
+                        <div class="cmp-cell"><i class="fa-solid fa-xmark cmp-no"></i></div>
+                    </div>
+                    <div class="cmp-row">
+                        <div class="cmp-cell"><i class="fa-solid fa-check-circle indigo-t"></i>Processus sans biais
+                            humain</div>
+                        <div class="cmp-cell"><i class="fa-solid fa-check cmp-yes"></i></div>
+                        <div class="cmp-cell"><i class="fa-solid fa-xmark cmp-no"></i></div>
+                    </div>
+                    <div class="cmp-row">
+                        <div class="cmp-cell"><i class="fa-solid fa-check-circle indigo-t"></i>Données pour négocier ton
+                            salaire</div>
+                        <div class="cmp-cell"><i class="fa-solid fa-check cmp-yes"></i></div>
+                        <div class="cmp-cell"><i class="fa-solid fa-xmark cmp-no"></i></div>
+                    </div>
+                    <div class="cmp-row">
+                        <div class="cmp-cell"><i class="fa-solid fa-check-circle indigo-t"></i>100% gratuit pour le
+                            candidat</div>
+                        <div class="cmp-cell"><i class="fa-solid fa-check cmp-yes"></i></div>
+                        <div class="cmp-cell"><span class="cmp-part">Variable</span></div>
+                    </div>
+                    <div class="cmp-row">
+                        <div class="cmp-cell"><i class="fa-solid fa-check-circle indigo-t"></i>Contrôle de ta vie privée
+                        </div>
+                        <div class="cmp-cell"><i class="fa-solid fa-check cmp-yes"></i></div>
+                        <div class="cmp-cell"><i class="fa-solid fa-xmark cmp-no"></i></div>
+                    </div>
+                    <div class="cmp-row">
+                        <div class="cmp-cell"><i class="fa-solid fa-check-circle indigo-t"></i>Accès multi-entreprises
+                            en 1 seul process</div>
+                        <div class="cmp-cell"><i class="fa-solid fa-check cmp-yes"></i></div>
+                        <div class="cmp-cell"><i class="fa-solid fa-xmark cmp-no"></i></div>
+                    </div>
+                </div>
+            </div>
+        </section>
+
+        <!-- ═══════════════ ADVANTAGES ═══════════════ -->
+        <section id="avantages">
+            <div class="w">
+                <div class="sec-hdr rv">
+                    <div class="kicker-pill"><span class="kp-dot"></span><span data-i18n="landing_page.advantages.kicker">Pourquoi Candway ?</span></div>
+                    <h2 class="h2"><span data-i18n="landing_page.advantages.title">Tes avantages</span> <span class="grad-t" data-i18n="landing_page.advantages.title_extra">exclusifs</span></h2>
+                    <p class="lead" data-i18n="landing_page.advantages.subtitle">Des bénéfices concrets, mesurables et immédiats pour faire avancer ta carrière.</p>
+                </div>
+                <div class="adv-grid">
+                    <div class="adv s2 rv d1">
+                        <div class="adv-ico"><i class="fa-solid fa-comment-slash"></i></div>
+                        <div>
+                            <div class="adv-title" data-i18n="landing_page.advantages.a1_title">Zéro Ghosting Garanti</div>
+                            <div class="adv-desc" data-i18n="landing_page.advantages.a1_desc">Feedback instantané après chaque interview. Tu sais exactement où tu
+                                te situes, ce qui va et ce qui doit s'améliorer. Plus jamais dans le vide.</div>
+                        </div>
+                    </div>
+                    <div class="adv rv d2">
+                        <div class="adv-ico"><i class="fa-solid fa-shield-halved"></i></div>
+                        <div>
+                            <div class="adv-title" data-i18n="landing_page.advantages.a2_title">100% Gratuit</div>
+                            <div class="adv-desc" data-i18n="landing_page.advantages.a2_desc">Pour les talents, pour toujours. Sans abonnement caché.</div>
+                        </div>
+                    </div>
+                    <div class="adv rv d3">
+                        <div class="adv-ico"><i class="fa-solid fa-clock"></i></div>
+                        <div>
+                            <div class="adv-title" data-i18n="landing_page.advantages.a3_title">Gain de Temps Réel</div>
+                            <div class="adv-desc" data-i18n="landing_page.advantages.a3_desc">Une seule interview pour accéder à des dizaines d'entreprises
+                                partenaires sans recommencer le process.</div>
+                        </div>
+                    </div>
+                    <div class="adv rv d1">
+                        <div class="adv-ico"><i class="fa-solid fa-trophy"></i></div>
+                        <div>
+                            <div class="adv-title" data-i18n="landing_page.advantages.a4_title">Négocie Avec des Preuves</div>
+                            <div class="adv-desc" data-i18n="landing_page.advantages.a4_desc">Utilise ton score comme argument de négociation salariale. Plus jamais
+                                sous-payé faute de données.</div>
+                        </div>
+                    </div>
+                    <div class="adv s2 rv d2">
+                        <div class="adv-ico"><i class="fa-solid fa-graduation-cap"></i></div>
+                        <div>
+                            <div class="adv-title" data-i18n="landing_page.advantages.a5_title">Upskilling & Progression Continue</div>
+                            <div class="adv-desc" data-i18n="landing_page.advantages.a5_desc">Identifie précisément tes lacunes, reçois des recommandations de
+                                formation personnalisées par l'IA et mesure ta progression dans le temps grâce à ton
+                                dashboard.</div>
+                        </div>
+                    </div>
+                    <div class="adv rv d3">
+                        <div class="adv-ico"><i class="fa-solid fa-users-viewfinder"></i></div>
+                        <div>
+                            <div class="adv-title" data-i18n="landing_page.advantages.a6_title">Sans Biais</div>
+                            <div class="adv-desc" data-i18n="landing_page.advantages.a6_desc">L'IA évalue tes compétences réelles, pas tes connexions LinkedIn ou
+                                ton école.</div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </section>
+
+        <!-- ═══════════════ TESTIMONIALS ═══════════════ -->
+        <section id="temoignages" style="background:var(--bg2);overflow:hidden">
+            <div class="w" style="overflow:visible">
+                <div class="sec-hdr rv">
+                    <div class="kicker-pill"><span class="kp-dot"></span><span data-i18n="landing_page.testimonials.kicker">Témoignages</span></div>
+                    <h2 class="h2"><span data-i18n="landing_page.testimonials.title">Ils ont trouvé</span> <span class="grad-t" data-i18n="landing_page.testimonials.title_extra">leur voie</span></h2>
+                </div>
+            </div>
+            <div class="testi-outer">
+                <div class="testi-track">
+                    <div class="t-card">
+                        <div class="t-stars">★★★★★</div>
+                        <p class="t-q">"Grâce au Talent Graph, j'ai prouvé mes compétences en 15 minutes. J'ai reçu 3
+                            offres en une semaine. Le feedback immédiat était une révélation."</p>
+                        <div class="t-per">
+                            <div class="t-av" style="background:var(--indigo)">AH</div>
+                            <div>
+                                <div class="t-name">Ahmed H.</div>
+                                <div class="t-role">Backend Dev · Tunis</div>
+                            </div>
+                        </div>
+                    </div>
+                    <div class="t-card">
+                        <div class="t-stars">★★★★★</div>
+                        <p class="t-q">"L'interview IA est bluffante de précision. Fini le ghosting — chaque process a
+                            un feedback clair et constructif. Ça change vraiment."</p>
+                        <div class="t-per">
+                            <div class="t-av" style="background:var(--purple)">SK</div>
+                            <div>
+                                <div class="t-name">Sarra K.</div>
+                                <div class="t-role">UI/UX Designer · Sousse</div>
+                            </div>
+                        </div>
+                    </div>
+                    <div class="t-card">
+                        <div class="t-stars">★★★★★</div>
+                        <p class="t-q">"Candway m'a permis de négocier mon salaire avec des données concrètes. Mon score
+                            de 89/100 a été mon meilleur argument en entretien."</p>
+                        <div class="t-per">
+                            <div class="t-av" style="background:var(--rose)">MR</div>
+                            <div>
+                                <div class="t-name">Mohamed R.</div>
+                                <div class="t-role">Marketing Manager · Sfax</div>
+                            </div>
+                        </div>
+                    </div>
+                    <div class="t-card">
+                        <div class="t-stars">★★★★★</div>
+                        <p class="t-q">"Je n'avais plus confiance en moi après 6 mois sans réponse. Candway m'a donné
+                            des preuves concrètes de ma valeur. J'ai eu un entretien en 10 jours."</p>
+                        <div class="t-per">
+                            <div class="t-av" style="background:var(--green)">YB</div>
+                            <div>
+                                <div class="t-name">Yassine B.</div>
+                                <div class="t-role">Data Scientist · Tunis</div>
+                            </div>
+                        </div>
+                    </div>
+                    <div class="t-card">
+                        <div class="t-stars">★★★★★</div>
+                        <p class="t-q">"Une plateforme d'un professionnalisme rare. En 20 minutes j'avais un profil qui
+                            reflète vraiment qui je suis, pas juste une liste de mots-clés."</p>
+                        <div class="t-per">
+                            <div class="t-av" style="background:var(--amber)">KM</div>
+                            <div>
+                                <div class="t-name">Karim M.</div>
+                                <div class="t-role">DevOps Engineer · Sousse</div>
+                            </div>
+                        </div>
+                    </div>
+                    <div class="t-card">
+                        <div class="t-stars">★★★★★</div>
+                        <p class="t-q">"L'expérience candidat est enfin à la hauteur de nos attentes. Candway respecte
+                            mon temps et valorise vraiment mes compétences concrètes."</p>
+                        <div class="t-per">
+                            <div class="t-av" style="background:var(--indigo-dark)">IA</div>
+                            <div>
+                                <div class="t-name">Ines A.</div>
+                                <div class="t-role">Product Manager · Tunis</div>
+                            </div>
+                        </div>
+                    </div>
+                    <!-- duplicates -->
+                    <div class="t-card">
+                        <div class="t-stars">★★★★★</div>
+                        <p class="t-q">"Grâce au Talent Graph, j'ai prouvé mes compétences en 15 minutes. J'ai reçu 3
+                            offres en une semaine. Le feedback immédiat était une révélation."</p>
+                        <div class="t-per">
+                            <div class="t-av" style="background:var(--indigo)">AH</div>
+                            <div>
+                                <div class="t-name">Ahmed H.</div>
+                                <div class="t-role">Backend Dev · Tunis</div>
+                            </div>
+                        </div>
+                    </div>
+                    <div class="t-card">
+                        <div class="t-stars">★★★★★</div>
+                        <p class="t-q">"L'interview IA est bluffante de précision. Fini le ghosting — chaque process a
+                            un feedback clair et constructif. Ça change vraiment."</p>
+                        <div class="t-per">
+                            <div class="t-av" style="background:var(--purple)">SK</div>
+                            <div>
+                                <div class="t-name">Sarra K.</div>
+                                <div class="t-role">UI/UX Designer · Sousse</div>
+                            </div>
+                        </div>
+                    </div>
+                    <div class="t-card">
+                        <div class="t-stars">★★★★★</div>
+                        <p class="t-q">"Candway m'a permis de négocier mon salaire avec des données concrètes. Mon score
+                            de 89/100 a été mon meilleur argument en entretien."</p>
+                        <div class="t-per">
+                            <div class="t-av" style="background:var(--rose)">MR</div>
+                            <div>
+                                <div class="t-name">Mohamed R.</div>
+                                <div class="t-role">Marketing Manager · Sfax</div>
+                            </div>
+                        </div>
+                    </div>
+                    <div class="t-card">
+                        <div class="t-stars">★★★★★</div>
+                        <p class="t-q">"Je n'avais plus confiance en moi après 6 mois sans réponse. Candway m'a donné
+                            des preuves concrètes de ma valeur. J'ai eu un entretien en 10 jours."</p>
+                        <div class="t-per">
+                            <div class="t-av" style="background:var(--green)">YB</div>
+                            <div>
+                                <div class="t-name">Yassine B.</div>
+                                <div class="t-role">Data Scientist · Tunis</div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </section>
+
+        <!-- ═══════════════ TRUST ═══════════════ -->
+        <div class="trust-strip">
+            <div class="trust-hdr rv">
+                <span class="kicker">Ils nous font confiance</span>
+            </div>
+            <div class="logo-scroll-wrap">
+                <div class="logo-scroll">
+                    <div class="logo-item"><i class="fa-solid fa-building" style="font-size:.7em;opacity:.6"></i>Sopra
+                        HR</div>
+                    <div class="logo-item"><i class="fa-solid fa-building" style="font-size:.7em;opacity:.6"></i>Vermeg
+                    </div>
+                    <div class="logo-item"><i class="fa-solid fa-building" style="font-size:.7em;opacity:.6"></i>Proxym
+                    </div>
+                    <div class="logo-item"><i class="fa-solid fa-building"
+                            style="font-size:.7em;opacity:.6"></i>Expensya</div>
+                    <div class="logo-item"><i class="fa-solid fa-building"
+                            style="font-size:.7em;opacity:.6"></i>Instadeep</div>
+                    <div class="logo-item"><i class="fa-solid fa-building" style="font-size:.7em;opacity:.6"></i>Telnet
+                    </div>
+                    <div class="logo-item"><i class="fa-solid fa-building" style="font-size:.7em;opacity:.6"></i>BIAT
+                        Tech</div>
+                    <div class="logo-item"><i class="fa-solid fa-building" style="font-size:.7em;opacity:.6"></i>Sopra
+                        HR</div>
+                    <div class="logo-item"><i class="fa-solid fa-building" style="font-size:.7em;opacity:.6"></i>Vermeg
+                    </div>
+                    <div class="logo-item"><i class="fa-solid fa-building" style="font-size:.7em;opacity:.6"></i>Proxym
+                    </div>
+                    <div class="logo-item"><i class="fa-solid fa-building"
+                            style="font-size:.7em;opacity:.6"></i>Expensya</div>
+                    <div class="logo-item"><i class="fa-solid fa-building"
+                            style="font-size:.7em;opacity:.6"></i>Instadeep</div>
+                    <div class="logo-item"><i class="fa-solid fa-building" style="font-size:.7em;opacity:.6"></i>Telnet
+                    </div>
+                    <div class="logo-item"><i class="fa-solid fa-building" style="font-size:.7em;opacity:.6"></i>BIAT
+                        Tech</div>
+                </div>
+            </div>
+        </div>
+
+        <!-- ═══════════════ FAQ ═══════════════ -->
+        <section id="faq" style="background:var(--bg2)">
+            <div class="w">
+                <div class="sec-hdr rv">
+                    <div class="kicker-pill"><span class="kp-dot"></span><span data-i18n="landing_page.faq.kicker">FAQ</span></div>
+                    <h2 class="h2"><span data-i18n="landing_page.faq.title">Questions</span> <span class="grad-t" data-i18n="landing_page.faq.title_extra">fréquentes</span></h2>
+                </div>
+                <div class="wm" style="padding:0">
+                    <div class="faq-list">
+                        <div class="faq-item rv d1">
+                            <button class="faq-q"><span data-i18n="landing_page.faq.q1">Comment fonctionne l'interview IA ?</span><i
+                                    class="fa-solid fa-chevron-down"></i></button>
+                            <div class="faq-a" data-i18n="landing_page.faq.a1">Notre agent IA analyse ton CV avant l'interview. Pendant les 15 min
+                                d'entretien, il génère des questions dynamiques qui s'adaptent à tes réponses
+                                précédentes pour explorer la profondeur réelle de tes connaissances. Multi-langues, zéro
+                                biais.</div>
+                        </div>
+                        <div class="faq-item rv d2">
+                            <button class="faq-q"><span data-i18n="landing_page.faq.q2">Est-ce vraiment gratuit pour les candidats ?</span><i
+                                    class="fa-solid fa-chevron-down"></i></button>
+                            <div class="faq-a" data-i18n="landing_page.faq.a2">Oui, sans exception. L'accès à la plateforme, l'interview IA, le Talent
+                                Graph et le matching sont 100% gratuits pour tous les talents. Notre modèle est B2B —
+                                les entreprises paient pour accéder aux profils certifiés.</div>
+                        </div>
+                        <div class="faq-item rv d3">
+                            <button class="faq-q"><span data-i18n="landing_page.faq.q3">Mon Talent Graph est-il partagé automatiquement ?</span><i
+                                    class="fa-solid fa-chevron-down"></i></button>
+                            <div class="faq-a" data-i18n="landing_page.faq.a3">Non. Tu gardes le contrôle total. Tu peux rendre ton profil public, le
+                                partager avec des entreprises spécifiques, ou le garder privé. Aucun recruteur ne voit
+                                quoi que ce soit sans ton autorisation explicite.</div>
+                        </div>
+                        <div class="faq-item rv d4">
+                            <button class="faq-q"><span data-i18n="landing_page.faq.q4">Comment Candway détecte-t-il la triche ?</span><i
+                                    class="fa-solid fa-chevron-down"></i></button>
+                            <div class="faq-a" data-i18n="landing_page.faq.a4">Notre système de proctoring intelligent analyse le comportement pendant
+                                l'interview : changements d'onglets, copier-coller, détection de présence, analyse
+                                sémantique des réponses. Cela garantit que chaque score est 100% authentique.</div>
+                        </div>
+                        <div class="faq-item rv d5">
+                            <button class="faq-q"><span data-i18n="landing_page.faq.q5">Dans quels domaines puis-je passer une interview ?</span><i
+                                    class="fa-solid fa-chevron-down"></i></button>
+                            <div class="faq-a" data-i18n="landing_page.faq.a5">Candway couvre Tech (Dev, DevOps, Data, Cloud, QA), Design (UI/UX,
+                                Product Design), Business (Marketing, Sales, Finance, Product Management) et bien
+                                d'autres. L'IA est entraînée sur les compétences spécifiques à chaque domaine.</div>
+                        </div>
+                        <div class="faq-item rv d6">
+                            <button class="faq-q"><span data-i18n="landing_page.faq.q6">Combien de temps est valable mon score ?</span><i
+                                    class="fa-solid fa-chevron-down"></i></button>
+                            <div class="faq-a" data-i18n="landing_page.faq.a6">Ton Talent Graph est valable 6 mois. Tu peux repasser une interview à
+                                tout moment pour mettre à jour ton score et refléter ta progression. Les recruteurs
+                                voient toujours la version la plus récente que tu as autorisée.</div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </section>
+
+        <!-- ═══════════════ CTA ═══════════════ -->
+        <section id="cta" style="padding:80px 0">
+            <div class="w">
+                <div class="cta-box rv">
+                    <div class="kicker-pill"
+                        style="background:rgba(255,255,255,.18);border-color:rgba(255,255,255,.28);color:#fff;margin-bottom:22px">
+                        <span class="kp-dot" style="background:#fff"></span><span data-i18n="landing_page.hero.badge">Accès Prioritaire · Liste d'attente</span>
+                    </div>
+                    <h2 class="cta-h" data-i18n="landing_page.cta.title">Prêt à changer de dimension ?</h2>
+                    <p class="cta-sub" data-i18n="landing_page.cta.subtitle">Rejoins les 500+ talents qui ont déjà prouvé leur valeur. 15 minutes pour transformer ta carrière.</p>
+                    <form class="wl-form" id="wlForm">
+                        <input type="email" class="wl-inp" placeholder="ton@email.com" required>
+                        <button type="submit" class="wl-btn" data-i18n="landing_page.cta.btn">Créer mon profil gratuit</button>
+                    </form>
+                    <div id="wlOk" style="display:none;margin-top:18px;color:#fff;font-weight:700;font-size:15px">
+                        <i class="fa-solid fa-circle-check"></i> <span data-i18n="success_message">Merci ! Tu fais maintenant partie de l'aventure.</span>
+                    </div>
+                    <div class="cta-note"><i class="fa-solid fa-lock"></i><span data-i18n="landing_page.hero.free_label">100% gratuit</span> · Aucun spam · Résiliable à tout
+                        moment</div>
+                </div>
+            </div>
+        </section>
+
+    </main>
+
+    <!-- FOOTER -->
+    <footer>
+        <div class="w">
+            <div class="foot-grid">
+                <div>
+                    <div class="foot-brand">
+                        <div class="foot-brand-ico"><i class="fa-solid fa-bolt"></i></div>
+                        Candway
+                    </div>
+                    <p class="foot-desc" data-i18n="landing_page.footer.desc">La plateforme d'intelligence RH qui révèle et certifie le potentiel réel des talents en Tunisie et à l'international.</p>
+                    <div class="socials">
+                        <a href="#" class="soc"><i class="fa-brands fa-linkedin-in"></i></a>
+                        <a href="#" class="soc"><i class="fa-brands fa-twitter"></i></a>
+                        <a href="#" class="soc"><i class="fa-brands fa-instagram"></i></a>
+                        <a href="#" class="soc"><i class="fa-brands fa-github"></i></a>
+                    </div>
+                </div>
+                <div>
+                    <h5 data-i18n="landing_page.footer.product">Produit</h5>
+                    <a href="#features" class="flnk" data-i18n="landing_page.nav.features">Fonctionnalités</a>
+                    <a href="#process" class="flnk" data-i18n="landing_page.nav.process">Comment ça marche</a>
+                    <a href="#compare" class="flnk" data-i18n="landing_page.nav.compare">Comparatif</a>
+                    <a href="#faq" class="flnk" data-i18n="landing_page.nav.faq">FAQ</a>
+                    <a href="/recruiter/landing" class="flnk" data-i18n="landing_page.nav.recruiter">Entreprises</a>
+                    <a href="/mentor/landing" class="flnk" data-i18n="landing_page.nav.mentor">Mentors</a>
+                </div>
+                <div>
+                    <h5 data-i18n="landing_page.footer.company">Entreprise</h5>
+                    <a href="#" class="flnk" data-i18n="nav.about">À propos</a>
+                    <a href="/blogs" class="flnk" data-i18n="nav.blogs">Blog</a>
+                    <a href="#" class="flnk" data-i18n="nav.careers">Carrières</a>
+                    <a href="#" class="flnk" data-i18n="nav.contact">Contact</a>
+                </div>
+                <div>
+                    <h5 data-i18n="landing_page.footer.legal">Légal</h5>
+                    <a href="/privacy" class="flnk" data-i18n="nav.privacy">Privacy</a>
+                    <a href="/terms" class="flnk" data-i18n="nav.terms">Terms</a>
+                    <a href="/cookies" class="flnk" data-i18n="nav.cookies">Cookies</a>
+                </div>
+            </div>
+            <div class="foot-bot">
+                <span data-i18n="landing_page.footer.rights">© 2025 Candway. Tous droits réservés.</span>
+                <div class="foot-cities" data-i18n="landing_page.ticker.locations">
+                    <span>TUNIS</span><span>·</span><span>SOUSSE</span><span>·</span><span>SFAX</span><span>·</span><span>PARIS</span>
+                </div>
+            </div>
+        </div>
+    </footer>
+
+    <script>
+        /* ── SCROLL REVEAL ── */
+        const RV = new IntersectionObserver(es => {
+            es.forEach(e => { if (e.isIntersecting) { e.target.classList.add('in'); RV.unobserve(e.target) } })
+        }, { threshold: .07, rootMargin: '0px 0px -30px 0px' });
+        document.querySelectorAll('.rv').forEach(el => RV.observe(el));
+
+        /* ── ANIMATED COUNTERS ── */
+        const CV = new IntersectionObserver(es => {
+            es.forEach(e => {
+                if (!e.isIntersecting) return;
+                const el = e.target, to = +el.dataset.to, suf = el.dataset.suf || '';
+                let n = 0, step = to / 55;
+                const t = setInterval(() => {
+                    n = Math.min(n + step, to);
+                    el.textContent = Math.floor(n) + suf;
+                    if (n >= to) clearInterval(t);
+                }, 16);
+                CV.unobserve(el);
+            });
+        }, { threshold: .5 });
+        document.querySelectorAll('[data-to]').forEach(el => CV.observe(el));
+
+        /* ── SKILL BARS ── */
+        window.addEventListener('load', () => {
+            document.querySelectorAll('.skill-fill').forEach(b => {
+                b.style.width = b.style.getPropertyValue('--w') || b.style.cssText.match(/--w:([^;]+)/)?.[1] || '0';
+            });
+        });
+
+        /* ── PROGRESS BAR ── */
+        window.addEventListener('scroll', () => {
+            const h = document.documentElement,
+                  b = document.body,
+                  st = 'scrollTop',
+                  sh = 'scrollHeight';
+            const p = (h[st] || b[st]) / ((h[sh] || b[sh]) - h.clientHeight) * 100;
+            const sp = document.getElementById('sp');
+            if (sp) sp.style.width = p + '%';
+        }, { passive: true });
+
+        /* ── NAV SCROLL ── */
+        window.addEventListener('scroll', () => {
+            document.getElementById('nav').classList.toggle('scrolled', window.scrollY > 60);
+        }, { passive: true });
+
+        /* ── LANG DROPDOWN ── */
+        function tl(e) { e.stopPropagation(); document.getElementById('lm').classList.toggle('show') }
+        function sl(c, flag, code, event) {
+            if (window.setLanguage) {
+                window.setLanguage(c);
+            } else {
+                localStorage.setItem('candway_lang', c);
+                location.reload();
+            }
+            document.getElementById('lflag').src = flag;
+            document.getElementById('lcode').textContent = code;
+            document.querySelectorAll('.lang-opt').forEach(o => o.classList.remove('active'));
+            const target = event ? event.target.closest('.lang-opt') : null;
+            if (target) target.classList.add('active');
+            document.getElementById('lm').classList.remove('show');
+        }
+
+        // Initialize UI from saved language
+        window.addEventListener('load', () => {
+            const saved = localStorage.getItem('candway_lang') || 'fr';
+            if (saved === 'en') sl('en', 'https://flagcdn.com/w40/gb.png', 'EN');
+
+            if (saved === 'fr') sl('fr', 'https://flagcdn.com/w40/fr.png', 'FR');
+        });
+
+        document.addEventListener('click', e => {
+            if (!e.target.closest('#lw')) document.getElementById('lm')?.classList.remove('show');
+        });
+
+        /* ── MOBILE ── */
+        function od() { document.getElementById('drawer').classList.add('open'); document.body.style.overflow = 'hidden'; }
+        function cd() { document.getElementById('drawer').classList.remove('open'); document.body.style.overflow = ''; }
+
+        /* ── FAQ ── */
+        document.querySelectorAll('.faq-q').forEach(btn => {
+            btn.addEventListener('click', () => {
+                const item = btn.parentElement;
+                const open = item.classList.contains('open');
+                document.querySelectorAll('.faq-item').forEach(i => i.classList.remove('open'));
+                if (!open) item.classList.add('open');
+            });
+        });
+
+        /* ── WAITLIST FORM ── */
+        document.getElementById('wlForm').addEventListener('submit', async e => {
+            e.preventDefault();
+            const btn = e.target.querySelector('.wl-btn');
+            const email = e.target.querySelector('input').value;
+            btn.textContent = window.t('loading') || '...'; btn.disabled = true;
+            try {
+                await fetch('/api/v1/waitlist', {
+                    method: 'POST', headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({ email })
+                });
+            } catch (err) { /* graceful */ }
+            e.target.style.display = 'none';
+            document.getElementById('wlOk').style.display = 'block';
+        });
+
+        /* ── SMOOTH SCROLL ── */
+        document.querySelectorAll('a[href^="#"]').forEach(a => {
+            a.addEventListener('click', e => {
+                const id = a.getAttribute('href');
+                if (id === '#') return;
+                const t = document.querySelector(id);
+                if (t) { e.preventDefault(); window.scrollTo({ top: t.offsetTop - 88, behavior: 'smooth' }); cd() }
+            });
+        });
+    </script>
+
+    <!-- Chart.js -->
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/Chart.js/4.4.1/chart.umd.min.js"></script>
+    <script>
+        /* ── TALENT RADAR CHART ── */
+        (function () {
+            const ctx = document.getElementById('talentRadar');
+            if (!ctx) return;
+
+            // Animate in when card enters viewport
+            const initChart = () => {
+                const gradient = ctx.getContext('2d');
+                const bg = gradient.createRadialGradient(
+                    ctx.offsetWidth / 2, ctx.offsetHeight / 2, 0,
+                    ctx.offsetWidth / 2, ctx.offsetHeight / 2, 160
+                );
+                bg.addColorStop(0, 'rgba(99,102,241,.22)');
+                bg.addColorStop(.6, 'rgba(147,51,234,.12)');
+                bg.addColorStop(1, 'rgba(244,63,94,.04)');
+
+                new Chart(ctx, {
+                    type: 'radar',
+                    data: {
+                        labels: [
+                            window.t('landing_page.chart.tech', 'Technique'),
+                            window.t('landing_page.chart.comm', 'Communication'),
+                            window.t('landing_page.chart.logic', 'Logique'),
+                            window.t('landing_page.chart.adapt', 'Adaptabilité'),
+                            window.t('landing_page.chart.stress', 'Gestion stress')
+                        ],
+                        datasets: [{
+                            label: window.t('landing_page.chart.your_profile', 'Ton profil'),
+                            data: [94, 88, 91, 85, 89],
+                            backgroundColor: bg,
+                            borderColor: '#6366F1',
+                            borderWidth: 2.5,
+                            pointBackgroundColor: ['#6366F1', '#9333EA', '#F43F5E', '#10B981', '#F59E0B'],
+                            pointBorderColor: '#fff',
+                            pointBorderWidth: 2,
+                            pointRadius: 5,
+                            pointHoverRadius: 7,
+                            pointHoverBackgroundColor: ['#6366F1', '#9333EA', '#F43F5E', '#10B981', '#F59E0B'],
+                            tension: 0.15,
+                            fill: true,
+                        }, {
+                            label: window.t('landing_page.chart.market_avg', 'Moyenne marché'),
+                            data: [72, 65, 70, 68, 60],
+                            backgroundColor: 'rgba(100,116,139,.07)',
+                            borderColor: 'rgba(100,116,139,.3)',
+                            borderWidth: 1.5,
+                            borderDash: [5, 4],
+                            pointBackgroundColor: 'rgba(100,116,139,.4)',
+                            pointBorderColor: '#fff',
+                            pointBorderWidth: 1.5,
+                            pointRadius: 3,
+                            pointHoverRadius: 5,
+                            fill: true,
+                        }]
+                    },
+                    options: {
+                        responsive: true,
+                        maintainAspectRatio: true,
+                        animation: {
+                            duration: 1400,
+                            easing: 'easeOutQuart',
+                            delay: (ctx) => ctx.dataIndex * 80,
+                        },
+                        scales: {
+                            r: {
+                                min: 0,
+                                max: 100,
+                                ticks: {
+                                    stepSize: 25,
+                                    display: false,
+                                    backdropColor: 'transparent',
+                                },
+                                grid: {
+                                    color: 'rgba(99,102,241,.1)',
+                                    lineWidth: 1,
+                                    circular: false,
+                                },
+                                angleLines: {
+                                    color: 'rgba(99,102,241,.12)',
+                                    lineWidth: 1,
+                                },
+                                pointLabels: {
+                                    font: { family: "'JetBrains Mono',monospace", size: 10, weight: '600' },
+                                    color: '#64748B',
+                                    padding: 10,
+                                },
+                            }
+                        },
+                        plugins: {
+                            legend: {
+                                display: true,
+                                position: 'bottom',
+                                labels: {
+                                    font: { family: "'JetBrains Mono',monospace", size: 10 },
+                                    color: '#94A3B8',
+                                    boxWidth: 10,
+                                    boxHeight: 10,
+                                    borderRadius: 3,
+                                    padding: 16,
+                                    usePointStyle: true,
+                                    pointStyle: 'circle',
+                                }
+                            },
+                            tooltip: {
+                                backgroundColor: 'rgba(15,23,42,.92)',
+                                borderColor: 'rgba(99,102,241,.3)',
+                                borderWidth: 1,
+                                titleFont: { family: "'Cabinet Grotesk',sans-serif", size: 13, weight: '700' },
+                                bodyFont: { family: "'JetBrains Mono',monospace", size: 12 },
+                                padding: 12,
+                                callbacks: {
+                                    label: ctx => ` ${ctx.dataset.label}: ${ctx.parsed.r}%`
+                                }
+                            }
+                        }
+                    }
+                });
+            };
+
+            // Fire when the card is revealed
+            const obs = new IntersectionObserver(entries => {
+                if (entries[0].isIntersecting) { initChart(); obs.disconnect(); }
+            }, { threshold: .3 });
+            obs.observe(ctx.closest('.card'));
+        })();
+    </script>
+</body>
+
+</html>

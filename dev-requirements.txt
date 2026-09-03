@@ -1,0 +1,6 @@
+ruff
+mypy
+black
+bandit
+safety
+pre-commit

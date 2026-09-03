@@ -1,0 +1,219 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title data-i18n="courses.page_title" data-cms="courses_page_title">Candway Academy | AI-Powered Course Marketplace</title>
+    <meta name="description" content="Master the future of tech with curated paths verified by AI. Taught by industry leaders." data-i18n-attr="content:courses.meta_desc">
+
+    <meta property="og:type" content="website">
+    <meta property="og:url" content="https://candway.com/courses">
+    <meta property="og:title" content="Candway Academy | AI-Powered Course Marketplace">
+    <meta property="og:description" content="Master the future of tech with curated paths verified by AI. Taught by industry leaders.">
+    <meta property="og:image" content="https://candway.com/assets/images/og-courses.jpg">
+
+    <meta name="cms-page-id" content="course_landing">
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+    <link rel="stylesheet" href="/css/public-glass.css">
+    <link href="https://unpkg.com/aos@2.3.1/dist/aos.css" rel="stylesheet">
+</head>
+
+<body>
+    <div class="pg-ambient"></div>
+
+    <!-- Navigation (Floating Glass) -->
+    <nav class="pg-nav">
+        <a href="/" class="pg-nav-logo">
+            <img src="/assets/images/candway_logo_dark.png" alt="Candway Logo">
+        </a>
+        <div class="pg-nav-links">
+            <a href="/" data-i18n="nav.home">Home</a>
+            <a href="/courses" class="active" data-i18n="nav.courses">Courses</a>
+            <a href="/jobs" data-i18n="nav.jobs">Jobs</a>
+            <a href="/opportunities" data-i18n="nav.opportunities">Opportunities</a>
+            <a href="/blogs" data-i18n="nav.blogs">Blogs</a>
+        </div>
+        <div class="pg-nav-right">
+            <div class="pg-lang-switcher">
+                <button class="pg-lang-btn" onclick="setLanguage('en')">EN</button>
+                <button class="pg-lang-btn" onclick="setLanguage('fr')">FR</button>
+            </div>
+            <a href="/portal/login" class="pg-nav-login" data-i18n="nav.signin">Sign In</a>
+            <a href="/signup" class="pg-nav-cta" data-i18n="nav.get_verified">Get Verified</a>
+        </div>
+        <button id="mobile-menu-btn" class="pg-burger">
+            <i class="fas fa-bars"></i>
+        </button>
+    </nav>
+    <div id="mobile-menu" class="pg-mobile-menu">
+        <a href="/" data-i18n="nav.home">Home</a>
+        <a href="/courses" class="active" data-i18n="nav.courses">Courses</a>
+        <a href="/jobs" data-i18n="nav.jobs">Jobs</a>
+        <a href="/opportunities" data-i18n="nav.opportunities">Opportunities</a>
+        <a href="/blogs" data-i18n="nav.blogs">Blogs</a>
+        <div class="pg-mobile-divider"></div>
+        <div class="pg-mobile-actions">
+            <div class="pg-lang-switcher" style="justify-content: center;">
+                <button class="pg-lang-btn" onclick="setLanguage('en')">EN</button>
+                <button class="pg-lang-btn" onclick="setLanguage('fr')">FR</button>
+            </div>
+            <a href="/portal/login" class="pg-btn pg-btn-md pg-btn-secondary pg-w-full" data-i18n="nav.signin" style="justify-content: center;">Sign In</a>
+            <a href="/signup" class="pg-nav-cta" data-i18n="nav.get_verified" style="justify-content: center;">Get Verified</a>
+        </div>
+    </div>
+
+    <!-- Header / Search -->
+    <header class="pg-hero pg-container" style="padding-bottom: 3rem;">
+        <h1 class="pg-display" data-cms="courses_hero_title">
+            <span data-i18n="courses.hero_title_start">Master the</span> <br> <span class="pg-gradient-text" data-i18n="courses.hero_title_end">Future of Tech.</span>
+        </h1>
+        <p class="pg-lead" data-i18n="courses.hero_subtitle" data-cms="courses_hero_subtitle">
+            Curated paths to close your skill gaps. Verified by AI, taught by industry leaders.
+        </p>
+
+        <!-- Search Bar -->
+        <div style="max-width: 600px; margin: 0 auto 2rem auto; position: relative;">
+            <input type="text" id="course-search" data-i18n-attr="placeholder:courses.search_placeholder" placeholder="Search for Python, System Design, React..."
+                style="width: 100%; padding: 1rem 1rem 1rem 3rem; border-radius: 16px; border: 1px solid var(--pg-glass-border); background: var(--pg-glass-bg); backdrop-filter: blur(20px); outline: none; box-shadow: var(--pg-sh-md); font-family: inherit;">
+            <i class="fas fa-search" style="position: absolute; left: 1rem; top: 50%; transform: translateY(-50%); color: var(--pg-ink-m);"></i>
+        </div>
+
+        <!-- Categories -->
+        <div class="pg-flex pg-flex-wrap pg-justify-center pg-gap-2 pg-mb-6" id="category-filters">
+            <!-- Dynamic categories will load here -->
+        </div>
+
+        <!-- View Controls & Sort -->
+        <div class="pg-flex pg-justify-between pg-items-center pg-mt-6" style="max-width: 1024px; margin-left: auto; margin-right: auto;">
+            <div class="pg-small">
+                <span data-i18n="courses.showing">Showing</span> <strong id="results-count">0</strong> <span data-i18n="courses.courses">courses</span>
+            </div>
+            <div class="pg-flex pg-gap-3 pg-items-center">
+                <select id="sort-select" style="padding: 0.5rem 1rem; border-radius: 8px; border: 1px solid var(--pg-glass-border); background: var(--pg-glass-bg); outline: none; font-family: inherit;">
+                    <option value="popular" data-i18n="courses.sort_popular">Most Popular</option>
+                    <option value="rating" data-i18n="courses.sort_rating">Highest Rated</option>
+                    <option value="newest" data-i18n="courses.sort_newest">Newest</option>
+                    <option value="price-low" data-i18n="courses.sort_price_low">Price: Low to High</option>
+                    <option value="price-high" data-i18n="courses.sort_price_high">Price: High to Low</option>
+                </select>
+                <div class="pg-view-toggle">
+                    <button id="grid-view-btn" class="pg-view-btn active"><i class="fas fa-th-large"></i></button>
+                    <button id="list-view-btn" class="pg-view-btn"><i class="fas fa-list"></i></button>
+                </div>
+            </div>
+        </div>
+    </header>
+
+    <main class="pg-section" style="padding-top: 0;">
+        <div class="pg-container">
+            <!-- Featured Course -->
+            <div class="pg-mb-12">
+                <div class="pg-flex pg-items-center pg-gap-2 pg-mb-6">
+                    <div class="pg-section-icon"><i class="fas fa-fire" style="color: #ff9800;"></i></div>
+                    <h2 class="pg-h2" data-i18n="courses.trending_title" data-cms="courses_trending_title">Trending Now</h2>
+                </div>
+
+                <div id="featured-course">
+                    <!-- Dynamic featured course will load here -->
+                    <div class="pg-glass-card pg-p-8 pg-text-center">
+                        <div class="pg-spinner pg-mb-4" style="margin-left: auto; margin-right: auto;"><div class="pg-spinner-ring"></div></div>
+                        <p data-i18n="courses.loading_featured">Loading featured course...</p>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Course Grid -->
+            <div>
+                <h2 class="pg-h2 pg-mb-6" data-i18n="courses.all_courses_title" data-cms="courses_all_title">All Courses</h2>
+
+                <div class="pg-grid-4" id="courses-container">
+                    <!-- Dynamic courses will load here -->
+                    <div class="pg-col-span-full pg-text-center pg-py-12">
+                        <div class="pg-spinner pg-mb-4" style="margin-left: auto; margin-right: auto;"><div class="pg-spinner-ring"></div></div>
+                        <p data-i18n="courses.loading_courses">Loading courses...</p>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </main>
+
+    <!-- Footer -->
+    <footer class="pg-footer">
+        <div class="pg-container">
+            <div class="pg-footer-grid">
+                <div>
+                    <a href="/" class="pg-footer-brand">
+                        <img src="/assets/images/candway_logo_dark.png" alt="Candway Logo">
+                    </a>
+                    <p class="pg-footer-desc">
+                        The global protocol for proof-of-skill. We connect world-class talent with world-class opportunities.
+                    </p>
+                    <div class="pg-footer-socials">
+                        <a href="#" class="pg-footer-social"><i class="fab fa-twitter"></i></a>
+                        <a href="#" class="pg-footer-social"><i class="fab fa-linkedin-in"></i></a>
+                        <a href="#" class="pg-footer-social"><i class="fab fa-instagram"></i></a>
+                    </div>
+                </div>
+
+                <div>
+                    <h4>Explore</h4>
+                    <ul class="pg-footer-links">
+                        <li><a href="/">For Candidates</a></li>
+                        <li><a href="/recruiter/landing">For Companies</a></li>
+                        <li><a href="/mentor/landing">For Mentors</a></li>
+                    </ul>
+                </div>
+
+                <div>
+                    <h4>Platform</h4>
+                    <ul class="pg-footer-links">
+                        <li><a href="/jobs">Job Board</a></li>
+                        <li><a href="/courses">Courses</a></li>
+                        <li><a href="/blogs">Blog</a></li>
+                        <li><a href="/opportunities">Opportunities</a></li>
+                    </ul>
+                </div>
+            </div>
+
+            <div class="pg-footer-bottom">
+                <div data-i18n="landing_page.footer.rights">© 2026 Candway Intelligence Inc. All rights reserved.</div>
+                <div class="pg-footer-legal">
+                    <a href="#" data-i18n="landing_page.footer.legal.privacy">Privacy Policy</a>
+                    <a href="#" data-i18n="landing_page.footer.legal.terms">Terms of Service</a>
+                </div>
+            </div>
+        </div>
+    </footer>
+
+    <!-- Scripts -->
+    <script src="https://unpkg.com/aos@2.3.1/dist/aos.js"></script>
+    <script src="/js/config.js"></script>
+    <script src="/js/cms-loader.js"></script>
+    <script src="/js/localization.js"></script>
+    <script src="/js/translations.js"></script>
+    <script src="/js/courses-premium.js"></script>
+    <script src="/js/csrf.js"></script>
+    <!-- XSS Protection -->
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/dompurify/3.0.8/purify.min.js"></script>
+    <script src="/js/xss-protection.js"></script>
+    <script>
+        if (typeof AOS !== "undefined") { AOS.init({ once: true, duration: 800 }); }
+        
+        // Add scroll listener for nav background
+        window.addEventListener('scroll', () => {
+            const nav = document.querySelector('.pg-nav');
+            if (nav) {
+                if (window.scrollY > 20) {
+                    nav.classList.add('scrolled');
+                } else {
+                    nav.classList.remove('scrolled');
+                }
+            }
+        });
+        
+        document.getElementById('mobile-menu-btn')?.addEventListener('click', () => {
+            document.getElementById('mobile-menu').classList.toggle('open');
+        });
+    </script>
+</body>
+</html>

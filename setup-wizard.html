@@ -1,0 +1,897 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Candway Setup Wizard</title>
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+
+        body {
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            min-height: 100vh;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            padding: 20px;
+        }
+
+        .wizard-container {
+            background: white;
+            border-radius: 20px;
+            box-shadow: 0 20px 60px rgba(0, 0, 0, 0.3);
+            max-width: 800px;
+            width: 100%;
+            overflow: hidden;
+        }
+
+        .wizard-header {
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            color: white;
+            padding: 30px;
+            text-align: center;
+        }
+
+        .wizard-header h1 {
+            font-size: 28px;
+            margin-bottom: 10px;
+        }
+
+        .wizard-header p {
+            opacity: 0.9;
+            font-size: 14px;
+        }
+
+        .progress-bar {
+            background: rgba(255, 255, 255, 0.2);
+            height: 8px;
+            border-radius: 4px;
+            margin-top: 20px;
+            overflow: hidden;
+        }
+
+        .progress-fill {
+            background: white;
+            height: 100%;
+            width: 0%;
+            transition: width 0.3s ease;
+        }
+
+        .wizard-body {
+            padding: 40px;
+        }
+
+        .step {
+            display: none;
+        }
+
+        .step.active {
+            display: block;
+            animation: fadeIn 0.3s ease;
+        }
+
+        @keyframes fadeIn {
+            from {
+                opacity: 0;
+                transform: translateY(10px);
+            }
+
+            to {
+                opacity: 1;
+                transform: translateY(0);
+            }
+        }
+
+        .step-title {
+            font-size: 24px;
+            color: #333;
+            margin-bottom: 10px;
+        }
+
+        .step-description {
+            color: #666;
+            margin-bottom: 30px;
+            line-height: 1.6;
+        }
+
+        .form-group {
+            margin-bottom: 20px;
+        }
+
+        .form-group label {
+            display: block;
+            margin-bottom: 8px;
+            color: #333;
+            font-weight: 500;
+        }
+
+        .form-group input,
+        .form-group select {
+            width: 100%;
+            padding: 12px 15px;
+            border: 2px solid #e0e0e0;
+            border-radius: 8px;
+            font-size: 14px;
+            transition: border-color 0.3s;
+        }
+
+        .form-group input:focus,
+        .form-group select:focus {
+            outline: none;
+            border-color: #667eea;
+        }
+
+        .form-row {
+            display: grid;
+            grid-template-columns: 1fr 1fr;
+            gap: 15px;
+        }
+
+        .btn {
+            padding: 12px 30px;
+            border: none;
+            border-radius: 8px;
+            font-size: 14px;
+            font-weight: 600;
+            cursor: pointer;
+            transition: all 0.3s;
+        }
+
+        .btn-primary {
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            color: white;
+        }
+
+        .btn-primary:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 5px 15px rgba(102, 126, 234, 0.4);
+        }
+
+        .btn-secondary {
+            background: #f0f0f0;
+            color: #333;
+        }
+
+        .btn-secondary:hover {
+            background: #e0e0e0;
+        }
+
+        .btn-test {
+            background: #4CAF50;
+            color: white;
+            margin-top: 10px;
+        }
+
+        .btn-test:hover {
+            background: #45a049;
+        }
+
+        .wizard-actions {
+            display: flex;
+            justify-content: space-between;
+            margin-top: 30px;
+            padding-top: 20px;
+            border-top: 1px solid #e0e0e0;
+        }
+
+        .alert {
+            padding: 12px 15px;
+            border-radius: 8px;
+            margin-bottom: 20px;
+            display: none;
+        }
+
+        .alert.show {
+            display: block;
+            animation: slideDown 0.3s ease;
+        }
+
+        @keyframes slideDown {
+            from {
+                opacity: 0;
+                transform: translateY(-10px);
+            }
+
+            to {
+                opacity: 1;
+                transform: translateY(0);
+            }
+        }
+
+        .alert-success {
+            background: #d4edda;
+            color: #155724;
+            border: 1px solid #c3e6cb;
+        }
+
+        .alert-error {
+            background: #f8d7da;
+            color: #721c24;
+            border: 1px solid #f5c6cb;
+        }
+
+        .alert-info {
+            background: #d1ecf1;
+            color: #0c5460;
+            border: 1px solid #bee5eb;
+        }
+
+        .skip-link {
+            color: #667eea;
+            text-decoration: none;
+            font-size: 14px;
+            margin-top: 15px;
+            display: inline-block;
+        }
+
+        .skip-link:hover {
+            text-decoration: underline;
+        }
+
+        .welcome-icon {
+            font-size: 80px;
+            margin-bottom: 20px;
+        }
+
+        .feature-list {
+            list-style: none;
+            margin: 20px 0;
+        }
+
+        .feature-list li {
+            padding: 10px 0;
+            padding-left: 30px;
+            position: relative;
+        }
+
+        .feature-list li:before {
+            content: "✓";
+            position: absolute;
+            left: 0;
+            color: #4CAF50;
+            font-weight: bold;
+            font-size: 18px;
+        }
+
+        .review-section {
+            background: #f9f9f9;
+            padding: 20px;
+            border-radius: 8px;
+            margin-bottom: 15px;
+        }
+
+        .review-section h3 {
+            color: #667eea;
+            margin-bottom: 10px;
+            font-size: 16px;
+        }
+
+        .review-item {
+            display: flex;
+            justify-content: space-between;
+            padding: 8px 0;
+            border-bottom: 1px solid #e0e0e0;
+        }
+
+        .review-item:last-child {
+            border-bottom: none;
+        }
+
+        .review-label {
+            color: #666;
+            font-size: 14px;
+        }
+
+        .review-value {
+            color: #333;
+            font-weight: 500;
+            font-size: 14px;
+        }
+
+        .spinner {
+            border: 3px solid #f3f3f3;
+            border-top: 3px solid #667eea;
+            border-radius: 50%;
+            width: 20px;
+            height: 20px;
+            animation: spin 1s linear infinite;
+            display: inline-block;
+            margin-left: 10px;
+        }
+
+        @keyframes spin {
+            0% {
+                transform: rotate(0deg);
+            }
+
+            100% {
+                transform: rotate(360deg);
+            }
+        }
+
+        .hidden {
+            display: none !important;
+        }
+
+        .checkbox-group {
+            display: flex;
+            align-items: center;
+            margin-top: 15px;
+        }
+
+        .checkbox-group input[type="checkbox"] {
+            width: auto;
+            margin-right: 10px;
+        }
+
+        @media (max-width: 768px) {
+            .form-row {
+                grid-template-columns: 1fr;
+            }
+
+            .wizard-body {
+                padding: 20px;
+            }
+        }
+    </style>
+
+    <script src="/js/config.js"></script>
+    <script src="/js/translations.js"></script>
+    <script src="/js/localization.js"></script>
+</head>
+
+<body>
+    <div class="wizard-container">
+        <div class="wizard-header">
+            <h1>🚀 Candway Setup Wizard</h1>
+            <p>Let's get your platform configured in just a few minutes</p>
+            <div class="progress-bar">
+                <div class="progress-fill" id="progressBar"></div>
+            </div>
+        </div>
+
+        <div class="wizard-body">
+            <div id="alertBox" class="alert"></div>
+
+            <!-- Step 1: Welcome -->
+            <div class="step active" data-step="1">
+                <div style="text-align: center;">
+                    <div class="welcome-icon">🎉</div>
+                    <h2 class="step-title">Welcome to Candway Intelligence!</h2>
+                    <p class="step-description">
+                        Thank you for choosing Candway. This wizard will help you set up your platform in minutes.
+                    </p>
+
+                    <ul class="feature-list" style="text-align: left; max-width: 500px; margin: 30px auto;">
+                        <li>Configure database connection</li>
+                        <li>Create your admin account</li>
+                        <li>Set up email notifications (optional)</li>
+                        <li>Configure AI features (optional)</li>
+                    </ul>
+
+                    <p style="color: #666; font-size: 14px; margin-top: 30px;">
+                        This should take about 5 minutes to complete.
+                    </p>
+                </div>
+
+                <div class="wizard-actions">
+                    <div></div>
+                    <button class="btn btn-primary" onclick="nextStep()">Start Setup →</button>
+                </div>
+            </div>
+
+            <!-- Step 2: Database Configuration -->
+            <div class="step" data-step="2">
+                <h2 class="step-title">Database Configuration</h2>
+                <p class="step-description">
+                    Enter your MySQL database connection details. We'll test the connection before proceeding.
+                </p>
+
+                <div class="form-row">
+                    <div class="form-group">
+                        <label for="dbHost">Database Host</label>
+                        <input type="text" id="dbHost" value="localhost" placeholder="localhost">
+                    </div>
+                    <div class="form-group">
+                        <label for="dbPort">Port</label>
+                        <input type="number" id="dbPort" value="3306" placeholder="3306">
+                    </div>
+                </div>
+
+                <div class="form-group">
+                    <label for="dbName">Database Name</label>
+                    <input type="text" id="dbName" placeholder="candway_db" required>
+                </div>
+
+                <div class="form-row">
+                    <div class="form-group">
+                        <label for="dbUsername">Username</label>
+                        <input type="text" id="dbUsername" placeholder="root" required>
+                    </div>
+                    <div class="form-group">
+                        <label for="dbPassword">Password</label>
+                        <input type="password" id="dbPassword" placeholder="Your database password">
+                    </div>
+                </div>
+
+                <div class="checkbox-group">
+                    <input type="checkbox" id="createDb">
+                    <label for="createDb" style="margin: 0;">Create database if it doesn't exist</label>
+                </div>
+
+                <button class="btn btn-test" onclick="testDatabase()">
+                    <span id="testDbText">Test Connection</span>
+                </button>
+
+                <div class="wizard-actions">
+                    <button class="btn btn-secondary" onclick="prevStep()">← Back</button>
+                    <button class="btn btn-primary" onclick="nextStep()" id="dbNextBtn" disabled>Next →</button>
+                </div>
+            </div>
+
+            <!-- Step 3: Admin User -->
+            <div class="step" data-step="3">
+                <div style="text-align: center; margin-bottom: 30px;">
+                    <div style="font-size: 60px; margin-bottom: 15px;">🔐</div>
+                    <h2 class="step-title">Secure Your Administrator Access</h2>
+                    <p class="step-description">
+                        Create a powerful administrator account with complete control over your Candway Intelligence platform. This account will have access to all system features, user management, and configuration settings.
+                    </p>
+                </div>
+
+                <div style="background: #f8f9ff; padding: 20px; border-radius: 12px; border-left: 4px solid #667eea; margin-bottom: 30px;">
+                    <div style="display: flex; align-items: center; margin-bottom: 10px;">
+                        <span style="font-size: 18px; color: #667eea; margin-right: 10px;">💡</span>
+                        <strong style="color: #333;">Password Requirements:</strong>
+                    </div>
+                    <ul style="color: #555; font-size: 14px; margin: 0; padding-left: 30px;">
+                        <li>Minimum 8 characters</li>
+                        <li>Include uppercase and lowercase letters</li>
+                        <li>Add numbers and special characters for enhanced security</li>
+                        <li>Avoid common words or easily guessable patterns</li>
+                    </ul>
+                </div>
+
+                <div class="form-group">
+                    <label for="adminName" style="font-weight: 600; color: #333;">Administrator Full Name</label>
+                    <input type="text" id="adminName" placeholder="Enter your full name" required style="font-size: 15px;">
+                </div>
+
+                <div class="form-group">
+                    <label for="adminEmail" style="font-weight: 600; color: #333;">Administrator Email Address</label>
+                    <input type="email" id="adminEmail" placeholder="admin@yourcompany.com" required style="font-size: 15px;">
+                    <small style="color: #666; font-size: 13px; display: block; margin-top: 5px;">
+                        This email will be used for login and important system notifications
+                    </small>
+                </div>
+
+                <div class="form-row">
+                    <div class="form-group">
+                        <label for="adminPassword" style="font-weight: 600; color: #333;">Secure Password</label>
+                        <input type="password" id="adminPassword" placeholder="Create a strong password" required style="font-size: 15px;">
+                    </div>
+                    <div class="form-group">
+                        <label for="adminPasswordConfirm" style="font-weight: 600; color: #333;">Confirm Password</label>
+                        <input type="password" id="adminPasswordConfirm" placeholder="Re-enter your password" required style="font-size: 15px;">
+                    </div>
+                </div>
+
+                <div style="background: #e8f5e8; padding: 15px; border-radius: 8px; margin-top: 20px; border: 1px solid #c3e6cb;">
+                    <div style="display: flex; align-items: flex-start;">
+                        <span style="font-size: 16px; color: #28a745; margin-right: 10px; margin-top: 2px;">✓</span>
+                        <div>
+                            <strong style="color: #155724;">Security First:</strong>
+                            <p style="color: #155724; margin: 5px 0 0 0; font-size: 14px;">
+                                Your administrator credentials are encrypted and stored securely. Remember to enable two-factor authentication in settings after setup.
+                            </p>
+                        </div>
+                    </div>
+                </div>
+
+                <div class="wizard-actions">
+                    <button class="btn btn-secondary" onclick="prevStep()">← Back</button>
+                    <button class="btn btn-primary" onclick="nextStep()">Create Account →</button>
+                </div>
+            </div>
+
+            <!-- Step 4: Email Configuration (Optional) -->
+            <div class="step" data-step="4">
+                <h2 class="step-title">Email Configuration (Optional)</h2>
+                <p class="step-description">
+                    Configure SMTP settings to send email notifications. You can skip this and configure it later.
+                </p>
+
+                <div class="form-row">
+                    <div class="form-group">
+                        <label for="smtpHost">SMTP Host</label>
+                        <input type="text" id="smtpHost" placeholder="smtp.gmail.com">
+                    </div>
+                    <div class="form-group">
+                        <label for="smtpPort">SMTP Port</label>
+                        <input type="number" id="smtpPort" value="587" placeholder="587">
+                    </div>
+                </div>
+
+                <div class="form-row">
+                    <div class="form-group">
+                        <label for="smtpUsername">Email Address</label>
+                        <input type="email" id="smtpUsername" placeholder="your-email@gmail.com">
+                    </div>
+                    <div class="form-group">
+                        <label for="smtpPassword">Password / App Password</label>
+                        <input type="password" id="smtpPassword" placeholder="Your email password">
+                    </div>
+                </div>
+
+                <div class="form-group">
+                    <label for="testEmail">Test Email Address</label>
+                    <input type="email" id="testEmail" placeholder="test@example.com">
+                </div>
+
+                <button class="btn btn-test" onclick="testEmail()" id="testEmailBtn">
+                    <span id="testEmailText">Send Test Email</span>
+                </button>
+
+                <a href="#" class="skip-link" onclick="skipEmail(); return false;">Skip email configuration for now</a>
+
+                <div class="wizard-actions">
+                    <button class="btn btn-secondary" onclick="prevStep()">← Back</button>
+                    <button class="btn btn-primary" onclick="nextStep()">Next →</button>
+                </div>
+            </div>
+
+            <!-- Step 5: API Keys (Optional) -->
+            <div class="step" data-step="5">
+                <h2 class="step-title">API Keys (Optional)</h2>
+                <p class="step-description">
+                    Configure API keys for AI features. You can add these later in the admin settings.
+                </p>
+
+                <div class="form-group">
+                    <label for="groqKey">GROQ API Key (for AI interviews)</label>
+                    <input type="text" id="groqKey" placeholder="gsk_...">
+                    <small style="color: #666; font-size: 12px;">
+                        Get your free API key at <a href="https://console.groq.com" target="_blank">console.groq.com</a>
+                    </small>
+                </div>
+
+                <a href="#" class="skip-link" onclick="skipApiKeys(); return false;">Skip API configuration for now</a>
+
+                <div class="wizard-actions">
+                    <button class="btn btn-secondary" onclick="prevStep()">← Back</button>
+                    <button class="btn btn-primary" onclick="nextStep()">Next →</button>
+                </div>
+            </div>
+
+            <!-- Step 6: Review & Launch -->
+            <div class="step" data-step="6">
+                <h2 class="step-title">Review & Launch</h2>
+                <p class="step-description">
+                    Please review your configuration before launching the platform.
+                </p>
+
+                <div class="review-section">
+                    <h3>📊 Database</h3>
+                    <div class="review-item">
+                        <span class="review-label">Host:</span>
+                        <span class="review-value" id="reviewDbHost"></span>
+                    </div>
+                    <div class="review-item">
+                        <span class="review-label">Database:</span>
+                        <span class="review-value" id="reviewDbName"></span>
+                    </div>
+                </div>
+
+                <div class="review-section">
+                    <h3>👤 Admin Account</h3>
+                    <div class="review-item">
+                        <span class="review-label">Name:</span>
+                        <span class="review-value" id="reviewAdminName"></span>
+                    </div>
+                    <div class="review-item">
+                        <span class="review-label">Email:</span>
+                        <span class="review-value" id="reviewAdminEmail"></span>
+                    </div>
+                </div>
+
+                <div class="review-section" id="reviewEmailSection">
+                    <h3>📧 Email Configuration</h3>
+                    <div class="review-item">
+                        <span class="review-label">SMTP Host:</span>
+                        <span class="review-value" id="reviewSmtpHost"></span>
+                    </div>
+                    <div class="review-item">
+                        <span class="review-label">Email:</span>
+                        <span class="review-value" id="reviewSmtpEmail"></span>
+                    </div>
+                </div>
+
+                <div class="review-section" id="reviewApiSection">
+                    <h3>🤖 API Keys</h3>
+                    <div class="review-item">
+                        <span class="review-label">GROQ API:</span>
+                        <span class="review-value" id="reviewGroqKey"></span>
+                    </div>
+                </div>
+
+                <div class="wizard-actions">
+                    <button class="btn btn-secondary" onclick="prevStep()">← Back</button>
+                    <button class="btn btn-primary" onclick="completeSetup()">
+                        <span id="launchText">🚀 Launch Platform</span>
+                    </button>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <script>
+        // CONFIG is already loaded from /js/config.js
+
+
+        let currentStep = 1;
+        const totalSteps = 6;
+        let setupData = {
+            database: {},
+            admin: {},
+            email: null,
+            api_keys: null
+        };
+
+        function updateProgress() {
+            const progress = ((currentStep - 1) / (totalSteps - 1)) * 100;
+            document.getElementById('progressBar').style.width = progress + '%';
+        }
+
+        function showAlert(message, type = 'info') {
+            const alertBox = document.getElementById('alertBox');
+            alertBox.className = `alert alert-${type} show`;
+            alertBox.textContent = message;
+
+            setTimeout(() => {
+                alertBox.classList.remove('show');
+            }, 5000);
+        }
+
+        function nextStep() {
+            // Validation
+            if (currentStep === 2 && !document.getElementById('dbNextBtn').disabled === false) {
+                showAlert('Please test the database connection first', 'error');
+                return;
+            }
+
+            if (currentStep === 3) {
+                const name = document.getElementById('adminName').value;
+                const email = document.getElementById('adminEmail').value;
+                const password = document.getElementById('adminPassword').value;
+                const confirm = document.getElementById('adminPasswordConfirm').value;
+
+                if (!name || !email || !password) {
+                    showAlert('Please fill in all admin fields', 'error');
+                    return;
+                }
+
+                if (password !== confirm) {
+                    showAlert('Passwords do not match', 'error');
+                    return;
+                }
+
+                if (password.length < 8) {
+                    showAlert('Password must be at least 8 characters', 'error');
+                    return;
+                }
+
+                setupData.admin = { name, email, password };
+            }
+
+            if (currentStep === 4) {
+                const host = document.getElementById('smtpHost').value;
+                const port = document.getElementById('smtpPort').value;
+                const username = document.getElementById('smtpUsername').value;
+                const password = document.getElementById('smtpPassword').value;
+
+                if (host && username && password) {
+                    setupData.email = {
+                        smtp_host: host,
+                        smtp_port: parseInt(port),
+                        smtp_username: username,
+                        smtp_password: password
+                    };
+                }
+            }
+
+            if (currentStep === 5) {
+                const groqKey = document.getElementById('groqKey').value;
+                if (groqKey) {
+                    setupData.api_keys = { groq_api_key: groqKey };
+                }
+            }
+
+            if (currentStep === 6) {
+                return; // Last step, use completeSetup instead
+            }
+
+            // Move to next step
+            document.querySelector(`.step[data-step="${currentStep}"]`).classList.remove('active');
+            currentStep++;
+            document.querySelector(`.step[data-step="${currentStep}"]`).classList.add('active');
+            updateProgress();
+
+            // Populate review if on last step
+            if (currentStep === 6) {
+                populateReview();
+            }
+        }
+
+        function prevStep() {
+            if (currentStep === 1) return;
+
+            document.querySelector(`.step[data-step="${currentStep}"]`).classList.remove('active');
+            currentStep--;
+            document.querySelector(`.step[data-step="${currentStep}"]`).classList.add('active');
+            updateProgress();
+        }
+
+        async function testDatabase() {
+            const btn = document.getElementById('testDbText');
+            const originalText = btn.textContent;
+            btn.innerHTML = 'Testing... <span class="spinner"></span>';
+
+            const config = {
+                host: document.getElementById('dbHost').value,
+                port: parseInt(document.getElementById('dbPort').value),
+                database: document.getElementById('dbName').value,
+                username: document.getElementById('dbUsername').value,
+                password: document.getElementById('dbPassword').value
+            };
+
+            try {
+                // Try to create database if checkbox is checked
+                if (document.getElementById('createDb').checked) {
+                    try {
+                        const createResp = await fetch(`${CONFIG.API_BASE_URL}${CONFIG.API_PREFIX}/setup/create-database`, {
+                            method: 'POST',
+                            headers: { 'Content-Type': 'application/json' },
+                            body: JSON.stringify(config)
+                        });
+                        if (createResp.ok) {
+                            showAlert('Database created successfully!', 'success');
+                        }
+                    } catch (e) {
+                        // Continue to test even if create fails
+                    }
+                }
+
+                const response = await fetch(`${CONFIG.API_BASE_URL}${CONFIG.API_PREFIX}/setup/test-database`, {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify(config)
+                });
+
+                const data = await response.json();
+
+                if (response.ok) {
+                    showAlert(data.message, 'success');
+                    setupData.database = config;
+                    document.getElementById('dbNextBtn').disabled = false;
+                } else {
+                    showAlert(data.detail || 'Connection failed', 'error');
+                }
+            } catch (error) {
+                showAlert('Connection failed: ' + error.message, 'error');
+            } finally {
+                btn.textContent = originalText;
+            }
+        }
+
+        async function testEmail() {
+            const btn = document.getElementById('testEmailText');
+            const originalText = btn.textContent;
+            btn.innerHTML = 'Sending... <span class="spinner"></span>';
+
+            const config = {
+                smtp_host: document.getElementById('smtpHost').value,
+                smtp_port: parseInt(document.getElementById('smtpPort').value),
+                smtp_username: document.getElementById('smtpUsername').value,
+                smtp_password: document.getElementById('smtpPassword').value,
+                test_email: document.getElementById('testEmail').value || document.getElementById('smtpUsername').value
+            };
+
+            try {
+                const response = await fetch(`${CONFIG.API_BASE_URL}${CONFIG.API_PREFIX}/setup/test-email`, {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify(config)
+                });
+
+                const data = await response.json();
+
+                if (response.ok) {
+                    showAlert(data.message, 'success');
+                } else {
+                    showAlert(data.detail || 'Email test failed', 'error');
+                }
+            } catch (error) {
+                showAlert('Email test failed: ' + error.message, 'error');
+            } finally {
+                btn.textContent = originalText;
+            }
+        }
+
+        function skipEmail() {
+            setupData.email = null;
+            nextStep();
+        }
+
+        function skipApiKeys() {
+            setupData.api_keys = null;
+            nextStep();
+        }
+
+        function populateReview() {
+            document.getElementById('reviewDbHost').textContent = setupData.database.host + ':' + setupData.database.port;
+            document.getElementById('reviewDbName').textContent = setupData.database.database;
+            document.getElementById('reviewAdminName').textContent = setupData.admin.name;
+            document.getElementById('reviewAdminEmail').textContent = setupData.admin.email;
+
+            if (setupData.email) {
+                document.getElementById('reviewSmtpHost').textContent = setupData.email.smtp_host;
+                document.getElementById('reviewSmtpEmail').textContent = setupData.email.smtp_username;
+                document.getElementById('reviewEmailSection').style.display = 'block';
+            } else {
+                document.getElementById('reviewEmailSection').style.display = 'none';
+            }
+
+            if (setupData.api_keys && setupData.api_keys.groq_api_key) {
+                document.getElementById('reviewGroqKey').textContent = setupData.api_keys.groq_api_key.substring(0, 20) + '...';
+                document.getElementById('reviewApiSection').style.display = 'block';
+            } else {
+                document.getElementById('reviewApiSection').style.display = 'none';
+            }
+        }
+
+        async function completeSetup() {
+            const btn = document.getElementById('launchText');
+            const originalText = btn.textContent;
+            btn.innerHTML = 'Setting up... <span class="spinner"></span>';
+
+            try {
+                const response = await fetch(`${CONFIG.API_BASE_URL}${CONFIG.API_PREFIX}/setup/complete`, {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify(setupData)
+                });
+
+                const data = await response.json();
+
+                if (response.ok) {
+                    showAlert('✅ Setup complete! Redirecting to login...', 'success');
+
+                    setTimeout(() => {
+                        window.location.href = '/login/admin';
+                    }, 2000);
+                } else {
+                    showAlert(data.detail || 'Setup failed', 'error');
+                    btn.textContent = originalText;
+                }
+            } catch (error) {
+                showAlert('Setup failed: ' + error.message, 'error');
+                btn.textContent = originalText;
+            }
+        }
+
+        // Initialize
+        updateProgress();
+    </script>
+    <script src="/js/csrf.js"></script>
+    <!-- XSS Protection -->
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/dompurify/3.0.8/purify.min.js"></script>
+    <script src="/js/xss-protection.js"></script>
+</body>
+
+</html>

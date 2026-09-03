@@ -1,0 +1,804 @@
+"""Rubric match helpers shared across recruiter (campaign) and candidate flows."""
+
+import json
+import logging
+import re
+from typing import Any, Dict, List, Optional
+
+logger = logging.getLogger(__name__)
+
+_EXPERIENCE_MARKERS = (
+    "years of",
+    "years ",
+    "experience",
+    "worked with",
+    "worked on",
+    "developed",
+    "developing",
+    "building",
+    "built",
+    "led",
+    "designed",
+    "shipped",
+    "implemented",
+    "responsible for",
+    "proficient in",
+    "expert in",
+    "hands-on",
+    "using",
+    "used ",
+    "deployed",
+    "managed",
+    "production",
+    "extensive",
+    "strong",
+    "solid",
+)
+
+
+def _parse_criteria(rubric) -> list:
+    """Parse rubric.criteria_json (TEXT/JSON string) into a categories list."""
+    if rubric is None:
+        return []
+    raw = getattr(rubric, "criteria_json", None)
+    if not raw:
+        return []
+    if isinstance(raw, (dict, list)):
+        return raw.get("categories", []) if isinstance(raw, dict) else raw
+    try:
+        data = json.loads(raw)
+        return data.get("categories", []) if isinstance(data, dict) else data
+    except (json.JSONDecodeError, TypeError):
+        logger.warning("Failed to parse rubric criteria_json", exc_info=True)
+        return []
+
+
+def build_rubric_context(rubric) -> str:
+    """Build a prompt context string from rubric criteria (Category + skills)."""
+    cats = _parse_criteria(rubric)
+    if not cats:
+        return ""
+    lines = []
+    for cat in cats:
+        skills = []
+        for sub in cat.get("subcategories", []):
+            for skill in sub.get("skills", []):
+                name = skill.get("name")
+                if name:
+                    skills.append(str(name).strip())
+        if skills:
+            lines.append(
+                f"Category: {cat.get('name', 'Unnamed')} — Skills: {', '.join(skills)}"
+            )
+    return "\n".join(lines)
+
+
+def compute_rubric_skill_match(cv_text: str, rubric) -> dict:
+    """Keyword scan of the CV text against rubric skills.
+
+    Returns {"total_skills", "matched_skills", "missing_skills",
+    "match_percentage"}. Each skill entry is {"name", "category"}. The match
+    percentage is the keyword-scan percentage (used as a fallback score when
+    the AI semantic score is absent).
+    """
+    cats = _parse_criteria(rubric)
+    matched_skills = []
+    missing_skills = []
+    total_skills = 0
+
+    haystack = (cv_text or "").lower()
+    for cat in cats:
+        cat_name = cat.get("name")
+        for sub in cat.get("subcategories", []):
+            for skill in sub.get("skills", []):
+                total_skills += 1
+                name = skill.get("name")
+                if not name:
+                    continue
+                needle = str(name).strip().lower()
+                if not needle:
+                    continue
+                entry = {"name": str(name).strip(), "category": cat_name}
+                if needle in haystack:
+                    matched_skills.append(entry)
+                else:
+                    missing_skills.append(entry)
+
+    match_pct = (
+        round(len(matched_skills) / total_skills * 100) if total_skills else 0
+    )
+    return {
+        "total_skills": total_skills,
+        "matched_skills": matched_skills,
+        "missing_skills": missing_skills,
+        "match_percentage": match_pct,
+    }
+
+
+# ---------------------------------------------------------------------------
+# Deterministic rubric-weighted CV scoring (P0)
+# ---------------------------------------------------------------------------
+
+_DETERMINISTIC_EVIDENCE_LEVELS = {
+    "none": 0.0,
+    "weak": 25.0,
+    "direct": 50.0,
+    "demonstrated": 75.0,
+    "strong": 100.0,
+}
+
+
+def _extract_rubric_skills(rubric) -> List[Dict[str, Any]]:
+    """Flatten rubric skills while preserving category-level weights.
+
+    Rubric hierarchy:
+      category.weight = global category weight
+      skill.weight    = local weight inside that category
+
+    Example:
+      Technical Skills = 50
+      Core Expertise   = 40
+      => global skill weight = 50% * 40% = 20%
+
+    Skill weights default to 1.0 when absent.
+    """
+    cats = _parse_criteria(rubric)
+    skills: List[Dict[str, Any]] = []
+
+    for cat in cats:
+        cat_name = cat.get("name", "Unnamed")
+
+        try:
+            category_weight = (
+                float(cat.get("weight"))
+                if cat.get("weight") is not None
+                else 0.0
+            )
+        except (TypeError, ValueError):
+            category_weight = 0.0
+
+        if category_weight < 0:
+            category_weight = 0.0
+
+        subcats = cat.get("subcategories") or []
+        if not subcats and isinstance(cat.get("skills"), list):
+            subcats = [{"name": "Skills", "skills": cat.get("skills")}]
+
+        for sub in subcats:
+            for skill in sub.get("skills", []) or []:
+                if not isinstance(skill, dict) or not skill.get("name"):
+                    continue
+
+                weight = skill.get("weight")
+                try:
+                    weight = float(weight) if weight is not None else 1.0
+                except (TypeError, ValueError):
+                    weight = 1.0
+
+                if weight <= 0:
+                    weight = 1.0
+
+                skills.append(
+                    {
+                        "name": str(skill["name"]).strip(),
+                        "category": cat_name,
+                        "category_weight": category_weight,
+                        "subcategory": sub.get("name"),
+                        "weight": weight,
+                        "keywords": skill.get("keywords") or [],
+                    }
+                )
+
+    return skills
+
+
+def _normalize_weights(skills: List[Dict[str, Any]]) -> List[Dict[str, Any]]:
+    """Set ``normalized_weight`` = skill_weight / sum(skill_weights)."""
+    total = sum(s["weight"] for s in skills) or 1.0
+    for s in skills:
+        s["normalized_weight"] = s["weight"] / total
+    return skills
+
+
+def _normalize_hierarchical_weights(
+    skills: List[Dict[str, Any]],
+) -> List[Dict[str, Any]]:
+    """Normalize skill weights hierarchically through category weights.
+
+    Category weights define the global distribution of the rubric.
+    Skill weights define the distribution *inside* each category.
+
+    Therefore:
+
+        global_skill_weight =
+            category_weight / total_category_weight
+            * skill_weight / total_skill_weight_in_category
+
+    For a valid rubric where category weights sum to 100, this becomes:
+
+        category_weight / 100
+        * local_skill_weight / local_skill_total
+
+    This preserves the recruiter's intended category importance.
+    """
+    if not skills:
+        return skills
+
+    category_totals: Dict[str, float] = {}
+    category_weights: Dict[str, float] = {}
+
+    for skill in skills:
+        category = skill["category"]
+        category_totals[category] = (
+            category_totals.get(category, 0.0) + skill["weight"]
+        )
+        category_weights[category] = max(
+            0.0,
+            float(skill.get("category_weight", 0.0) or 0.0),
+        )
+
+    total_category_weight = sum(category_weights.values())
+
+    # Defensive fallback for legacy rubrics that have no category weights.
+    if total_category_weight <= 0:
+        return _normalize_weights(skills)
+
+    for skill in skills:
+        category = skill["category"]
+        local_total = category_totals.get(category, 0.0) or 1.0
+        category_global = (
+            category_weights.get(category, 0.0) / total_category_weight
+        )
+
+        local_weight = skill["weight"] / local_total
+        skill["normalized_weight"] = category_global * local_weight
+        skill["category_normalized_weight"] = category_global
+        skill["local_normalized_weight"] = local_weight
+
+    return skills
+
+
+# ---------------------------------------------------------------------------
+# Evidence-aware deterministic skill matching
+# ---------------------------------------------------------------------------
+
+# Concept aliases are intentionally conservative. They describe equivalent
+# professional actions/phrases rather than trying to perform unrestricted
+# semantic similarity.
+_CONCEPT_ALIASES = {
+    "sourcing & candidate pipeline": [
+        "candidate sourcing",
+        "sourced candidates",
+        "source candidates",
+        "recruited candidates",
+        "recruitment pipeline",
+        "candidate pipeline",
+        "talent pipeline",
+        "candidate screening",
+    ],
+    "structured interviewing": [
+        "structured interview",
+        "structured interviews",
+        "conducted interviews",
+        "conducted structured interviews",
+        "interviewed candidates",
+        "candidate interviews",
+        "interview process",
+    ],
+    "onboarding execution": [
+        "employee onboarding",
+        "staff onboarding",
+        "onboarded employees",
+        "onboarded new hires",
+        "new hire onboarding",
+        "onboarding process",
+        "onboarding employees",
+    ],
+    "hris data accuracy": [
+        "hris",
+        "hris data",
+        "employee records",
+        "employee data",
+        "personnel records",
+        "maintained employee records",
+        "maintained employee data",
+    ],
+    "record keeping & documentation": [
+        "record keeping",
+        "record-keeping",
+        "maintained records",
+        "maintained documentation",
+        "employee documentation",
+        "personnel documentation",
+        "document management",
+    ],
+    "basic labor law alignment": [
+        "labor law",
+        "labour law",
+        "employment law",
+        "employment regulations",
+        "labor regulations",
+        "labour regulations",
+        "legal compliance",
+        "employment compliance",
+    ],
+    "first-line staff inquiries": [
+        "staff inquiries",
+        "employee inquiries",
+        "employee questions",
+        "staff questions",
+        "employee support",
+        "first-line employee support",
+        "first line employee support",
+    ],
+    "conflict resolution & mediation": [
+        "conflict resolution",
+        "resolved conflicts",
+        "resolve conflicts",
+        "workplace conflicts",
+        "workplace disputes",
+        "resolved disputes",
+        "resolve disputes",
+        "mediated conflicts",
+        "mediate conflicts",
+        "conflict mediation",
+        "employee disputes",
+    ],
+    "metrics tracking & reporting": [
+        "metrics tracking",
+        "tracked metrics",
+        "tracking metrics",
+        "performance metrics",
+        "hr metrics",
+        "metrics reporting",
+        "reported metrics",
+        "performance reporting",
+    ],
+    "continuous process optimization": [
+        "process optimization",
+        "process improvement",
+        "improved processes",
+        "optimized processes",
+        "continuous improvement",
+        "workflow optimization",
+        "workflow improvement",
+    ],
+    "customer relationship management": [
+        "crm",
+        "customer relationship management",
+        "managed customer relationships",
+        "customer management",
+    ],
+    "management": [
+        "managed a team",
+        "managed teams",
+        "team management",
+        "people management",
+        "management experience",
+    ],
+}
+
+
+def _normalize_evidence_text(text: str) -> str:
+    """Normalize CV text for deterministic concept matching."""
+    text = (text or "").lower()
+    text = text.replace("\u2011", "-").replace("\u2013", "-").replace("\u2014", "-")
+    text = re.sub(r"[/|]+", " ", text)
+    text = re.sub(r"[^a-z0-9&+\- ]+", " ", text)
+    return re.sub(r"\s+", " ", text).strip()
+
+
+def _phrase_present(phrase: str, text: str) -> bool:
+    phrase = _normalize_evidence_text(phrase)
+    text = _normalize_evidence_text(text)
+
+    if not phrase or not text:
+        return False
+
+    return bool(re.search(r"(?<![a-z0-9])" + re.escape(phrase) +
+                          r"(?![a-z0-9])", text))
+
+
+def _stem_word(word: str) -> str:
+    """Small deterministic stemmer for common English inflections."""
+    w = re.sub(r"[^a-z0-9]", "", word.lower())
+
+    if len(w) <= 3:
+        return w
+
+    # Longer suffixes first.
+    for suffix in (
+        "ations", "ation", "ments", "ment",
+        "ingly", "edly", "izing", "ized",
+        "ings", "ing", "ies", "ied",
+        "ers", "er", "ed", "es", "s",
+    ):
+        if w.endswith(suffix) and len(w) - len(suffix) >= 3:
+            w = w[:-len(suffix)]
+            break
+
+    # running -> run, planning -> plan, etc.
+    if len(w) >= 4 and w[-1] == w[-2]:
+        w = w[:-1]
+
+    return w
+
+
+def _stem_phrase(phrase: str) -> list:
+    return [
+        _stem_word(w)
+        for w in re.findall(r"[a-z0-9]+", _normalize_evidence_text(phrase))
+        if w
+    ]
+
+
+def _stem_phrase_present(phrase: str, text: str) -> bool:
+    target = _stem_phrase(phrase)
+    words = [
+        _stem_word(w)
+        for w in re.findall(r"[a-z0-9]+", _normalize_evidence_text(text))
+    ]
+
+    if not target:
+        return False
+
+    n = len(target)
+
+    if n == 1:
+        return target[0] in words
+
+    for i in range(len(words) - n + 1):
+        if words[i:i + n] == target:
+            return True
+
+    return False
+
+
+def _skill_concept_aliases(skill_name: str, keywords=None) -> list:
+    """Return deterministic aliases for a rubric concept."""
+    key = _normalize_evidence_text(skill_name)
+
+    aliases = list(_CONCEPT_ALIASES.get(key, []))
+
+    # Rubric-provided keywords remain first-class evidence.
+    for keyword in keywords or []:
+        keyword = str(keyword).strip()
+        if keyword:
+            aliases.append(keyword)
+
+    # The canonical skill name itself is always a concept candidate.
+    if skill_name:
+        aliases.append(skill_name)
+
+    # Preserve order while deduplicating.
+    result = []
+    seen = set()
+
+    for alias in aliases:
+        normalized = _normalize_evidence_text(alias)
+        if normalized and normalized not in seen:
+            seen.add(normalized)
+            result.append(alias)
+
+    return result
+
+
+def _find_concept_evidence(
+    cv_text: str,
+    skill_name: str,
+    keywords=None,
+) -> Dict[str, Any]:
+    """Find deterministic evidence for a skill concept.
+
+    Evidence classes:
+      exact        = canonical skill phrase
+      alias        = known professional equivalent
+      keyword      = recruiter supplied keyword
+      morphological = inflected/reordered lexical form
+    """
+    text = _normalize_evidence_text(cv_text)
+    if not text:
+        return {
+            "hits": [],
+            "exact_hits": 0,
+            "alias_hits": 0,
+            "keyword_hits": 0,
+            "morphological_hits": 0,
+        }
+
+    canonical = _normalize_evidence_text(skill_name)
+
+    exact_hits = 0
+    alias_hits = 0
+    keyword_hits = 0
+    morphological_hits = 0
+    hits = []
+
+    # Canonical phrase.
+    if _phrase_present(canonical, text):
+        exact_hits = len(re.findall(
+            r"(?<![a-z0-9])" + re.escape(canonical) + r"(?![a-z0-9])",
+            text,
+        ))
+        hits.append(("exact", skill_name))
+
+    aliases = _skill_concept_aliases(skill_name, keywords)
+
+    for alias in aliases:
+        normalized = _normalize_evidence_text(alias)
+
+        # Canonical skill already handled above.
+        if normalized == canonical:
+            continue
+
+        if _phrase_present(normalized, text):
+            if alias in (keywords or []):
+                keyword_hits += 1
+                hits.append(("keyword", alias))
+            else:
+                alias_hits += 1
+                hits.append(("alias", alias))
+            continue
+
+        # Morphological matching is deliberately restricted to phrases,
+        # avoiding fuzzy edit-distance false positives.
+        if _stem_phrase_present(normalized, text):
+            morphological_hits += 1
+            hits.append(("morphological", alias))
+
+    return {
+        "hits": hits,
+        "exact_hits": exact_hits,
+        "alias_hits": alias_hits,
+        "keyword_hits": keyword_hits,
+        "morphological_hits": morphological_hits,
+    }
+
+
+def _has_experience_context(cv_text: str, evidence_phrase: str) -> bool:
+    """Return True only when evidence and experience context share a sentence.
+
+    Evidence matching is token-aware. This is important for short skill names
+    such as "C", "R", "B", or "Go", which must not match characters inside
+    unrelated words such as "production" or "Built".
+    """
+    raw_text = str(cv_text or "")
+    phrase = str(evidence_phrase or "").strip()
+
+    if not phrase:
+        return False
+
+    # Preserve sentence boundaries so experience context cannot leak between
+    # separate sentences.
+    sentences = re.split(r"(?<=[.!?])\s+", raw_text)
+
+    # Match the complete evidence phrase, not an arbitrary substring.
+    phrase_pattern = re.compile(
+        r"(?<![a-z0-9])"
+        + re.escape(phrase.lower())
+        + r"(?![a-z0-9])"
+    )
+
+    for sentence in sentences:
+        sentence_lower = sentence.lower()
+
+        if not phrase_pattern.search(sentence_lower):
+            continue
+
+        # Experience markers are checked in the same sentence.
+        for marker in _EXPERIENCE_MARKERS:
+            marker_lower = marker.strip().lower()
+
+            if not marker_lower:
+                continue
+
+            marker_pattern = re.compile(
+                r"(?<![a-z0-9])"
+                + re.escape(marker_lower)
+                + r"(?![a-z0-9])"
+            )
+
+            if marker_pattern.search(sentence_lower):
+                return True
+
+    return False
+
+def _cv_skill_evidence_score(
+    cv_text: str,
+    skill: Dict[str, Any],
+    extracted_skills: Optional[List[str]] = None,
+) -> Dict[str, Any]:
+    """Evidence-aware deterministic score for one rubric skill.
+
+    Scale:
+      0   = no evidence
+      25  = weak keyword / AI-extracted signal
+      50  = direct or conceptual mention
+      75  = demonstrated professional evidence
+      100 = repeated demonstrated evidence
+
+    The matcher is intentionally deterministic. It does not use an LLM and
+    does not claim semantic similarity beyond explicitly defined concepts.
+    """
+    name = str(skill.get("name") or "").strip()
+
+    if not name:
+        return {
+            "score": 0.0,
+            "level": "none",
+            "feedback": "No skill name",
+        }
+
+    evidence = _find_concept_evidence(
+        cv_text=cv_text,
+        skill_name=name,
+        keywords=skill.get("keywords") or [],
+    )
+
+    exact_hits = evidence["exact_hits"]
+    alias_hits = evidence["alias_hits"]
+    keyword_hits = evidence["keyword_hits"]
+    morphological_hits = evidence["morphological_hits"]
+
+    extracted_hit = False
+    if extracted_skills:
+        normalized_name = _normalize_evidence_text(name)
+
+        for extracted in extracted_skills:
+            extracted_normalized = _normalize_evidence_text(str(extracted))
+
+            if (
+                extracted_normalized == normalized_name
+                or _stem_phrase_present(name, extracted_normalized)
+                or extracted_normalized in {
+                    _normalize_evidence_text(a)
+                    for a in _CONCEPT_ALIASES.get(normalized_name, [])
+                }
+            ):
+                extracted_hit = True
+                break
+
+    total_concept_hits = (
+        exact_hits + alias_hits + morphological_hits
+    )
+
+    if total_concept_hits == 0 and keyword_hits == 0 and not extracted_hit:
+        return {
+            "score": 0.0,
+            "level": "none",
+            "feedback": f"No evidence of {name} in the CV",
+        }
+
+    # A keyword/extracted signal without the actual skill concept remains weak.
+    if total_concept_hits == 0:
+        return {
+            "score": 25.0,
+            "level": "weak",
+            "feedback": (
+                f"Weak {name} evidence "
+                "(keyword/extracted mention only)"
+            ),
+        }
+
+    # Find whether any actual concept evidence is demonstrated in context.
+    demonstrated = False
+
+    concept_phrases = [name]
+    concept_phrases.extend(
+        _CONCEPT_ALIASES.get(_normalize_evidence_text(name), [])
+    )
+
+    for phrase in concept_phrases:
+        if _has_experience_context(cv_text, phrase):
+            demonstrated = True
+            break
+
+    # Repeated evidence is strong only when it is demonstrated, not merely
+    # repeated in a skills list.
+    if demonstrated and total_concept_hits >= 2:
+        return {
+            "score": 100.0,
+            "level": "strong",
+            "feedback": (
+                f"Strong repeated role-relevant {name} evidence in CV"
+            ),
+        }
+
+    if demonstrated:
+        return {
+            "score": 75.0,
+            "level": "demonstrated",
+            "feedback": f"Demonstrated {name} experience in CV",
+        }
+
+    return {
+        "score": 50.0,
+        "level": "direct",
+        "feedback": f"Direct conceptual {name} evidence in CV",
+    }
+
+
+def compute_rubric_weighted_cv_score(
+    cv_text: str,
+    rubric,
+    extracted_skills: Optional[List[str]] = None,
+) -> Optional[Dict[str, Any]]:
+    """Deterministic rubric-weighted CV score (P0).
+
+    Parses the rubric criteria (flat and nested), normalizes skill weights, and
+    computes ``cv_score = sum(skill_score * normalized_weight)`` using pure
+    keyword/context evidence — no LLM involvement.
+
+    Returns ``None`` when the rubric has no parseable skills (the caller should
+    fall back to the generic scoring path and mark ``scoring_method``
+    ``generic_fallback``). Otherwise returns a breakdown payload:
+
+      {
+        "cv_score": float,
+        "scoring_method": "deterministic_keyword_weighted",
+        "skill_scores": {name: {"score", "weight", "normalized_weight",
+                                "level", "feedback", "category"}},
+        "normalized_weights": {name: float},
+        "coverage_pct": float,
+        "missing_skills": [name, ...],
+        "detail_rows": [{criterion_name, score, weight, feedback}],
+      }
+    """
+    skills = _extract_rubric_skills(rubric)
+    if not skills:
+        return None
+
+    # IMPORTANT: respect the rubric hierarchy:
+    # category weight -> local skill weight -> global skill weight.
+    #
+    # Example:
+    # Technical Skills = 50%, Core Expertise = 40% locally
+    # => Core Expertise contributes 20% globally.
+    skills = _normalize_hierarchical_weights(skills)
+
+    skill_scores: Dict[str, Any] = {}
+    normalized_weights: Dict[str, float] = {}
+    detail_rows: List[Dict[str, Any]] = []
+    missing_skills: List[str] = []
+    total = 0.0
+
+    for s in skills:
+        ev = _cv_skill_evidence_score(cv_text, s, extracted_skills)
+        weighted = ev["score"] * s["normalized_weight"]
+        total += weighted
+        skill_scores[s["name"]] = {
+            "score": ev["score"],
+            "weight": round(s["weight"], 4),
+            "normalized_weight": round(s["normalized_weight"], 6),
+            "level": ev["level"],
+            "feedback": ev["feedback"],
+            "category": s["category"],
+        }
+        normalized_weights[s["name"]] = round(s["normalized_weight"], 6)
+        detail_rows.append(
+            {
+                "criterion_name": s["name"],
+                "score": ev["score"],
+                "weight": round(s["normalized_weight"], 6),
+                "feedback": ev["feedback"],
+            }
+        )
+        if ev["score"] == 0:
+            missing_skills.append(s["name"])
+
+    coverage_pct = round(
+        len([s for s in skills if s["name"] not in missing_skills])
+        / len(skills)
+        * 100,
+        1,
+    )
+
+    return {
+        "cv_score": round(total, 1),
+        "scoring_method": "deterministic_keyword_weighted",
+        "skill_scores": skill_scores,
+        "normalized_weights": normalized_weights,
+        "coverage_pct": coverage_pct,
+        "missing_skills": missing_skills,
+        "detail_rows": detail_rows,
+    }

@@ -1,0 +1,361 @@
+/* ============================================================================
+   RUBRIC BUILDER — Modern Redesign
+   Premium card-based design system with depth, gradients, and smooth animations
+   ============================================================================ */
+
+/* --- BASE --- */
+#rb-tree-container {
+    min-height: 200px;
+    padding: 0.375rem;
+}
+
+/* --- TREE NODES — Compact modern --- */
+.rb-node {
+    margin-bottom: 0.375rem;
+}
+
+.rb-node > div {
+    background: linear-gradient(135deg, #ffffff 0%, #fafbfc 100%);
+    border: 1px solid rgba(148, 163, 184, 0.18);
+    border-radius: 0.625rem;
+    padding: 0.45rem 0.75rem;
+    display: flex;
+    align-items: center;
+    gap: 0.5rem;
+    box-shadow: 0 1px 2px rgba(15, 23, 42, 0.03);
+    transition: border-color 0.15s ease, background 0.15s ease, box-shadow 0.15s ease;
+}
+
+.rb-node > div:hover {
+    border-color: rgba(124, 58, 237, 0.25);
+    box-shadow: 0 2px 8px rgba(15, 23, 42, 0.04),
+                0 0 0 1px rgba(124, 58, 237, 0.05);
+    background: linear-gradient(135deg, #ffffff 0%, #f5f3ff 100%);
+}
+
+/* Category node — subtle violet accent */
+.rb-cat > div {
+    border-left: 3px solid rgba(124, 58, 237, 0.3);
+    background: linear-gradient(135deg, #ffffff 0%, #f8f9ff 100%);
+}
+
+/* Subcategory node — sky accent */
+.rb-sub > div {
+    border-left: 3px solid rgba(14, 165, 233, 0.25);
+    background: linear-gradient(135deg, #ffffff 0%, #f0f9ff 100%);
+}
+
+/* Skill node — emerald accent */
+.rb-skill > div {
+    border-left: 3px solid rgba(16, 185, 129, 0.25);
+    background: linear-gradient(135deg, #ffffff 0%, #f0fdf4 100%);
+}
+
+.rb-node > div:active {
+    transform: translateY(0) scale(0.995);
+}
+
+/* Selected node glow */
+.rb-node > div.\!bg-indigo-50 {
+    border-color: rgba(99, 102, 241, 0.45) !important;
+    box-shadow: 0 0 0 2px rgba(99, 102, 241, 0.1),
+                0 2px 8px rgba(99, 102, 241, 0.08) !important;
+    background: linear-gradient(135deg, #eef2ff 0%, #e0e7ff 100%) !important;
+}
+
+/* --- TOGGLE BUTTON --- */
+.rb-node .rb-toggle {
+    width: 1.25rem;
+    height: 1.25rem;
+    border-radius: 0.375rem;
+    display: grid;
+    place-items: center;
+    transition: background 0.15s ease, color 0.15s ease;
+    color: #94a3b8;
+    font-size: 0.6rem;
+}
+
+.rb-node .rb-toggle:hover {
+    background: rgba(99, 102, 241, 0.1);
+    color: #4f46e5;
+}
+
+/* --- ROW MENU --- */
+.rb-node .rb-row-menu {
+    width: 1.5rem;
+    height: 1.5rem;
+    border-radius: 0.375rem;
+    display: grid;
+    place-items: center;
+    transition: background 0.15s ease, color 0.15s ease;
+    color: #cbd5e1;
+}
+
+.rb-node .rb-row-menu:hover {
+    background: rgba(148, 163, 184, 0.12);
+    color: #64748b;
+}
+
+/* --- CHILDREN CONNECTOR --- */
+.rb-children {
+    margin-left: 0.75rem;
+    padding-left: 0.75rem;
+    border-left: 1.5px solid rgba(148, 163, 184, 0.12);
+}
+
+/* --- STATS CARDS --- */
+.stats-grid {
+    gap: 0.5rem;
+}
+.stats-grid .stat-card {
+    background: #ffffff;
+    border: 1px solid rgba(148, 163, 184, 0.1);
+    border-radius: 0.75rem;
+    padding: 0.75rem 0.875rem;
+    transition: border-color 0.15s ease, box-shadow 0.15s ease;
+}
+
+.stats-grid .stat-card:hover {
+    box-shadow: 0 4px 12px rgba(15, 23, 42, 0.04);
+    border-color: rgba(99, 102, 241, 0.12);
+}
+
+.stat-icon {
+    width: 2rem;
+    height: 2rem;
+    border-radius: 0.5rem;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    flex-shrink: 0;
+}
+
+.stat-icon i {
+    font-size: 0.75rem;
+}
+
+/* --- DETAIL PANEL --- */
+#rb-detail-col > .bg-white {
+    position: sticky;
+    top: 5rem;
+}
+
+#rb-detail-col > .bg-white {
+    max-height: calc(100vh - 7rem);
+    overflow: hidden;
+    border-radius: 1rem;
+    box-shadow: 0 1px 3px rgba(15, 23, 42, 0.04);
+    border: 1px solid rgba(148, 163, 184, 0.12);
+}
+
+/* --- DETAIL TABS --- */
+.rb-detail-tab {
+    font-size: 0.7rem;
+    padding: 0.5rem 0.75rem;
+    font-weight: 700;
+    border-bottom: 2px solid transparent;
+    transition: all 0.15s ease;
+    color: #64748b;
+}
+
+.rb-detail-tab:hover {
+    color: #334155;
+}
+
+.rb-detail-tab.active {
+    color: #4f46e5 !important;
+    border-bottom-color: #4f46e5 !important;
+}
+
+/* --- LEVEL CARDS --- */
+.level-card {
+    border: 1px solid rgba(148, 163, 184, 0.15);
+    border-radius: 0.875rem;
+    padding: 1rem;
+    background: #ffffff;
+    transition: all 0.2s ease;
+}
+
+.level-card:hover {
+    border-color: rgba(99, 102, 241, 0.2);
+    box-shadow: 0 4px 12px rgba(15, 23, 42, 0.04);
+}
+
+/* --- VERSION CARDS --- */
+.rb-version-row {
+    transition: all 0.18s cubic-bezier(0.34, 1.56, 0.64, 1);
+    cursor: pointer;
+    border-radius: 0.75rem;
+    border: 1px solid rgba(148, 163, 184, 0.15);
+    background: #ffffff;
+}
+
+.rb-version-row:hover {
+    transform: translateY(-2px);
+    box-shadow: 0 8px 20px rgba(15, 23, 42, 0.06);
+    border-color: rgba(99, 102, 241, 0.2);
+}
+
+/* --- CONTEXT MENU --- */
+#rb-context-menu {
+    border-radius: 0.75rem;
+    box-shadow: 0 10px 40px rgba(15, 23, 42, 0.12),
+                0 0 0 1px rgba(148, 163, 184, 0.1);
+    overflow: hidden;
+    padding: 0.25rem;
+    background: #ffffff;
+}
+
+#rb-context-menu button {
+    border-radius: 0.5rem;
+    padding: 0.5rem 0.75rem;
+    font-size: 0.75rem;
+    font-weight: 500;
+    transition: all 0.1s ease;
+}
+
+#rb-context-menu button:hover {
+    background: rgba(99, 102, 241, 0.08);
+}
+
+/* --- COLOR SWATCHES --- */
+.rb-color-swatch {
+    transition: transform 0.15s ease, box-shadow 0.15s ease, border-color 0.15s ease;
+}
+
+.rb-color-swatch:hover {
+    transform: scale(1.2);
+    box-shadow: 0 2px 8px rgba(0, 0, 0, 0.12);
+}
+
+/* --- SHORTCUTS POPOVER --- */
+#rb-shortcuts-popover {
+    border-radius: 1rem;
+    box-shadow: 0 20px 60px rgba(15, 23, 42, 0.15),
+                0 0 0 1px rgba(148, 163, 184, 0.1);
+    width: min(380px, calc(100vw - 2rem));
+}
+
+#rb-shortcuts-popover button {
+    border: none;
+    background: transparent;
+}
+
+/* --- SHORTCUTS LIST ITEMS --- */
+#rb-shortcuts-list kbd {
+    font-family: 'SF Mono', 'Fira Code', 'Cascadia Code', monospace;
+    font-size: 0.65rem;
+    padding: 0.15rem 0.5rem;
+    background: rgba(148, 163, 184, 0.08);
+    border: 1px solid rgba(148, 163, 184, 0.15);
+    border-radius: 0.375rem;
+    color: #475569;
+}
+
+/* --- ACTION BAR --- */
+#rb-id-action-bar {
+    position: sticky;
+    bottom: 0;
+    z-index: 20;
+    backdrop-filter: blur(16px);
+    background: rgba(255, 255, 255, 0.88);
+    border-radius: 1rem;
+    box-shadow: 0 -4px 20px rgba(15, 23, 42, 0.04),
+                0 0 0 1px rgba(148, 163, 184, 0.08);
+}
+
+/* --- TOAST --- */
+@keyframes bounceIn {
+    0% { transform: translate(-50%, 24px); opacity: 0; }
+    50% { transform: translate(-50%, -4px); opacity: 1; }
+    100% { transform: translate(-50%, 0); opacity: 1; }
+}
+
+.rb-toast {
+    animation: bounceIn 0.35s cubic-bezier(0.34, 1.56, 0.64, 1);
+    font-weight: 600;
+    font-size: 0.75rem;
+}
+
+/* --- VERSION DIFF PANEL --- */
+#rb-version-panel .bg-white {
+    box-shadow: -4px 0 40px rgba(15, 23, 42, 0.1);
+}
+
+/* --- EMPTY STATES --- */
+#rb-detail-empty {
+    transition: opacity 0.2s ease;
+}
+
+/* --- RESPONSIVE --- */
+@media (max-width: 1024px) {
+    #rb-detail-col > .bg-white {
+        max-height: none;
+        position: static;
+    }
+}
+
+/* --- DRAG OVER STATE --- */
+.rb-node > div.drag-over {
+    border-color: rgba(99, 102, 241, 0.5) !important;
+    box-shadow: 0 0 0 2px rgba(99, 102, 241, 0.15),
+                0 4px 16px rgba(99, 102, 241, 0.1);
+    transform: translateY(-1px);
+}
+
+/* --- SCROLLBAR --- */
+#rb-tree-container::-webkit-scrollbar,
+#rb-detail-body::-webkit-scrollbar {
+    width: 4px;
+}
+
+#rb-tree-container::-webkit-scrollbar-track,
+#rb-detail-body::-webkit-scrollbar-track {
+    background: transparent;
+}
+
+#rb-tree-container::-webkit-scrollbar-thumb,
+#rb-detail-body::-webkit-scrollbar-thumb {
+    background: rgba(148, 163, 184, 0.25);
+    border-radius: 4px;
+}
+
+#rb-tree-container::-webkit-scrollbar-thumb:hover,
+#rb-detail-body::-webkit-scrollbar-thumb:hover {
+    background: rgba(148, 163, 184, 0.4);
+}
+
+/* --- NODE TYPE ICON WRAPPER --- */
+.rb-cat-icon {
+    border-radius: 0.625rem;
+}
+.rb-sub-icon {
+    border-radius: 0.5rem;
+}
+.rb-skill-icon {
+    border-radius: 0.5rem;
+}
+
+/* --- SUBCATEGORY GROUP --- */
+.subcategory-group {
+    margin-bottom: 0.25rem;
+}
+
+.subcategory-group .border-l-2 {
+    transition: border-color 0.15s ease;
+}
+
+.subcategory-group:hover .border-l-2 {
+    border-color: rgba(14, 165, 233, 0.3);
+}
+
+/* --- WEIGHT BADGE --- */
+.rb-weight-badge {
+    font-size: 0.7rem;
+    font-weight: 700;
+    font-family: 'SF Mono', 'Fira Code', 'Cascadia Code', monospace;
+    padding: 0.15rem 0.5rem;
+    border-radius: 0.375rem;
+    background: rgba(148, 163, 184, 0.08);
+    color: #64748b;
+}

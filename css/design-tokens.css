@@ -1,0 +1,43 @@
+/**
+ * Design Tokens — centralized CSS custom properties.
+ *
+ * This file bridges custom.css (--primary, --secondary) and
+ * public-glass.css (--pg-primary, --pg-secondary) into a single
+ * set of design tokens. Both systems are maintained for backward
+ * compatibility; new code should use the --candway-* tokens.
+ *
+ * Migration path:
+ *   1. Replace --primary / --pg-primary → --candway-primary
+ *   2. Remove the old variable definitions after verifying no regressions
+ */
+
+:root {
+    /* ── Core Brand Palette ────────────────────────────────── */
+    --candway-primary:       #6366f1;   /* Indigo-500 (matches original custom.css) */
+    --candway-primary-light: #818cf8;   /* Indigo-400 */
+    --candway-primary-dark:  #3730a3;   /* Indigo-800 */
+    --candway-secondary:     #7c3aed;   /* Violet-600 */
+    --candway-accent:        #06b6d4;   /* Cyan-500 */
+    --candway-success:       #10b981;   /* Emerald-500 */
+    --candway-warning:       #f59e0b;   /* Amber-500 */
+    --candway-danger:        #ef4444;   /* Red-500 */
+
+    /* ── Neutral / Gray Scale ──────────────────────────────── */
+    --candway-bg:            #f8fafc;   /* Slate-50 */
+    --candway-surface:       #ffffff;
+    --candway-border:        #e2e8f0;   /* Slate-200 */
+    --candway-text:          #1e293b;   /* Slate-800 */
+    --candway-text-muted:    #64748b;   /* Slate-500 */
+
+    /* ── Glassmorphism (public-glass.css compat) ───────────── */
+    --candway-glass-bg:      rgba(255, 255, 255, 0.15);
+    --candway-glass-border:  rgba(255, 255, 255, 0.25);
+    --candway-glass-shadow:  0 8px 32px rgba(0, 0, 0, 0.1);
+
+    /* ── Legacy variable aliases (backward compat) ─────────── */
+    --primary:       var(--candway-primary);
+    --secondary:     var(--candway-secondary);
+    --pg-primary:    var(--candway-primary);
+    --pg-secondary:  var(--candway-secondary);
+    --pg-accent:     var(--candway-accent);
+}

@@ -1,0 +1,6 @@
+User-agent: *
+Allow: /
+Disallow: /backend/
+Disallow: /portal/admin/
+
+Sitemap: https://candway.com/sitemap.xml

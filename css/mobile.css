@@ -1,0 +1,241 @@
+/* Candway ATS - Responsive Layout & Mobile Optimizations */
+
+/* ── Desktop: Content spacing from sidebar ── */
+body {
+  column-gap: 0;
+}
+
+body > main {
+  margin-left: 0;
+}
+
+/* Responsive main padding fallback */
+body > main:not([class*="p-"]):not([style*="padding"]) {
+  padding: 2rem 2.5rem !important;
+}
+
+/* Add a visual separator between sidebar and content */
+#sidebar-container {
+  border-right: 1px solid rgba(99, 102, 241, 0.08);
+  z-index: 1001;
+}
+
+/* Card inner spacing */
+.glass-card, .glass-panel {
+  padding: 1.75rem !important;
+}
+
+/* Increase section spacing */
+.mb-8 { margin-bottom: 2rem !important; }
+.mb-10 { margin-bottom: 2.5rem !important; }
+.mb-12 { margin-bottom: 3rem !important; }
+
+/* Section spacing */
+header + div,
+header + .grid {
+  margin-top: 0.5rem;
+}
+
+.grid + .grid,
+.grid + div:not(.grid) {
+  margin-top: 1.5rem;
+}
+
+/* Broadcast container spacing */
+#broadcast-container {
+  margin-bottom: 1.5rem !important;
+}
+
+/* ── Tablet: Collapsible sidebar (icons only) ── */
+@media (max-width: 1024px) {
+  #sidebar-container {
+    width: 72px !important;
+    min-width: 72px !important;
+  }
+
+  #sidebar-container .nav-label,
+  #sidebar-container .sidebar-section-header,
+  #sidebar-container .sidebar-user-info,
+  #sidebar-container .upgrade-strip-text,
+  #sidebar-container .sidebar-collapse-btn,
+  #sidebar-container .sidebar-user-card .fa-chevron-right,
+  #sidebar-container .logo-container span {
+    display: none !important;
+  }
+
+  #sidebar-container .logo-container {
+    padding: 20px 12px !important;
+    justify-content: center !important;
+  }
+
+  #sidebar-container .sidebar-logo-img {
+    width: 36px !important;
+    height: 36px !important;
+    max-width: 36px !important;
+  }
+
+  #sidebar-container .nav-link {
+    justify-content: center !important;
+    padding: 12px !important;
+    margin: 2px 8px !important;
+  }
+
+  #sidebar-container .nav-link i {
+    font-size: 18px !important;
+    margin: 0 !important;
+  }
+
+  #sidebar-container .upgrade-strip {
+    padding: 12px !important;
+    justify-content: center !important;
+  }
+
+  #sidebar-container .upgrade-strip-icon {
+    margin: 0 !important;
+  }
+
+  #sidebar-container .sidebar-user-section {
+    padding: 8px !important;
+  }
+
+  #sidebar-container .sidebar-user-card {
+    justify-content: center !important;
+    padding: 8px !important;
+  }
+
+  #sidebar-container .sidebar-avatar {
+    width: 36px !important;
+    height: 36px !important;
+  }
+
+  #sidebar-container .strength-bar-bg,
+  #sidebar-container #sidebar-strength-pct {
+    display: none !important;
+  }
+
+  main {
+    margin-left: 0 !important;
+  }
+}
+
+/* ── Mobile: Hidden sidebar with overlay ── */
+@media (max-width: 768px) {
+  #sidebar-container {
+    position: fixed !important;
+    left: -280px !important;
+    top: 0 !important;
+    bottom: 0 !important;
+    width: 0 !important;
+    min-width: 0 !important;
+    max-width: 0 !important;
+    overflow: hidden !important;
+    z-index: 1000 !important;
+    transition: left 0.3s cubic-bezier(0.16, 1, 0.3, 1), width 0.3s cubic-bezier(0.16, 1, 0.3, 1) !important;
+    box-shadow: none !important;
+  }
+
+  #sidebar-container.mobile-open,
+  body.mobile-menu-open #sidebar-container {
+    left: 0 !important;
+    width: 280px !important;
+    min-width: 280px !important;
+    max-width: 280px !important;
+  }
+
+  body.mobile-menu-open #sidebar-container .nav-label,
+  body.mobile-menu-open #sidebar-container .sidebar-section-header,
+  body.mobile-menu-open #sidebar-container .sidebar-user-info,
+  body.mobile-menu-open #sidebar-container .upgrade-strip-text,
+  body.mobile-menu-open #sidebar-container .sidebar-collapse-btn,
+  body.mobile-menu-open #sidebar-container .sidebar-avatar,
+  body.mobile-menu-open #sidebar-container .strength-bar-bg,
+  body.mobile-menu-open #sidebar-container #sidebar-strength-pct,
+  body.mobile-menu-open #sidebar-container .sidebar-logo-img {
+    display: revert !important;
+  }
+
+  body.mobile-menu-open #sidebar-container .logo-container {
+    padding: 32px 18px 26px !important;
+    justify-content: flex-start !important;
+  }
+
+  body.mobile-menu-open #sidebar-container .sidebar-logo-img {
+    width: auto !important;
+    height: 48px !important;
+    max-width: 140px !important;
+  }
+
+  body.mobile-menu-open #sidebar-container .nav-link {
+    justify-content: flex-start !important;
+    padding: 10px 16px !important;
+    margin: 2px 8px !important;
+  }
+
+  body.mobile-menu-open #sidebar-container .sidebar-user-card {
+    justify-content: flex-start !important;
+  }
+
+  /* Overlay backdrop */
+  .mobile-overlay {
+    display: none;
+    position: fixed;
+    inset: 0;
+    background: rgba(0, 0, 0, 0.4);
+    backdrop-filter: blur(4px);
+    z-index: 999;
+  }
+
+  .mobile-overlay.active {
+    display: block;
+  }
+
+  /* Main content full width */
+  main {
+    padding: 1.5rem !important;
+    margin-left: 0 !important;
+    width: 100% !important;
+  }
+
+  .glass-card, .glass-panel {
+    padding: 1rem !important;
+  }
+
+  .grid.grid-cols-2,
+  .grid.grid-cols-3,
+  .grid.grid-cols-4 {
+    grid-template-columns: 1fr !important;
+  }
+
+  /* Responsive Tables */
+  table {
+    display: block;
+    overflow-x: auto;
+    white-space: nowrap;
+  }
+
+  h1 {
+    font-size: 1.5rem !important;
+  }
+
+  input, select, textarea {
+    font-size: 16px !important;
+  }
+
+  /* Hide desktop collapse button on mobile */
+  .sidebar-collapse-btn {
+    display: none !important;
+  }
+
+  /* Hide the mobile bottom nav (old approach — replaced by hamburger) */
+  .mobile-nav {
+    display: none !important;
+  }
+}
+
+/* ── Fix for background-clip lint error ── */
+.gradient-text {
+  background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+  -webkit-background-clip: text;
+  background-clip: text;
+  -webkit-text-fill-color: transparent;
+}

@@ -1,0 +1,841 @@
+import asyncio
+import json
+from datetime import UTC, datetime
+from typing import Optional, Tuple
+
+from fastapi import APIRouter, Depends, HTTPException
+from pydantic import BaseModel, Field
+from sqlalchemy import text
+from sqlalchemy.orm import Session, selectinload
+
+from backend.ai import evaluate_complete_interview
+from backend.config import get_settings
+from backend.database import Application, EvaluationResult, EvaluationSession, User
+from backend.dependencies import get_current_user, get_db, get_interview_access
+from backend.entity_writer import (
+    sync_cv_document,
+    sync_evaluation_state,
+)
+from backend.logger import logger
+from backend.routers.ai_interview.utils import (
+    _utcnow,
+    derive_dashboard_insights_from_skills,
+    safe_user_id,
+    safe_user_role,
+    safe_user_skills,
+)
+from backend.scoring_service import ScoringService
+from backend.scoring_transparent import (
+    calculate_integrity_penalty,
+    get_recommendation,
+)
+
+router = APIRouter(tags=["ai-interview"])
+
+
+class FraudReport(BaseModel):
+    application_id: int
+    reason: str = Field(..., max_length=1000)
+
+
+def _extract_qa_pairs_from_history(history: list) -> list:
+    qa_pairs = []
+    current_question = None
+    for item in history or []:
+        role = (item or {}).get("role")
+        content = (item or {}).get("content")
+        if not isinstance(content, str):
+            continue
+        if role == "assistant":
+            current_question = content
+        elif role == "user" and current_question:
+            qa_pairs.append({"question": current_question, "answer": content})
+    return qa_pairs
+
+
+async def run_background_final_evaluation(application_id: int, company_id: int):
+    from backend.database import SessionLocal
+
+    with SessionLocal() as db:
+        try:
+            app = (
+                db.query(Application)
+                .options(
+                    selectinload(Application.cv_document),
+                    selectinload(Application.evaluation_sessions).selectinload(
+                        EvaluationSession.evaluation_result
+                    ),
+                )
+                .filter(
+                    Application.id == application_id,
+                    Application.company_id == company_id,
+                )
+                .first()
+            )
+            if not app:
+                logger.warning(f"[BG EVAL] App {application_id} not found. Skipping.")
+                return
+
+            _cv = app.cv_document
+            _iv = app.evaluation_sessions[0] if app.evaluation_sessions else None
+            _er = (
+                app.evaluation_sessions[0].evaluation_result
+                if app.evaluation_sessions
+                and app.evaluation_sessions[0].evaluation_result
+                else None
+            )
+            _sc = _er
+            _ev = app.evaluation_state
+            _es_list = app.evaluation_sessions or []
+            _es = _es_list[-1] if _es_list else None
+
+            if not app.evaluation_sessions:
+                logger.error(
+                    f"[BG EVAL] No EvaluationSession found for app {application_id}. Skipping."
+                )
+                return
+
+            result = (
+                db.query(EvaluationSession)
+                .filter(
+                    EvaluationSession.application_id == application_id,
+                    EvaluationSession.status == "pending",
+                )
+                .update(
+                    {"status": "running", "started_at": datetime.now(UTC)},
+                    synchronize_session=False,
+                )
+            )
+            db.commit()
+
+            if result == 0:
+                logger.info(
+                    f"[BG EVAL] Skipping — evaluation_state is not 'pending' for app {application_id}."
+                )
+                return
+
+            db.refresh(app)
+            sync_evaluation_state(db, app, evaluation_state="running")
+            if app.evaluation_sessions:
+                _es_bg = sorted(
+                    app.evaluation_sessions,
+                    key=lambda s: s.updated_at or s.created_at or datetime.min,
+                    reverse=True,
+                )[0]
+                _es_bg.status = "running"
+                _es_bg.started_at = datetime.now(UTC)
+
+            _interview_log_bg = (
+                getattr(_es, "interview_log", None)
+                or getattr(_iv, "interview_log", None)
+                or app.interview_log
+            )
+            _proctoring_bg = getattr(_es, "proctoring_violations", None) or getattr(
+                _iv, "proctoring_violations", None
+            )
+            _cv_score_bg = _sc.cv_score if _sc else None
+            _final_score_bg = _sc.final_score if _sc else None
+            _cv_text_bg = (
+                getattr(_cv, "cv_text_anonymized", None) or app.cv_text_anonymized
+            )
+            _declared_role_bg = getattr(_cv, "declared_role", None) or app.declared_role
+            _analysis_json_bg = getattr(_cv, "analysis_json", None) or app.analysis_json
+
+            qa_pairs = []
+            try:
+                from backend.interview_turns import load_turns
+
+                qa_pairs = load_turns(db, app)
+            except Exception as e:
+                logger.error(f"[TURNS] load_turns failed for app {application_id}: {e}")
+
+            if not qa_pairs:
+                try:
+                    if _interview_log_bg:
+                        legacy_history = (
+                            json.loads(_interview_log_bg)
+                            if isinstance(_interview_log_bg, str)
+                            else _interview_log_bg
+                        )
+                        qa_pairs = _extract_qa_pairs_from_history(legacy_history)
+                        logger.warning(
+                            f"[BG EVAL] InterviewTurn empty for app {application_id}; "
+                            "falling back to interview_log"
+                        )
+                except Exception as e:
+                    logger.error(
+                        f"[BG EVAL] QA load failed for app {application_id}: {e}"
+                    )
+
+            violations = []
+            try:
+                if _proctoring_bg:
+                    violations = json.loads(_proctoring_bg)
+            except Exception:
+                pass
+
+            logger.info(
+                f"[BG EVAL] Running final evaluation for app {application_id} ({len(qa_pairs)} QA pairs)"
+            )
+
+            rubric_result = None
+
+            try:
+                from backend.database import RubricScoringDetail
+                from backend.rubric.config_reader import EvaluationConfigReader
+                from backend.rubric.scoring_aggregator import aggregate_scores
+
+                reader = EvaluationConfigReader(_es)
+                parsed_rubric = reader.get_rubric()
+                rubric = None
+                if parsed_rubric.raw_json:
+                    from backend.rubric.rubric_schema import JobRubric
+
+                    rubric = JobRubric(**parsed_rubric.raw_json)
+                if rubric:
+                    all_turn_results = {}
+                    scoring_rows = (
+                        db.query(RubricScoringDetail)
+                        .join(
+                            EvaluationResult,
+                            RubricScoringDetail.evaluation_result_id
+                            == EvaluationResult.id,
+                        )
+                        .join(
+                            EvaluationSession,
+                            EvaluationResult.evaluation_session_id
+                            == EvaluationSession.id,
+                        )
+                        .filter(EvaluationSession.application_id == application_id)
+                        .all()
+                    )
+                    for row in scoring_rows:
+                        rid = getattr(row, "id", 0) or 0
+                        if rid not in all_turn_results:
+                            all_turn_results[rid] = {}
+                        from backend.rubric.rubric_engine import SkillScoreResult
+
+                        sr = SkillScoreResult(
+                            skill_name=row.criterion_name,
+                            skill_id="",
+                            base_score=row.score,
+                            quality="medium",
+                            quality_multiplier=1.0,
+                            final_score=row.score,
+                            confidence_lower=0,
+                            confidence_upper=0,
+                            evidence_sentences=[],
+                            matched_level="",
+                            matched_keywords=[],
+                            missing_competencies=[],
+                            explanation=row.feedback or "",
+                        )
+                        all_turn_results[rid][row.criterion_name] = sr
+
+                    if all_turn_results:
+                        summary = aggregate_scores(
+                            interview_id=application_id,
+                            application_id=application_id,
+                            rubric=rubric,
+                            all_answer_results=all_turn_results,
+                            seniority=getattr(_sc, "rubric_seniority", "mid")
+                            if _sc
+                            else "mid",
+                        )
+
+                        rubric_result = summary.to_dict()
+                        logger.info(
+                            f"[BG EVAL] Rubric score for app {application_id}: {summary.overall_score}"
+                        )
+            except Exception as rub_err:
+                logger.error(
+                    f"[BG EVAL] Rubric aggregation failed for app {application_id}: {rub_err}",
+                    exc_info=True,
+                )
+
+            if rubric_result:
+                result = {
+                    "final_score": rubric_result["overall_score"],
+                    "skill_metrics": {},
+                    "score_breakdown": rubric_result,
+                }
+                for cat in rubric_result.get("categories", []):
+                    cat_name = cat.get("name", "")
+                    cat_score = cat.get("score", 50)
+                    if cat_name == "Backend":
+                        result["skill_metrics"]["Technical"] = cat_score
+                    elif cat_name == "Frontend":
+                        result["skill_metrics"]["Technical"] = max(
+                            result["skill_metrics"].get("Technical", 0), cat_score
+                        )
+                rubric_result = rubric_result
+            else:
+                try:
+                    result = await asyncio.wait_for(
+                        evaluate_complete_interview(
+                            cv_text=_cv_text_bg or "",
+                            declared_role=_declared_role_bg or "Professional",
+                            qa_pairs=qa_pairs,
+                            violations=violations,
+                        ),
+                        timeout=300,
+                    )
+                except asyncio.TimeoutError as timeout_err:
+                    logger.error(
+                        f"[BG EVAL] Evaluation timeout for app {application_id}: {timeout_err}"
+                    )
+                    sync_evaluation_state(db, app, evaluation_state="failed")
+                    if app.evaluation_sessions:
+                        app.evaluation_sessions[-1].status = "failed"
+                    db.commit()
+                    return
+                except Exception as eval_err:
+                    logger.error(
+                        f"[BG EVAL] Evaluation failed for app {application_id}: {eval_err}",
+                        exc_info=True,
+                    )
+                    sync_evaluation_state(db, app, evaluation_state="failed")
+                    if app.evaluation_sessions:
+                        app.evaluation_sessions[-1].status = "failed"
+                    db.commit()
+                    return
+
+            from backend.ai.validation import AIOutputValidator, AIValidationContext
+
+            validator = AIOutputValidator(
+                AIValidationContext(
+                    application_id=application_id,
+                    db=db,
+                    action="final_evaluation",
+                    company_id=getattr(app, "company_id", None),
+                )
+            )
+            validated = validator.validate("final_evaluation", result)
+            if validated is not None:
+                result = validated.model_dump()
+            else:
+                logger.warning(
+                    f"[BG EVAL] AI output validation failed for app {application_id}; "
+                    f"marking evaluation_state='failed', preserving existing scores."
+                )
+                sync_evaluation_state(db, app, evaluation_state="failed")
+                if app.evaluation_sessions:
+                    app.evaluation_sessions[-1].status = "failed"
+                db.commit()
+                return
+
+            if isinstance(result, dict) and result.get("_schema_error"):
+                _schema_error_bg = result["_schema_error"]
+                logger.error(
+                    f"[BG EVAL] AI schema error for app {application_id}: "
+                    f"{_schema_error_bg}"
+                )
+                sync_evaluation_state(db, app, evaluation_state="failed")
+                if app.evaluation_sessions:
+                    app.evaluation_sessions[-1].status = "failed"
+                db.commit()
+                return
+
+            if result.get("final_score") is not None:
+                eval_score = float(result["final_score"])
+
+                final_metrics = result.get("skill_metrics", {})
+                if not final_metrics:
+                    try:
+                        analysis_data_bg = (
+                            json.loads(_analysis_json_bg)
+                            if isinstance(_analysis_json_bg, str)
+                            else (_analysis_json_bg or {})
+                        )
+                        final_metrics = analysis_data_bg.get("engine_v2_state", {}).get(
+                            "live_skill_metrics", {}
+                        )
+                    except Exception:
+                        pass
+
+                if not final_metrics:
+                    per_q_scores: list = []
+                    try:
+                        if qa_pairs:
+                            per_q_scores = [
+                                float(q.get("score", 0))
+                                for q in qa_pairs
+                                if isinstance(q, dict) and q.get("score") is not None
+                            ]
+                    except Exception:
+                        pass
+
+                    avg_score = (
+                        sum(per_q_scores) / len(per_q_scores)
+                        if per_q_scores
+                        else eval_score
+                    )
+                    final_metrics = {
+                        "Technical": round(avg_score, 2),
+                        "Communication": round((avg_score + eval_score) / 2, 2),
+                        "Problem Solving": round(eval_score, 2),
+                    }
+
+                score_record = ScoringService.set_evaluation_result(
+                    app=app,
+                    db=db,
+                    eval_score=eval_score,
+                    skill_metrics=final_metrics,
+                    scored_by="ai",
+                    cv_score=_sc.cv_score if _sc else None,
+                    rubric_score=(
+                        rubric_result.get("overall_score")
+                        if rubric_result and isinstance(rubric_result, dict)
+                        else None
+                    ),
+                    rubric_coverage_pct=(
+                        rubric_result.get("overall_coverage_pct")
+                        if rubric_result and isinstance(rubric_result, dict)
+                        else None
+                    ),
+                    rubric_version=(
+                        rubric_result.get("rubric_version")
+                        if rubric_result and isinstance(rubric_result, dict)
+                        else None
+                    ),
+                    score_breakdown=rubric_result if rubric_result else None,
+                    raw_analysis=result if isinstance(result, dict) else None,
+                )
+
+                if score_record.final_score is None:
+                    raise ValueError(
+                        f"Canonical scoring returned no final_score for app "
+                        f"{application_id}"
+                    )
+
+                canonical_final_score = float(score_record.final_score)
+
+                score_record.verdict = get_recommendation(
+                    canonical_final_score,
+                    calculate_integrity_penalty(violations or []),
+                )
+                db.add(score_record)
+
+                logger.info(
+                    f"[BG EVAL] Scores for app {application_id}: "
+                    f"interview={eval_score:.1f}, "
+                    f"canonical={canonical_final_score:.1f}"
+                )
+
+                insights = derive_dashboard_insights_from_skills(final_metrics)
+                sync_cv_document(db, app, analysis_json={"insights": insights})
+
+                # AI-interview final evaluation is billed to the owning company's
+                # wallet (one-time charge per completed evaluation, not per turn).
+                # Best-effort in a background task — a company without a resolvable
+                # wallet/member is not charged rather than failing the evaluation.
+                try:
+                    from backend.credit_service import consume_company_credits
+
+                    consume_company_credits(
+                        db,
+                        company_id,
+                        5,
+                        "ai_interview_evaluation",
+                        reference_type="application",
+                        reference_id=application_id,
+                    )
+                except Exception as charge_err:
+                    logger.warning(
+                        f"[BG EVAL] Company credit charge skipped for app "
+                        f"{application_id}: {charge_err}"
+                    )
+
+                email_service = getattr(
+                    __import__("backend.email_service", fromlist=["email_service"]),
+                    "email_service",
+                )
+                recruiter_email = None
+                campaign_title = "AI Interview"
+                try:
+                    if app.job and app.job.recruiter:
+                        recruiter_email = app.job.recruiter.email
+                        campaign_title = app.job.title or "AI Interview"
+                    elif app.batch_job and app.batch_job.recruiter:
+                        recruiter_email = app.batch_job.recruiter.email
+                        campaign_title = app.batch_job.title or "AI Interview"
+                except Exception as e:
+                    logger.warning(
+                        f"Failed to resolve recruiter for interview email: {e}"
+                    )
+
+                try:
+                    dashboard_url = f"{get_settings().frontend_url}/candidate/interview-analysis?application_id={application_id}"
+
+                    pdf_data = None
+                    attachment_filename = None
+                    try:
+                        from backend.pdf_generator import generate_interview_pdf
+
+                        pdf_data = generate_interview_pdf(
+                            candidate_name=app.full_name or "Candidate",
+                            cv_text=_cv_text_bg or "",
+                            qa_pairs=qa_pairs,
+                            scoring_summary={
+                                "final_score": canonical_final_score,
+                                "skill_metrics": final_metrics,
+                                "recommendation": get_recommendation(canonical_final_score, 0.0),
+                            },
+                            feedback={
+                                "score": canonical_final_score,
+                                "strengths": result.get("strengths", []),
+                                "weaknesses": result.get("weaknesses", []),
+                            },
+                        )
+                        attachment_filename = f"interview_report_{application_id}.pdf"
+                    except Exception as pdf_err:
+                        logger.error(f"[BG EVAL] PDF generation failed: {pdf_err}")
+
+                    email_service.send_interview_complete_email(
+                        recruiter_email=recruiter_email,
+                        candidate_name=app.full_name or "A candidate",
+                        campaign_title=campaign_title,
+                        final_score=canonical_final_score,
+                        dashboard_url=dashboard_url,
+                        attachment_data=pdf_data,
+                        attachment_filename=attachment_filename,
+                    )
+                    logger.info(
+                        f"[BG EVAL] Completion notification sent to recruiter {recruiter_email}"
+                    )
+                except Exception as email_err:
+                    logger.error(
+                        f"[BG EVAL] Failed to send completion notification: {email_err}"
+                    )
+
+                if app.user_id and app.email:
+                    try:
+                        candidate_url = f"{get_settings().frontend_url}/candidate/interview-analysis?application_id={application_id}"
+                        email_service.send_candidate_completion_email(
+                            candidate_email=app.email,
+                            candidate_name=app.full_name or "Candidate",
+                            campaign_title=campaign_title,
+                            final_score=canonical_final_score,
+                            results_url=candidate_url,
+                        )
+                        logger.info(
+                            f"[BG EVAL] Completion notification sent to candidate {app.email}"
+                        )
+                    except Exception as cand_email_err:
+                        logger.error(
+                            f"[BG EVAL] Failed to send candidate completion notification: {cand_email_err}"
+                        )
+
+            sync_evaluation_state(db, app, evaluation_state="completed")
+            app.interview_state = "completed"
+            app.final_eval_timestamp = datetime.now(UTC)
+            app.evaluation_source = "auto"
+            if app.status in ["interviewing", "invited", "pending", "applied"]:
+                app.status = "screening"
+            if app.evaluation_sessions:
+                app.evaluation_sessions[-1].status = "completed"
+                app.evaluation_sessions[-1].interview_state = "completed"
+                app.evaluation_sessions[-1].completed_at = datetime.now(UTC)
+            db.commit()
+            logger.info(
+                f"[BG EVAL] Evaluation completed for app {application_id}: score={_final_score_bg}"
+            )
+
+        except Exception as e:
+            logger.error(
+                f"[BG EVAL] Unhandled error for app {application_id}: {e}",
+                exc_info=True,
+            )
+            sync_evaluation_state(db, app, evaluation_state="failed")
+            if app.evaluation_sessions:
+                app.evaluation_sessions[-1].status = "failed"
+            db.commit()
+            raise
+
+
+@router.post("/interview/evaluate-final")
+async def evaluate_final_interview(
+    payload: dict,
+    db: Session = Depends(get_db),
+    auth: Tuple[Optional[User], Application] = Depends(get_interview_access),
+):
+    current_user, app = auth
+    application_id = payload.get("application_id")
+    force = payload.get("force_reevaluation", False)
+
+    if not app:
+        if not application_id:
+            raise HTTPException(400, "application_id required")
+        app = db.query(Application).filter(Application.id == application_id).first()
+        if not app:
+            raise HTTPException(404, "Application not found")
+
+    is_recruiter = current_user and safe_user_role(current_user) in [
+        "admin",
+        "recruiter",
+    ]
+
+    if app.evaluation_state == "completed":
+        if not force:
+            logger.info(
+                f"[EVAL-FINAL] Evaluation already completed for app {application_id}. "
+                f"Completed at: {app.evaluation_completed_at}, source: {app.evaluation_source}"
+            )
+            return {
+                "success": True,
+                "message": "Evaluation already completed",
+                "final_score": app.overall_score,
+                "completed_at": app.evaluation_completed_at.isoformat()
+                if app.evaluation_completed_at
+                else None,
+                "source": app.evaluation_source,
+            }
+        elif is_recruiter:
+            logger.info(
+                f"[EVAL-FINAL] Force re-evaluation requested for app {application_id}"
+            )
+            app.evaluation_state = "pending"
+            db.commit()
+        else:
+            raise HTTPException(
+                403, "Force re-evaluation requires recruiter or admin role"
+            )
+
+    result = db.execute(
+        text(
+            "UPDATE applications SET evaluation_state='running', evaluation_started_at=NOW() "
+            "WHERE id=:id AND company_id=:company_id AND evaluation_state='pending'"
+        ),
+        {"id": application_id, "company_id": app.company_id},
+    )
+    db.commit()
+
+    if result.rowcount == 0:
+        logger.info(f"[EVAL-FINAL] Could not claim evaluation for app {application_id}")
+        return {
+            "success": False,
+            "message": f"Evaluation in progress or already completed (state: {app.evaluation_state})",
+            "state": app.evaluation_state,
+        }
+
+    db.refresh(app)
+
+    qa_pairs = []
+    try:
+        if app.interview_qa_structured:
+            qa_pairs = json.loads(app.interview_qa_structured)
+        elif app.interview_log:
+            history = json.loads(app.interview_log)
+            qa_pairs = _extract_qa_pairs_from_history(history)
+            logger.warning(f"Using legacy history for app {application_id}")
+    except Exception as e:
+        logger.error(f"Error loading QA pairs for app {application_id}: {e}")
+
+    violations = []
+    try:
+        if app.proctoring_violations:
+            violations = json.loads(app.proctoring_violations)
+    except Exception as viol_err:
+        logger.error(f"Violation loading failed for app {application_id}: {viol_err}")
+
+    result = await evaluate_complete_interview(
+        cv_text=app.cv_text_anonymized,
+        declared_role=app.declared_role,
+        qa_pairs=qa_pairs,
+        violations=violations,
+    )
+
+    if result.get("final_score") is not None:
+        eval_score = float(result["final_score"])
+
+        # Canonical scoring is persisted by ScoringService.set_evaluation_result()
+        # above. Do NOT write Application.overall_score here or blend a second
+        # score outside the canonical scoring pipeline.
+        canonical_result = ScoringService.get_canonical_score(app.id, db)
+        canonical_score = (
+            float(canonical_result.final_score)
+            if canonical_result and canonical_result.final_score is not None
+            else eval_score
+        )
+
+        app.recruiter_notes = f"AI Evaluation: {result.get('detailed_feedback')}"
+        logger.info(
+            f"[EVAL-FINAL] Interview={eval_score:.1f}, "
+            f"canonical_final={canonical_score:.1f}"
+        )
+
+        if not current_user:
+            logger.info(
+                f"[ROADMAP] Skipping roadmap for guest application {application_id}"
+            )
+        else:
+            try:
+                from backend.ai.roadmap import generate_career_roadmap
+                from backend.database import Course
+
+                available_courses = (
+                    db.query(Course).filter(Course.status == "published").all()
+                )
+                courses_formatted = [
+                    {"id": c.id, "title": c.title, "description": c.description}
+                    for c in available_courses
+                ]
+
+                candidate_profile = (
+                    getattr(current_user, "candidate_profile", None)
+                    if current_user
+                    else None
+                )
+                if candidate_profile and candidate_profile.skills:
+                    current_skills = safe_user_skills(current_user)
+                else:
+                    current_skills = []
+                    if app.analysis_json:
+                        try:
+                            analysis_data = json.loads(app.analysis_json)
+                            skill_metrics = analysis_data.get("skill_metrics", {})
+                            current_skills = (
+                                list(skill_metrics.keys())
+                                if isinstance(skill_metrics, dict)
+                                else []
+                            )
+                        except Exception:
+                            pass
+
+                roadmap_result = await generate_career_roadmap(
+                    target_role=app.declared_role or "Professional",
+                    current_skills=current_skills,
+                    available_courses=courses_formatted,
+                    audit_context={
+                        "interview_score": canonical_score,
+                        "interview_feedback": result.get("detailed_feedback"),
+                        "qa_pairs": qa_pairs,
+                    },
+                )
+
+                if roadmap_result:
+                    sync_cv_document(db, app, roadmap_json=roadmap_result)
+                    logger.info(f"Roadmap generated for app {application_id}")
+            except Exception as roadmap_err:
+                logger.error(
+                    f"Failed to generate roadmap: {roadmap_err}", exc_info=True
+                )
+
+    try:
+        analysis_data = {}
+        if app.analysis_json:
+            try:
+                analysis_data = json.loads(app.analysis_json)
+            except Exception:
+                analysis_data = {}
+        if not isinstance(analysis_data, dict):
+            analysis_data = {}
+
+        if isinstance(result, dict):
+            if isinstance(result.get("skill_metrics"), dict):
+                analysis_data["skill_metrics"] = result["skill_metrics"]
+                derived = derive_dashboard_insights_from_skills(result["skill_metrics"])
+                analysis_data["strengths"] = (
+                    result.get("strengths") or derived["strengths"]
+                )
+                analysis_data["missing_skills"] = (
+                    result.get("weaknesses") or derived["missing_skills"]
+                )
+                analysis_data["weaknesses"] = (
+                    result.get("weaknesses") or derived["weaknesses"]
+                )
+                analysis_data["action_plan"] = (
+                    result.get("action_plan") or derived["action_plan"]
+                )
+
+                explainability = analysis_data.get("explainability")
+                if not isinstance(explainability, dict):
+                    explainability = {}
+                if isinstance(result.get("explainability"), dict):
+                    explainability.update(result["explainability"])
+                if not explainability.get("gap_analysis"):
+                    explainability["gap_analysis"] = derived["gap_analysis"]
+                analysis_data["explainability"] = explainability
+
+            if result.get("detailed_feedback"):
+                analysis_data["summary"] = result["detailed_feedback"]
+                app.recruiter_notes = (
+                    f"AI Evaluation: {result.get('detailed_feedback')}"
+                )
+
+        sync_cv_document(db, app, analysis_json=analysis_data)
+
+        history = []
+        if app.interview_log and app.interview_log != "null":
+            try:
+                parsed_history = json.loads(app.interview_log)
+                if isinstance(parsed_history, list):
+                    history = parsed_history
+            except Exception:
+                history = []
+
+        if result.get("detailed_feedback"):
+            summary_msg = f"Interview Complete. Evaluation Summary: {result.get('detailed_feedback')}"
+            if not any(
+                isinstance(item, dict)
+                and item.get("role") in {"assistant", "ai", "bot"}
+                and isinstance(item.get("content"), str)
+                and "Evaluation Summary:" in item.get("content", "")
+                for item in history
+            ):
+                history.append({"role": "assistant", "content": summary_msg})
+                app.interview_log = json.dumps(history)
+    except Exception as sync_err:
+        logger.error(
+            f"Final evaluation sync failed for app {application_id}: {sync_err}",
+            exc_info=True,
+        )
+
+    app.interview_state = "completed"
+    if app.status in ["interviewing", "invited", "pending", "applied"]:
+        app.status = "screening"
+    app.final_eval_done = True
+    app.final_eval_timestamp = _utcnow()
+    app.evaluation_state = "completed"
+    app.evaluation_completed_at = _utcnow()
+    app.evaluation_source = "manual"
+    if app.roadmap_json:
+        result["roadmap_json"] = json.loads(app.roadmap_json)
+
+    db.commit()
+    return result
+
+
+@router.post("/interview/report-fraud")
+async def report_fraud(
+    req: FraudReport,
+    db: Session = Depends(get_db),
+    current_user: User = Depends(get_current_user),
+):
+    if not current_user or safe_user_role(current_user) not in ["recruiter", "admin"]:
+        raise HTTPException(
+            status_code=403,
+            detail="Only recruiters and admins can submit fraud reports",
+        )
+
+    app = (
+        db.query(Application)
+        .filter(
+            Application.id == req.application_id,
+            Application.company_id == getattr(current_user, "_company_id", None),
+        )
+        .first()
+    )
+    if not app:
+        raise HTTPException(status_code=404, detail="Application not found")
+
+    app.fraud_score = 100.0
+    app.verdict = f"FRAUD DETECTED by {safe_user_id(current_user)}: {req.reason}"
+    app.fraud_reported_by = current_user.id
+    app.fraud_reported_at = _utcnow()
+    db.commit()
+    return {
+        "success": True,
+        "message": "Fraud report submitted successfully",
+        "fraud_score": app.fraud_score,
+    }

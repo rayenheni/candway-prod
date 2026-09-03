@@ -1,0 +1,81 @@
+# P0-08 FIX: keep secrets, dev artifacts, and tests out of the
+# container image. The Dockerfile uses `COPY . /app` which would
+# otherwise bake `.env` and `.git` into a layer.
+
+# Secrets & local config
+.env
+.env.*
+!.env.example
+*.local
+
+# Version control
+.git
+.gitignore
+.gitattributes
+
+# Python cache / build artifacts
+__pycache__/
+*.py[cod]
+*$py.class
+*.so
+.Python
+*.egg-info/
+.pytest_cache/
+.mypy_cache/
+.ruff_cache/
+.coverage
+.coverage.*
+htmlcov/
+.tox/
+.venv/
+venv/
+env/
+
+# Tests (CI runs them; image should not need them)
+tests/
+backend/tests/
+.pytest.ini
+pytest.ini
+
+# Docs and design (not needed at runtime)
+docs/
+*.md
+!README.md
+
+# IDE / OS junk
+.idea/
+.vscode/
+.DS_Store
+Thumbs.db
+*.swp
+*.swo
+
+# Dev scripts
+scripts/dev/
+scripts/probe_*
+scripts/restart_*
+scripts/seed_*
+
+# Marketing / asset build outputs
+node_modules/
+frontend/node_modules/   # Will be reinstalled by npm ci in Docker
+dist/
+build/
+.cache/
+
+# Frontend build output (rebuilt in Docker from source)
+frontend/dist/
+
+# Local data & logs
+*.log
+*.sqlite
+*.sqlite3
+*.db
+backend/uploads/
+backend/interviews_events/
+backend/brain/
+backend/trakin/
+
+# Pylint / mypy configs (we don't run them in prod)
+.pylintrc
+.mypy.ini

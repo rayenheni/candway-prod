@@ -1,0 +1,303 @@
+name: Candway CI/CD Pipeline
+
+on:
+  push:
+    branches: [main, develop]
+  pull_request:
+    branches: [main]
+
+concurrency:
+  group: ${{ github.workflow }}-${{ github.ref }}
+  cancel-in-progress: true
+
+env:
+  PYTHON_VERSION: "3.11"
+  COVERAGE_THRESHOLD: 70
+
+jobs:
+  # ============================================
+  # LINT & TYPE CHECK
+  # ============================================
+  lint:
+    name: Lint & Type Check
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Set up Python
+        uses: actions/setup-python@v5
+        with:
+          python-version: ${{ env.PYTHON_VERSION }}
+          cache: pip
+
+      - name: Install dependencies
+        run: |
+          python -m pip install --upgrade pip
+          pip install -r requirements.txt
+          pip install ruff mypy
+
+      - name: Lint with Ruff
+        run: ruff check backend/ --select E,F,W,I --ignore E501
+
+      - name: Format check with Ruff
+        run: ruff format backend/ --check
+
+      - name: Type check with Mypy
+        run: mypy backend/ --ignore-missing-imports
+
+  # ============================================
+  # SECURITY SCAN
+  # ============================================
+  security:
+    name: Security Scan
+    runs-on: ubuntu-latest
+    needs: [docker-build]
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Set up Python
+        uses: actions/setup-python@v5
+        with:
+          python-version: ${{ env.PYTHON_VERSION }}
+          cache: pip
+
+      - name: Install dependencies
+        run: |
+          python -m pip install --upgrade pip
+          pip install -r requirements.txt
+          pip install bandit safety
+
+      - name: Run Bandit security scan
+        run: bandit -r backend/ -ll -ii
+
+      - name: Check dependencies for known vulnerabilities
+        run: safety check -r requirements.txt --ignore 70612
+
+      - name: Run Trivy vulnerability scanner
+        uses: aquasecurity/trivy-action@0.24.0
+        with:
+          image-ref: candway/platform:ci-test
+          format: sarif
+          output: trivy-results.sarif
+          severity: CRITICAL,HIGH
+          exit-code: 1
+          skip-dirs: /usr/local/lib/python3.11/site-packages/
+
+      - name: Upload Trivy results to GitHub Security
+        uses: github/codeql-action/upload-sarif@v3
+        if: always()
+        with:
+          sarif_file: trivy-results.sarif
+
+  # ============================================
+  # FRONTEND BUILD & TYPECHECK
+  # ============================================
+  frontend-lint:
+    name: Frontend Build & Typecheck
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Set up Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: "22"
+
+      - name: Install dependencies
+        working-directory: frontend
+        run: npm ci
+
+      - name: Typecheck
+        working-directory: frontend
+        run: npx tsc --noEmit
+
+      - name: Build SPA
+        working-directory: frontend
+        run: npm run build
+
+  # ============================================
+  # BACKEND TESTS
+  # ============================================
+  test:
+    name: Run Tests
+    needs: [lint, security]
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+
+      - name: Set up Python
+        uses: actions/setup-python@v5
+        with:
+          python-version: ${{ env.PYTHON_VERSION }}
+          cache: pip
+
+      - name: Install dependencies
+        run: |
+          python -m pip install --upgrade pip
+          pip install -r requirements.txt
+          pip install pytest-cov
+
+      - name: Run tests with coverage
+        env:
+          DATABASE_URL: "sqlite:///file:test_db?mode=memory&cache=shared&uri=true"
+          SECRET_KEY: test_secret_key_for_ci_pipeline
+          ALGORITHM: HS256
+          ACCESS_TOKEN_EXPIRE_MINUTES: "30"
+          DEBUG: "false"
+          ENVIRONMENT: test
+          TESTING: "true"
+        run: |
+          python -m pytest tests/ -v --tb=short --timeout=60 \
+            --cov=backend --cov-report=xml --cov-report=term-missing \
+            --cov-fail-under=${{ env.COVERAGE_THRESHOLD }}
+
+      - name: Upload coverage reports
+        uses: codecov/codecov-action@v5
+        with:
+          file: ./coverage.xml
+          flags: backend
+          name: backend-coverage
+          fail_ci_if_error: true
+
+  # ============================================
+  # MIGRATION VALIDATION
+  # ============================================
+  migration-check:
+    name: Migration Validation
+    runs-on: ubuntu-latest
+    needs: [lint]
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+
+      - name: Set up Python
+        uses: actions/setup-python@v5
+        with:
+          python-version: ${{ env.PYTHON_VERSION }}
+          cache: pip
+
+      - name: Install dependencies
+        run: |
+          python -m pip install --upgrade pip
+          pip install -r requirements.txt
+
+      - name: Check alembic migration history is linear
+        run: |
+          pip install alembic
+          python -m alembic check 2>&1 || echo "alembic check not available, verifying heads..."
+          python -c "
+          from alembic.config import Config
+          from alembic.script import ScriptDirectory
+          config = Config('alembic.ini')
+          script = ScriptDirectory.from_config(config)
+          heads = script.get_heads()
+          assert len(heads) == 1, f'Expected 1 head, got {len(heads)}: {heads}'
+          print(f'Migration check passed: single head {heads[0]}')
+          "
+
+  # ============================================
+  # DOCKER BUILD VERIFICATION
+  # ============================================
+  docker-build:
+    name: Docker Build Check
+    runs-on: ubuntu-latest
+    needs: [lint]
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Set up Docker Buildx
+        uses: docker/setup-buildx-action@v3
+
+      - name: Build Docker image (no push)
+        uses: docker/build-push-action@v6
+        with:
+          context: .
+          push: false
+          load: true
+          tags: candway/platform:ci-test
+          cache-from: type=gha
+          cache-to: type=gha,mode=max
+
+  # ============================================
+  # PERFORMANCE TESTS (main branch only)
+  # ============================================
+  performance-tests:
+    name: Performance Tests
+    needs: [test]
+    runs-on: ubuntu-latest
+    if: github.ref == 'refs/heads/main'
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Set up Python
+        uses: actions/setup-python@v5
+        with:
+          python-version: ${{ env.PYTHON_VERSION }}
+          cache: pip
+
+      - name: Install dependencies
+        run: |
+          pip install locust uvicorn
+          pip install -r requirements.txt
+
+      - name: Run load tests
+        env:
+          DATABASE_URL: sqlite:///file:test_db?mode=memory&cache=shared&uri=true
+          SECRET_KEY: test_secret_key_for_perf
+        run: |
+          uvicorn backend.main:app --host 0.0.0.0 --port 8002 &
+          sleep 10
+          locust -f backend/tests/load_test.py --headless -u 100 -r 10 --run-time 60s --host http://localhost:8002
+
+  # ============================================
+  # DEPLOY (main branch only)
+  # ============================================
+  deploy:
+    name: Deploy
+    needs: [test, frontend-lint, migration-check, docker-build, performance-tests]
+    runs-on: ubuntu-latest
+    if: github.ref == 'refs/heads/main' && github.event_name == 'push'
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+
+      - name: Set up Docker Buildx
+        uses: docker/setup-buildx-action@v3
+
+      - name: Login to Docker Hub
+        uses: docker/login-action@v3
+        with:
+          username: ${{ secrets.DOCKER_USERNAME }}
+          password: ${{ secrets.DOCKER_PASSWORD }}
+
+      - name: Build and push Docker image
+        uses: docker/build-push-action@v6
+        with:
+          context: .
+          push: true
+          tags: |
+            candway/platform:latest
+            candway/platform:${{ github.sha }}
+          cache-from: type=gha
+          cache-to: type=gha,mode=max
+
+      - name: Deploy to production
+        if: github.ref == 'refs/heads/main' && github.event_name == 'push'
+        env:
+          DEPLOY_HOST: ${{ secrets.DEPLOY_HOST }}
+          DEPLOY_USER: ${{ secrets.DEPLOY_USER }}
+          DEPLOY_KEY: ${{ secrets.DEPLOY_KEY }}
+        run: |
+          mkdir -p ~/.ssh
+          echo "$DEPLOY_KEY" > ~/.ssh/deploy_key
+          chmod 600 ~/.ssh/deploy_key
+          ssh -o StrictHostKeyChecking=no -i ~/.ssh/deploy_key \
+            ${DEPLOY_USER}@${DEPLOY_HOST} \
+            "cd /opt/candway && \
+             git fetch origin main && \
+             git reset --hard origin/main && \
+             bash scripts/deploy.sh"

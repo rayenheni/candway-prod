@@ -1,0 +1,810 @@
+/* ============================================================
+   Candway Admin — Enterprise Table Design System
+   Recruiter Design System Applied · Violet/Indigo palette
+   8px spacing grid · Outfit typography · Glass chrome
+   ============================================================ */
+
+/* ── Design Tokens ────────────────────────────────────────── */
+:root {
+    /* Spacing (8px grid) */
+    --cw-space-xs: 4px;
+    --cw-space-sm: 8px;
+    --cw-space-md: 12px;
+    --cw-space-lg: 16px;
+    --cw-space-xl: 24px;
+    --cw-space-2xl: 32px;
+    --cw-space-3xl: 48px;
+
+    /* Table cell padding */
+    --cw-cell-px: 24px;
+    --cw-cell-py: 14px;
+
+    /* Colors — Neutral */
+    --cw-bg-page: #f5f3ff;
+    --cw-bg-card: rgba(255, 255, 255, 0.72);
+    --cw-bg-header: rgba(245, 243, 255, 0.85);
+    --cw-bg-hover: rgba(124, 58, 237, 0.04);
+    --cw-border: rgba(167, 139, 250, 0.15);
+    --cw-border-strong: rgba(167, 139, 250, 0.25);
+    --cw-text-primary: #0f172a;
+    --cw-text-secondary: #475569;
+    --cw-text-muted: #94a3b8;
+    --cw-text-faint: #cbd5e1;
+
+    /* Colors — Accent (violet/indigo from recruiter system) */
+    --cw-accent: #7C3AED;
+    --cw-accent-light: #f5f3ff;
+    --cw-accent-glow: rgba(124, 58, 237, 0.22);
+    --cw-success: #10B981;
+    --cw-success-light: #ecfdf5;
+    --cw-warning: #F59E0B;
+    --cw-warning-light: #fffbeb;
+    --cw-danger: #dc2626;
+    --cw-danger-light: #fef2f2;
+
+    /* Radius */
+    --cw-radius-sm: 6px;
+    --cw-radius-md: 8px;
+    --cw-radius-lg: 12px;
+    --cw-radius-xl: 22px;
+    --cw-radius-2xl: 32px;
+
+    /* Shadows — glass inspired from recruiter */
+    --cw-shadow-card: 0 24px 70px -32px rgba(88, 28, 135, 0.38), inset 0 1px 0 rgba(255,255,255,0.72);
+    --cw-shadow-elevated: 0 30px 80px -34px rgba(88, 28, 135, 0.48), inset 0 1px 0 rgba(255,255,255,0.82);
+
+    /* Glass surface */
+    --cw-glass-bg: linear-gradient(145deg, rgba(255,255,255,0.76), rgba(255,255,255,0.5));
+    --cw-glass-blur: blur(26px) saturate(165%);
+
+    /* Transitions */
+    --cw-transition: 150ms cubic-bezier(0.16, 1, 0.3, 1);
+    --cw-transition-slow: 300ms cubic-bezier(0.16, 1, 0.3, 1);
+}
+
+
+/* ── Table Container ──────────────────────────────────────── */
+.cw-table-wrap {
+    background: #ffffff;
+    border: 1px solid rgba(167, 139, 250, 0.15);
+    border-radius: var(--cw-radius-xl);
+    box-shadow: 0 24px 70px -32px rgba(88, 28, 135, 0.38), inset 0 1px 0 rgba(255,255,255,0.72);
+    overflow: hidden;
+    position: relative;
+}
+
+.cw-table-scroll {
+    overflow-x: auto;
+    overflow-y: visible;
+    -webkit-overflow-scrolling: touch;
+    scrollbar-width: thin;
+    scrollbar-color: var(--cw-border-strong) transparent;
+}
+
+.cw-table-scroll::-webkit-scrollbar {
+    height: 6px;
+}
+
+.cw-table-scroll::-webkit-scrollbar-track {
+    background: transparent;
+}
+
+.cw-table-scroll::-webkit-scrollbar-thumb {
+    background: var(--cw-border-strong);
+    border-radius: 3px;
+}
+
+
+/* ── Table Element ────────────────────────────────────────── */
+.cw-table {
+    display: table !important;
+    width: 100%;
+    border-collapse: collapse;
+    border-spacing: 0;
+    font-size: 13px;
+    line-height: 1.5;
+    color: var(--cw-text-secondary);
+    table-layout: auto;
+}
+
+/* CRITICAL: Force table-cell on ALL td/th inside .cw-table
+   Tailwind v4 @layer system can override default table display */
+.cw-table td,
+.cw-table th {
+    display: table-cell !important;
+    vertical-align: middle;
+    border: none;
+}
+
+
+/* ── Table Header ─────────────────────────────────────────── */
+.cw-thead {
+    display: table-header-group !important;
+    position: sticky;
+    top: 0;
+    z-index: 10;
+    background: var(--cw-bg-header);
+    backdrop-filter: blur(8px);
+    -webkit-backdrop-filter: blur(8px);
+}
+
+.cw-thead::after {
+    content: '';
+    position: absolute;
+    bottom: 0;
+    left: 0;
+    right: 0;
+    height: 1px;
+    background: var(--cw-border-strong);
+}
+
+.cw-th {
+    display: table-cell !important;
+    padding: var(--cw-cell-py) var(--cw-cell-px);
+    font-size: 11px;
+    font-weight: 600;
+    color: var(--cw-text-muted);
+    text-transform: uppercase;
+    letter-spacing: 0.06em;
+    white-space: nowrap;
+    text-align: left;
+    user-select: none;
+    position: relative;
+    border: none;
+}
+
+.cw-th--right {
+    text-align: right;
+}
+
+.cw-th--center {
+    text-align: center;
+}
+
+/* Sortable column indicator */
+.cw-th--sortable {
+    cursor: pointer;
+    transition: color var(--cw-transition);
+}
+
+.cw-th--sortable:hover {
+    color: var(--cw-text-primary);
+}
+
+.cw-th--sortable::after {
+    content: '';
+    display: inline-block;
+    width: 0;
+    height: 0;
+    margin-left: 6px;
+    vertical-align: middle;
+    border-left: 3.5px solid transparent;
+    border-right: 3.5px solid transparent;
+    border-top: 4px solid currentColor;
+    opacity: 0.3;
+    transition: opacity var(--cw-transition), transform var(--cw-transition);
+}
+
+.cw-th--sortable:hover::after {
+    opacity: 0.6;
+}
+
+.cw-th--sorted-asc::after {
+    opacity: 1;
+    transform: rotate(180deg);
+}
+
+.cw-th--sorted-desc::after {
+    opacity: 1;
+}
+
+
+/* ── Table Body / Rows ────────────────────────────────────── */
+
+
+.cw-tbody {
+    display: table-row-group !important;
+}
+
+.cw-tr {
+    display: table-row !important;
+    border-bottom: 1px solid var(--cw-border);
+    transition: background var(--cw-transition);
+}
+
+.cw-tr:last-child {
+    border-bottom: none;
+}
+
+.cw-tr:hover {
+    background: var(--cw-bg-hover);
+}
+
+/* Clicking-feedback on row */
+.cw-tr:active {
+    background: rgba(124, 58, 237, 0.06);
+}
+
+/* Remove double border on last row */
+.cw-tr:last-child {
+    border-bottom: none;
+}
+
+
+/* ── Table Cells ──────────────────────────────────────────── */
+.cw-td {
+    display: table-cell !important;
+    padding: var(--cw-cell-py) var(--cw-cell-px);
+    vertical-align: middle;
+    white-space: nowrap;
+    border: none;
+}
+
+.cw-td--primary {
+    font-weight: 600;
+    color: var(--cw-text-primary);
+}
+
+.cw-td--mono {
+    font-family: 'SF Mono', 'Fira Code', 'Consolas', monospace;
+    font-size: 12px;
+    color: var(--cw-text-muted);
+}
+
+.cw-td--right {
+    text-align: right;
+}
+
+.cw-td--center {
+    text-align: center;
+}
+
+.cw-td--wrap {
+    white-space: normal;
+    max-width: 280px;
+}
+
+/* Composite cell: Name + subtitle stacked */
+.cw-cell-stack {
+    display: flex;
+    flex-direction: column;
+    gap: 2px;
+}
+
+.cw-cell-stack__title {
+    font-weight: 600;
+    font-size: 13px;
+    color: var(--cw-text-primary);
+    line-height: 1.3;
+}
+
+.cw-cell-stack__sub {
+    font-size: 12px;
+    color: var(--cw-text-muted);
+    line-height: 1.3;
+}
+
+/* Avatar + text composite */
+.cw-cell-identity {
+    display: flex;
+    align-items: center;
+    gap: 12px;
+}
+
+.cw-avatar {
+    width: 32px;
+    height: 32px;
+    border-radius: var(--cw-radius-md);
+    background: var(--cw-accent-light);
+    color: var(--cw-accent);
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    font-size: 11px;
+    font-weight: 700;
+    text-transform: uppercase;
+    flex-shrink: 0;
+    letter-spacing: 0.02em;
+}
+
+.cw-avatar--neutral {
+    background: #f1f5f9;
+    color: var(--cw-text-muted);
+}
+
+
+/* ── Status Badges ────────────────────────────────────────── */
+.cw-badge {
+    display: inline-flex;
+    align-items: center;
+    gap: 6px;
+    padding: 3px 10px;
+    border-radius: 999px;
+    font-size: 11px;
+    font-weight: 600;
+    letter-spacing: 0.01em;
+    line-height: 1.5;
+    white-space: nowrap;
+    transition: transform var(--cw-transition);
+}
+
+.cw-badge:hover {
+    transform: scale(1.02);
+}
+
+/* Dot indicator inside badge */
+.cw-badge__dot {
+    width: 6px;
+    height: 6px;
+    border-radius: 50%;
+    flex-shrink: 0;
+}
+
+.cw-badge--success {
+    background: var(--cw-success-light);
+    color: var(--cw-success);
+}
+
+.cw-badge--success .cw-badge__dot {
+    background: var(--cw-success);
+}
+
+.cw-badge--warning {
+    background: var(--cw-warning-light);
+    color: var(--cw-warning);
+}
+
+.cw-badge--warning .cw-badge__dot {
+    background: var(--cw-warning);
+}
+
+.cw-badge--danger {
+    background: var(--cw-danger-light);
+    color: var(--cw-danger);
+}
+
+.cw-badge--danger .cw-badge__dot {
+    background: var(--cw-danger);
+}
+
+.cw-badge--neutral {
+    background: #f1f5f9;
+    color: var(--cw-text-muted);
+}
+
+.cw-badge--neutral .cw-badge__dot {
+    background: var(--cw-text-muted);
+}
+
+.cw-badge--accent {
+    background: var(--cw-accent-light);
+    color: var(--cw-accent);
+}
+
+.cw-badge--accent .cw-badge__dot {
+    background: var(--cw-accent);
+}
+
+/* Solid role badges (admin, recruiter, etc.) */
+.cw-role {
+    display: inline-flex;
+    align-items: center;
+    padding: 3px 10px;
+    border-radius: var(--cw-radius-sm);
+    font-size: 10px;
+    font-weight: 700;
+    text-transform: uppercase;
+    letter-spacing: 0.08em;
+    color: white;
+}
+
+.cw-role--admin {
+    background: #312e81;
+}
+
+.cw-role--recruiter {
+    background: #0c4a6e;
+}
+
+.cw-role--mentor {
+    background: #064e3b;
+}
+
+.cw-role--candidate {
+    background: #1e1b4b;
+}
+
+
+/* ── Progress Bars ────────────────────────────────────────── */
+.cw-progress-group {
+    display: flex;
+    flex-direction: column;
+    gap: 6px;
+    min-width: 100px;
+}
+
+.cw-progress-label {
+    font-size: 12px;
+    font-weight: 600;
+    color: var(--cw-text-secondary);
+}
+
+.cw-progress {
+    height: 4px;
+    background: #f1f5f9;
+    border-radius: 2px;
+    overflow: hidden;
+    width: 100%;
+    max-width: 120px;
+}
+
+.cw-progress__fill {
+    height: 100%;
+    border-radius: 2px;
+    transition: width 0.6s cubic-bezier(0.4, 0, 0.2, 1);
+}
+
+.cw-progress__fill--accent {
+    background: var(--cw-accent);
+}
+
+.cw-progress__fill--purple {
+    background: #8b5cf6;
+}
+
+.cw-progress__fill--success {
+    background: var(--cw-success);
+}
+
+.cw-progress__fill--warning {
+    background: var(--cw-warning);
+}
+
+.cw-progress__fill--danger {
+    background: var(--cw-danger);
+}
+
+
+/* ── Action Buttons ───────────────────────────────────────── */
+.cw-actions {
+    display: flex;
+    align-items: center;
+    justify-content: flex-end;
+    gap: 4px;
+    opacity: 0;
+    transition: opacity var(--cw-transition);
+}
+
+.cw-tr:hover .cw-actions {
+    opacity: 1;
+}
+
+.cw-action-btn {
+    width: 28px;
+    height: 28px;
+    border-radius: var(--cw-radius-sm);
+    border: none;
+    cursor: pointer;
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    font-size: 11px;
+    transition: all var(--cw-transition);
+    background: transparent;
+}
+
+.cw-action-btn:hover {
+    transform: scale(1.08);
+}
+
+.cw-action-btn--ghost {
+    background: var(--cw-accent-light);
+    color: var(--cw-accent);
+}
+
+.cw-action-btn--ghost:hover {
+    background: #ddd6fe;
+}
+
+.cw-action-btn--edit {
+    background: #f1f5f9;
+    color: var(--cw-text-secondary);
+}
+
+.cw-action-btn--edit:hover {
+    background: var(--cw-border-strong);
+}
+
+.cw-action-btn--danger {
+    background: var(--cw-danger-light);
+    color: var(--cw-danger);
+}
+
+.cw-action-btn--danger:hover {
+    background: #fecaca;
+}
+
+.cw-action-btn--approve {
+    background: var(--cw-success-light);
+    color: var(--cw-success);
+    padding: 4px 12px;
+    width: auto;
+    font-weight: 700;
+    font-size: 10px;
+    text-transform: uppercase;
+    letter-spacing: 0.04em;
+    border-radius: var(--cw-radius-sm);
+}
+
+.cw-action-btn--approve:hover {
+    background: #a7f3d0;
+}
+
+.cw-action-btn--reject {
+    background: var(--cw-danger-light);
+    color: var(--cw-danger);
+    padding: 4px 12px;
+    width: auto;
+    font-weight: 700;
+    font-size: 10px;
+    text-transform: uppercase;
+    letter-spacing: 0.04em;
+    border-radius: var(--cw-radius-sm);
+}
+
+.cw-action-btn--reject:hover {
+    background: #fecaca;
+}
+
+.cw-action-btn--primary {
+    background: var(--cw-text-primary);
+    color: white;
+    padding: 4px 14px;
+    width: auto;
+    font-weight: 700;
+    font-size: 10px;
+    text-transform: uppercase;
+    letter-spacing: 0.04em;
+    border-radius: var(--cw-radius-sm);
+}
+
+.cw-action-btn--primary:hover {
+    background: var(--cw-accent);
+}
+
+
+/* ── Link Cells ───────────────────────────────────────────── */
+.cw-link {
+    display: inline-flex;
+    align-items: center;
+    gap: 6px;
+    font-size: 11px;
+    font-weight: 600;
+    color: var(--cw-accent);
+    text-decoration: none;
+    text-transform: uppercase;
+    letter-spacing: 0.04em;
+    transition: color var(--cw-transition);
+}
+
+.cw-link:hover {
+    color: #4338ca;
+}
+
+.cw-link i {
+    font-size: 10px;
+}
+
+
+/* ── Empty State ──────────────────────────────────────────── */
+.cw-empty {
+    padding: var(--cw-space-3xl) var(--cw-cell-px);
+    text-align: center;
+    color: var(--cw-text-faint);
+}
+
+.cw-empty__icon {
+    font-size: 24px;
+    margin-bottom: var(--cw-space-sm);
+    opacity: 0.5;
+}
+
+.cw-empty__text {
+    font-size: 12px;
+    font-weight: 500;
+    color: var(--cw-text-muted);
+}
+
+
+/* ── Pagination ───────────────────────────────────────────── */
+.cw-pagination {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    padding: var(--cw-space-lg) var(--cw-space-xl);
+    border-top: 1px solid var(--cw-border);
+    background: rgba(248, 250, 252, 0.95);
+    gap: var(--cw-space-lg);
+}
+
+.cw-pagination__info {
+    font-size: 12px;
+    font-weight: 500;
+    color: var(--cw-text-muted);
+}
+
+.cw-pagination__controls {
+    display: flex;
+    align-items: center;
+    gap: 4px;
+}
+
+.cw-pagination__btn {
+    width: 32px;
+    height: 32px;
+    border-radius: var(--cw-radius-md);
+    border: 1px solid var(--cw-border);
+    background: var(--cw-bg-card);
+    color: var(--cw-text-muted);
+    cursor: pointer;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    font-size: 12px;
+    transition: all var(--cw-transition);
+}
+
+.cw-pagination__btn:hover {
+    border-color: var(--cw-border-strong);
+    color: var(--cw-text-primary);
+    background: #f8fafc;
+}
+
+.cw-pagination__btn--active {
+    background: var(--cw-text-primary);
+    color: white;
+    border-color: var(--cw-text-primary);
+}
+
+
+/* ── Loading Spinner ──────────────────────────────────────── */
+.cw-loading {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    justify-content: center;
+    padding: var(--cw-space-3xl) var(--cw-cell-px);
+    gap: var(--cw-space-md);
+    color: var(--cw-text-faint);
+}
+
+.cw-loading__spinner {
+    font-size: 20px;
+    animation: cw-spin 1s linear infinite;
+}
+
+.cw-loading__text {
+    font-size: 11px;
+    font-weight: 600;
+    text-transform: uppercase;
+    letter-spacing: 0.08em;
+    color: var(--cw-text-muted);
+}
+
+@keyframes cw-spin {
+    from {
+        transform: rotate(0deg);
+    }
+
+    to {
+        transform: rotate(360deg);
+    }
+}
+
+
+/* ── Stat Counters (in header) ────────────────────────────── */
+.cw-stat {
+    display: flex;
+    flex-direction: column;
+    align-items: flex-end;
+    gap: 2px;
+}
+
+.cw-stat__label {
+    font-size: 10px;
+    font-weight: 600;
+    color: var(--cw-text-muted);
+    text-transform: uppercase;
+    letter-spacing: 0.08em;
+}
+
+.cw-stat__value {
+    font-size: 20px;
+    font-weight: 800;
+    color: var(--cw-text-primary);
+    line-height: 1;
+}
+
+
+/* ── Admin Page Body Override (prevents public-glass.css body reset conflicts) ── */
+body:not(.pg-ambient) {
+    font-family: 'Outfit', -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif;
+    background: #f5f3ff;
+    line-height: inherit;
+    overflow: hidden;
+}
+
+/* ── Responsive: Stack cells on small screens ─────────────── */
+@media (max-width: 768px) {
+    .cw-table {
+        font-size: 12px;
+    }
+
+    .cw-th,
+    .cw-td {
+        padding: 10px 12px;
+    }
+
+    .cw-actions {
+        opacity: 1;
+        /* Always show on mobile — no hover */
+    }
+
+    .cw-cell-identity {
+        gap: 8px;
+    }
+
+    .cw-avatar {
+        width: 28px;
+        height: 28px;
+        font-size: 10px;
+    }
+}
+
+
+/* ── Tailwind v4 @layer Override ──────────────────────────────
+   Tailwind v4 wraps all CSS in @layer (properties, theme, base, utilities).
+   CSS Cascade Layers rules:
+     - Normal declarations: LATER layers WIN over earlier layers
+     - !important declarations: EARLIER layers WIN over later layers
+
+   Since Tailwind's @layer utilities is the LAST of its layers and loads
+   BEFORE our file, our @layer admin-tables declared HERE comes AFTER
+   @layer utilities in source order. For NORMAL declarations this means
+   our rules WIN. We intentionally do NOT use !important because
+   that would actually give us LOWER priority inside a late layer.
+   ─────────────────────────────────────────────────────────── */
+@layer admin-tables {
+    .cw-table {
+        display: table;
+    }
+
+    .cw-table td,
+    .cw-table th {
+        display: table-cell;
+        vertical-align: middle;
+        border: none;
+    }
+
+    .cw-table thead {
+        display: table-header-group;
+    }
+
+    .cw-table tbody {
+        display: table-row-group;
+    }
+
+    .cw-table tr {
+        display: table-row;
+    }
+}
+
+/* ── RTL Overrides for Admin Tables ── */
+[dir="rtl"] .cw-td--right,
+html.rtl-mode .cw-td--right {
+    text-align: left;
+}
+[dir="rtl"] .cw-cell-stack,
+html.rtl-mode .cw-cell-stack {
+    flex-direction: row-reverse;
+}

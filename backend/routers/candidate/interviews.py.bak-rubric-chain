@@ -1,0 +1,904 @@
+import logging
+from datetime import UTC, datetime, timedelta
+from typing import Optional, Tuple
+
+from fastapi import (
+    APIRouter,
+    Body,
+    Depends,
+    HTTPException,
+)
+from pydantic import BaseModel
+from sqlalchemy import and_, func, or_
+from sqlalchemy.orm import Session, joinedload, selectinload
+
+from backend.authz import get_application_for_candidate, get_application_for_recruiter
+from backend.database import (
+    Application,
+    EvaluationResult,
+    EvaluationSession,
+    Rubric,
+    User,
+)
+from backend.dependencies import get_current_user, get_db, get_interview_access
+from backend.entity_writer import sync_ai_interview_session, sync_cv_document
+from backend.profile_helpers import get_user_company_name, get_user_headline
+from backend.recommendations import get_ai_recommendations
+from backend.scoring_service import ScoringService
+from backend.tenant import get_current_company_id
+
+from .common import safe_load_json
+
+router = APIRouter(tags=["candidate"])
+
+logger = logging.getLogger(__name__)
+
+
+class DirectInterviewRequest(BaseModel):
+    rubric_id: Optional[int] = None
+    role_title: Optional[str] = None
+    skills: Optional[str] = None
+
+
+def _compute_candidate_rank(
+    db: Session, app: Application
+) -> Optional[dict]:
+    """Compute the candidate's rank among all scored applicants for the same
+    job (or campaign batch). Only applicants with a final EvaluationResult
+    score are ranked. Returns None when there is nothing to rank against
+    (no job/batch, no score, or no scored peers).
+    """
+    if not app.job_id and not app.batch_id:
+        return None
+    target_col = Application.job_id if app.job_id else Application.batch_id
+    target_val = app.job_id or app.batch_id
+
+    rows = (
+        db.query(Application.id, EvaluationResult.final_score)
+        .join(
+            EvaluationSession,
+            EvaluationSession.application_id == Application.id,
+        )
+        .join(
+            EvaluationResult,
+            EvaluationResult.evaluation_session_id == EvaluationSession.id,
+        )
+        .filter(
+            target_col == target_val,
+            EvaluationResult.final_score.isnot(None),
+        )
+        .all()
+    )
+    scored = [r for r in rows if r.final_score is not None]
+    if len(scored) < 2:
+        return None
+
+    my_score = None
+    for r in rows:
+        if r.id == app.id:
+            my_score = r.final_score
+            break
+    if my_score is None:
+        return None
+
+    # Rank is 1-based with ties sharing the best position (competition rank).
+    rank = 1 + sum(1 for r in scored if (r.final_score or 0) > (my_score or 0))
+    total = len(scored)
+    percentile = round((1 - (rank - 1) / total) * 100)
+    return {
+        "rank": rank,
+        "total": total,
+        "percentile": percentile,
+        "score": my_score,
+    }
+
+
+@router.post("/interviews/direct-start")
+def start_direct_interview(
+    req: DirectInterviewRequest,
+    current_user: User = Depends(get_current_user),
+    db: Session = Depends(get_db),
+    company_id: int = Depends(get_current_company_id),
+):
+    raise HTTPException(
+        status_code=410,
+        detail="Direct interview start is no longer available. Interviews must be scheduled by the recruiter after they review your application.",
+    )
+
+
+@router.post("/reset-interview")
+async def reset_interview(
+    payload: Optional[dict] = Body(default=None),
+    current_user: User = Depends(get_current_user),
+    db: Session = Depends(get_db),
+):
+    if current_user.role != "candidate":
+        raise HTTPException(status_code=403, detail="Not authorized")
+    requested_app_id = (payload or {}).get("application_id")
+    query = db.query(Application).filter(Application.user_id == current_user.id)
+    if requested_app_id:
+        app = query.filter(Application.id == requested_app_id).first()
+    else:
+        app = query.order_by(Application.id.desc()).first()
+    if not app:
+        raise HTTPException(status_code=404, detail="No application found")
+
+    # Reset must operate on the latest EvaluationSession even when the
+    # previous session is already marked completed. sync_ai_interview_session()
+    # intentionally targets active sessions, which is correct for the interview
+    # engine but wrong for an explicit reset.
+    eval_session = app._latest_eval_session()
+    if eval_session is None:
+        eval_session = EvaluationSession(
+            application_id=app.id,
+            company_id=app.company_id,
+            interview_state="not_started",
+            interview_progress=0,
+            interview_log=[],
+            interview_questions=[],
+        )
+        db.add(eval_session)
+        db.flush()
+
+    # Rate-limit interview resets. The counter and last-reset timestamp
+    # live on EvaluationSession (Phase 2 migration). Backfill from
+    # legacy `_reset_count` / `_last_reset` keys on first read so existing
+    # applications keep their existing quota consumption.
+    now = datetime.now(UTC).replace(tzinfo=None)
+
+    _reset_count_val = app.interview_reset_count or 0
+    _last_reset_val = app.interview_last_reset_at
+
+    if _reset_count_val == 0:
+        # Legacy migration: read the once-only counter from analysis_json
+        legacy_meta = {}
+        if app.analysis_json:
+            try:
+                legacy_meta = safe_load_json(app.analysis_json, {})
+            except Exception:
+                legacy_meta = {}
+        legacy_count = int(legacy_meta.get("_reset_count") or 0)
+        legacy_last = legacy_meta.get("_last_reset")
+        if legacy_count:
+            _reset_count_val = legacy_count
+        if legacy_last:
+            try:
+                _last_reset_val = datetime.fromisoformat(legacy_last)
+            except Exception:
+                pass
+
+    if _last_reset_val:
+        try:
+            if now - _last_reset_val > timedelta(hours=24):
+                _reset_count_val = 0
+        except Exception:
+            pass
+
+    if (_reset_count_val or 0) >= 10:
+        raise HTTPException(
+            status_code=403,
+            detail="Maximum interview resets (10) reached for this application within 24 hours.",
+        )
+
+    _reset_count_val = (_reset_count_val or 0) + 1
+    _last_reset_val = now
+    eval_session.interview_reset_count = _reset_count_val
+    eval_session.interview_last_reset_at = _last_reset_val
+
+    # Strip the legacy keys from analysis_json so the JSON bag doesn't
+    # drift back into the source of truth. Existing keys are preserved
+    # for the backfill above; on the next reset we have already
+    # migrated the counter into the column.
+    if app.analysis_json:
+        try:
+            existing_meta = safe_load_json(app.analysis_json, {})
+            if isinstance(existing_meta, dict):
+                existing_meta.pop("_reset_count", None)
+                existing_meta.pop("_last_reset", None)
+                sync_cv_document(db, app, analysis_json=existing_meta)
+        except Exception:
+            pass
+
+    eval_session.interview_log = []
+    app.status = "analyzed"
+    app.recruiter_notes = None
+    _reset_cv_score = (
+        app.evaluation_sessions[0].evaluation_result.cv_score
+        if app.evaluation_sessions
+        and app.evaluation_sessions[0].evaluation_result
+        and app.evaluation_sessions[0].evaluation_result.cv_score
+        else 0
+    )
+    ScoringService.set_cv_only(
+        app, db, cv_score=_reset_cv_score, computed_by="interview_reset"
+    )
+    ScoringService.set_verdict(app, db, verdict=None, computed_by="interview_reset")
+
+    app.opened_at = None
+    # Reset the complete interview lifecycle state on the SAME latest
+    # EvaluationSession. Do not use sync_ai_interview_session() here because
+    # that helper intentionally targets active sessions and may skip a
+    # completed session that is the current source of truth.
+    #
+    # turn_seq must return to 0; otherwise a previous in-flight/claimed
+    # turn can poison the next interview lifecycle.
+    eval_session.interview_state = "not_started"
+    eval_session.interview_progress = 0
+    eval_session.interview_last_saved = None
+    eval_session.proctoring_violations = "[]"
+    eval_session.turn_seq = 0
+
+    db.commit()
+    return {
+        "id": app.id,
+        "active_app_id": app.id,
+        "message": "Interview reset successfully",
+        "score": app.evaluation_sessions[0].evaluation_result.final_score
+        if app.evaluation_sessions and app.evaluation_sessions[0].evaluation_result
+        else None,
+        "reset_count": app.interview_reset_count,
+    }
+
+
+@router.get("/interviews/history")
+def get_candidate_interview_history(
+    current_user: User = Depends(get_current_user), db: Session = Depends(get_db)
+):
+    user_email = current_user.email.strip().lower() if current_user.email else ""
+    apps = (
+        db.query(Application)
+        .options(
+            joinedload(Application.job),
+            joinedload(Application.batch_job),
+            selectinload(Application.evaluation_sessions).selectinload(
+                EvaluationSession.evaluation_result
+            ),
+            selectinload(Application.cv_document),
+        )
+        .filter(
+            or_(
+                Application.user_id == current_user.id,
+                and_(
+                    Application.user_id.is_(None),
+                    func.lower(Application.email) == user_email,
+                ),
+            )
+        )
+        .order_by(Application.updated_at.desc())
+        .all()
+    )
+
+    results = []
+    for app in apps:
+        _iv, _cv, _ev = (
+            (app.evaluation_sessions[0] if app.evaluation_sessions else None),
+            getattr(app, "cv_document", None),
+            (app.evaluation_sessions[0] if app.evaluation_sessions else None),
+        )
+        _er = getattr(app, "evaluation_sessions", None)
+        _sc = _er[0].evaluation_result if _er and _er[0].evaluation_result else None
+        _iv_state = getattr(_iv, "interview_state", None) or app.interview_state
+        _iv_progress = (
+            getattr(_iv, "interview_progress", None) or app.interview_progress
+        )
+        _iv_questions = (
+            getattr(_iv, "interview_questions", None) or app.interview_questions
+        )
+        _sc_score = _sc.final_score if _sc else None
+        _cv_role = getattr(_cv, "declared_role", None) or app.declared_role
+        _sc_verdict = (
+            _sc.verdict
+            if _sc and _sc.verdict
+            else (
+                (_sc.score_breakdown or {}).get("verdict")
+                if _sc and _sc.score_breakdown
+                else None
+            )
+        )
+
+        # Expiry only counts from interview session creation; if never started, it cannot expire
+        iv_created = _iv.created_at if _iv else None
+        days_elapsed = (
+            (datetime.now(UTC).replace(tzinfo=None) - iv_created).days
+            if iv_created
+            else 0
+        )
+        is_expired = (
+            days_elapsed >= 7 and _iv_state != "completed" and _iv_state != "expired"
+        )
+
+        # An AI interview is only available to the candidate once the recruiter
+        # has actually scheduled/invited them (mirrors the gate in
+        # ai_interview/chat.py + session.py). Applications that were merely
+        # applied (status applied/screening/analyzed...) and never invited are
+        # NOT interviews yet — they belong to the Applications page, not here.
+        # Self-assessments (no job, no campaign) keep auto-start so the
+        # practice/audit flow is preserved.
+        _ALLOWED_INTERVIEW_START_STATUSES = {"invited", "interviewing", "shortlisted"}
+        is_self_assessment = app.job_id is None and app.batch_id is None
+        interview_available = (
+            is_self_assessment
+            or app.status in _ALLOWED_INTERVIEW_START_STATUSES
+            or _iv_state in ("in_progress", "paused", "flagged", "completed", "expired")
+            or app.status == "under_review"
+        )
+        if not interview_available:
+            continue
+
+        status = "pending"
+        if _iv_state == "completed":
+            status = "completed"
+        elif _iv_state == "flagged":
+            total_q = len(safe_load_json(_iv_questions, [])) or 15
+            if (_iv_progress or 0) >= total_q:
+                status = "completed"
+            else:
+                status = "in-progress"
+        elif _iv_state == "expired" or is_expired:
+            status = "expired"
+        elif _iv_state in ["in_progress", "paused"]:
+            status = "in-progress"
+        elif app.status == "under_review":
+            status = "under-review"
+
+        total_q = len(safe_load_json(_iv_questions, [])) or 15
+
+        results.append(
+            {
+                "id": app.id,
+                "role": _cv_role or "General Assessment",
+                "company": app.job.company_name
+                if app.job
+                else (
+                    get_user_company_name(app.batch_job.recruiter)
+                    if (app.batch_job and app.batch_job.recruiter)
+                    else "Direct Audit"
+                ),
+                "date": (app.updated_at or app.created_at).isoformat(),
+                "score": _sc_score,
+                "ranking": _compute_candidate_rank(db, app) if _sc_score is not None else None,
+                "status": status,
+                "days_remaining": max(0, 7 - days_elapsed)
+                if status in ["in-progress", "pending"]
+                else 0,
+                "progress": _iv_progress or 0,
+                "total": total_q,
+                "duration": "AI Session",
+                "questions": total_q,
+                "qualified": app.status == "preselected"
+                or _sc_verdict in ["High Potential", "Qualified", "Excellent Match"],
+                "color": "#6366F1",
+            }
+        )
+    return results
+
+
+@router.get("/interviews/{app_id}/analysis")
+async def get_candidate_interview_analysis(
+    app_id: int,
+    db: Session = Depends(get_db),
+    auth: Tuple[Optional[User], Application] = Depends(get_interview_access),
+):
+    """Full interview analysis for the app owner.
+
+    Uses get_interview_access so both logged-in candidates (JWT) and
+    invited guest candidates (guest JWT / HMAC link) can view their own
+    results. Previously guarded by get_current_user + candidate ownership
+    only, which bounced every guest to the login page after completing.
+    """
+    current_user, app = auth
+    if not app:
+        if (
+            current_user
+            and getattr(current_user, "role", None) in ["recruiter", "admin"]
+        ):
+            app = get_application_for_recruiter(app_id, current_user, db)
+        elif current_user:
+            app = get_application_for_candidate(app_id, current_user, db)
+    if not app:
+        raise HTTPException(status_code=404, detail="Application not found")
+    if current_user and getattr(current_user, "role", None) not in [
+        "recruiter",
+        "admin",
+    ]:
+        if app.user_id and app.user_id != current_user.id:
+            raise HTTPException(
+                status_code=403, detail="Not authorized to access this application"
+            )
+    app = (
+        db.query(Application)
+        .options(
+            selectinload(Application.cv_document),
+            selectinload(Application.evaluation_sessions).selectinload(
+                EvaluationSession.evaluation_result
+            ),
+        )
+        .filter(Application.id == app.id)
+        .first()
+    )
+
+    _cv = app.cv_document
+    _iv = app.evaluation_sessions[0] if app.evaluation_sessions else None
+    _er_sessions = getattr(app, "evaluation_sessions", None)
+    _sc = (
+        _er_sessions[0].evaluation_result
+        if _er_sessions and _er_sessions[0].evaluation_result
+        else None
+    )
+    _ev = app.evaluation_state
+    _iv_state = getattr(_iv, "interview_state", None) or app.interview_state
+    _analysis_json_i = getattr(_cv, "analysis_json", None) or app.analysis_json
+    _sc_score_i = _sc.final_score if _sc else None
+    _cv_role_i = getattr(_cv, "declared_role", None) or app.declared_role
+    _cv_text_i = getattr(_cv, "cv_text_anonymized", None) or app.cv_text_anonymized
+    _sc_verdict_i = (
+        _sc.verdict
+        if _sc and _sc.verdict
+        else (
+            (_sc.score_breakdown or {}).get("verdict")
+            if _sc and _sc.score_breakdown
+            else None
+        )
+    )
+    _ranking = _compute_candidate_rank(db, app)
+    _scoring_breakdown = None
+    if _sc:
+        _sb = _sc.score_breakdown or {}
+        if isinstance(_sb, str):
+            try:
+                import json
+
+                _sb = json.loads(_sb) if _sb else {}
+            except Exception:
+                _sb = {}
+        _sb = _sb if isinstance(_sb, dict) else {}
+        _has_rubric = _sc.rubric_score is not None and _sc.rubric_score > 0.0
+        _weights = {
+            "cv": 0.25 if _has_rubric else 0.75,
+            "rubric": 0.50 if _has_rubric else 0.0,
+            "human": 0.0,
+            "coverage": 0.25,
+        }
+        _cov_pct = _sc.rubric_coverage_pct or 0.0
+        _scoring_breakdown = {
+            "final_score": _sc.final_score,
+            "cv_score": _sc.cv_score,
+            "rubric_score": _sc.rubric_score,
+            "human_score": None,
+            "rubric_coverage_pct": _sc.rubric_coverage_pct,
+            "coverage_bonus": round(_cov_pct * 0.25, 2),
+            "has_rubric": _has_rubric,
+            "weights": _weights,
+            "computed": round(
+                (_sc.cv_score or 0) * _weights["cv"]
+                + (_sc.rubric_score or 0) * _weights["rubric"]
+                + _cov_pct * _weights["coverage"],
+                1,
+            ),
+        }
+    from backend.interview_turns import load_turns
+
+    _iv_qa_i = load_turns(db, app)
+    _iv_log_i = getattr(_iv, "interview_log", None) or app.interview_log
+    _iv_questions_i = (
+        getattr(_iv, "interview_questions", None) or app.interview_questions
+    )
+    _roadmap_i = getattr(_cv, "roadmap_json", None) or app.roadmap_json
+
+    # Phase A: Load rubric summary
+    rubric_summary = (
+        db.query(EvaluationResult)
+        .join(
+            EvaluationSession,
+            EvaluationResult.evaluation_session_id == EvaluationSession.id,
+        )
+        .filter(EvaluationSession.application_id == app_id)
+        .first()
+    )
+    is_rubric_driven = rubric_summary is not None
+
+    iv_created = _iv.created_at if _iv else None
+    days_elapsed = (
+        (datetime.now(UTC).replace(tzinfo=None) - iv_created).days if iv_created else 0
+    )
+    is_expired = (
+        days_elapsed >= 7 and _iv_state != "completed" and _iv_state != "expired"
+    )
+
+    if is_expired and app.status != "rejected":
+        app.status = "rejected"
+        sync_ai_interview_session(db, app, interview_state="expired")
+        db.commit()
+
+    analysis = safe_load_json(_analysis_json_i)
+    metrics = analysis.get("skill_metrics") or analysis.get("skills") or {}
+
+    # Live score fallback: while the interview is in progress there is no
+    # EvaluationResult row yet. Use the engine state's score_breakdown.
+    if not _sc_score_i:
+        engine_state = (
+            analysis.get("engine_v2_state") if isinstance(analysis, dict) else None
+        )
+        if isinstance(engine_state, dict):
+            sb = engine_state.get("score_breakdown") or {}
+            if isinstance(sb, dict) and sb.get("final_score"):
+                _sc_score_i = float(sb["final_score"])
+
+    # Phase A: Build performance_overview from rubric or fallback to fabricated
+    category_breakdown = []
+    skill_breakdown = []
+    gaps = []
+    rubric_version = None
+    rubric_score = None
+    rubric_coverage_pct = None
+
+    if is_rubric_driven:
+        try:
+            rubric_score = _sc.rubric_score if _sc else None
+            rubric_coverage_pct = _sc.rubric_coverage_pct if _sc else None
+            rubric_version = rubric_summary.rubric_version
+            breakdown_data = rubric_summary.score_breakdown or {}
+            if isinstance(breakdown_data, str):
+                import json
+
+                breakdown_data = json.loads(breakdown_data) if breakdown_data else {}
+            raw_cats = (
+                breakdown_data.get("category_scores", [])
+                if isinstance(breakdown_data, dict)
+                else []
+            )
+            if isinstance(raw_cats, list):
+                for cat in raw_cats:
+                    cname = cat.get("name", "") if isinstance(cat, dict) else ""
+                    cscore = cat.get("score", 0) if isinstance(cat, dict) else 0
+                    cweight = cat.get("weight", 1.0) if isinstance(cat, dict) else 1.0
+                    category_breakdown.append(
+                        {
+                            "name": cname,
+                            "score": cscore,
+                            "weight": cweight,
+                            "coverage_pct": cat.get("coverage_pct", None)
+                            if isinstance(cat, dict)
+                            else None,
+                            "skills_scored": cat.get("skills_scored", None)
+                            if isinstance(cat, dict)
+                            else None,
+                            "skills_total": cat.get("skills_total", None)
+                            if isinstance(cat, dict)
+                            else None,
+                        }
+                    )
+
+            raw_skills = (
+                breakdown_data.get("skill_scores", {})
+                if isinstance(breakdown_data, dict)
+                else {}
+            )
+            if isinstance(raw_skills, dict):
+                for sname, sdetails in raw_skills.items():
+                    sd = sdetails if isinstance(sdetails, dict) else {}
+                    skill_breakdown.append(
+                        {
+                            "name": sname,
+                            "score": sd.get("final_score", 0),
+                            "is_required": sd.get("is_required", False),
+                            "assessed": sd.get("final_score", 0) > 0,
+                            "category": sd.get("category", ""),
+                        }
+                    )
+
+            raw_gaps = (
+                breakdown_data.get("gaps", [])
+                if isinstance(breakdown_data, dict)
+                else []
+            )
+            if isinstance(raw_gaps, list):
+                gaps = [g for g in raw_gaps if isinstance(g, dict)]
+
+            metrics = {c["name"]: c["score"] for c in category_breakdown if c["name"]}
+            if not metrics:
+                metrics = {s["name"]: s["score"] for s in skill_breakdown if s["name"]}
+        except Exception as rub_err:
+            logger.error(f"Failed to parse rubric summary for app {app_id}: {rub_err}")
+            is_rubric_driven = False
+
+    qa_structured = (
+        _iv_qa_i if isinstance(_iv_qa_i, list) else safe_load_json(_iv_qa_i, [])
+    )
+    questions_data = []
+    score_timeline = []
+    best_moment = None
+    worst_moment = None
+    longest_answer = None
+    longest_len = 0
+
+    for idx, qa in enumerate(qa_structured):
+        q_text = qa.get("q") or qa.get("question", f"Question {idx + 1}")
+        a_text = qa.get("a") or qa.get("answer", "")
+        q_score = qa.get("score", 0)
+        q_feedback = qa.get("feedback", "")
+        q_type = qa.get("type", "Technical")
+        q_difficulty = qa.get("difficulty", "Medium")
+
+        score_timeline.append({"q": f"Q{idx + 1}", "score": q_score})
+
+        if best_moment is None or q_score > best_moment.get("score", 0):
+            best_moment = {"question": idx + 1, "topic": q_text[:60], "score": q_score}
+        if worst_moment is None or q_score < worst_moment.get("score", 100):
+            worst_moment = {"question": idx + 1, "topic": q_text[:60], "score": q_score}
+
+        a_len = len(a_text.split()) if a_text else 0
+        if a_len > longest_len:
+            longest_len = a_len
+            est_minutes = max(1, round(a_len / 130))
+            est_seconds = (a_len * 60 // 130) % 60
+            longest_answer = {
+                "question": idx + 1,
+                "topic": q_text[:60],
+                "duration": f"{est_minutes}:{est_seconds:02d}",
+            }
+
+        questions_data.append(
+            {
+                "number": idx + 1,
+                "question": q_text,
+                "answer": a_text,
+                "score": q_score,
+                "feedback": q_feedback,
+                "reasoning": qa.get("reasoning", ""),
+                "quality": qa.get("quality", "normal"),
+                "response_time_seconds": qa.get("response_time_seconds", 0),
+                "duration": (
+                    f"{int(qa['response_time_seconds'] // 60)}:"
+                    f"{int(qa['response_time_seconds'] % 60):02d}"
+                    if qa.get("response_time_seconds")
+                    else "0:00"
+                ),
+                "type": q_type,
+                "difficulty": q_difficulty,
+                "status": "excellent"
+                if q_score >= 80
+                else ("good" if q_score >= 60 else "fair"),
+            }
+        )
+
+    if not questions_data:
+        interview_log = (
+            _iv_log_i if isinstance(_iv_log_i, list) else safe_load_json(_iv_log_i, [])
+        )
+        for idx, entry in enumerate(interview_log):
+            if entry.get("role") == "user" and not entry.get("_handshake"):
+                questions_data.append(
+                    {
+                        "number": len(questions_data) + 1,
+                        "question": f"Question {len(questions_data) + 1}",
+                        "answer": entry.get("content", ""),
+                        "score": _sc_score_i or 0,
+                        "feedback": "AI evaluated",
+                        "type": "General",
+                        "difficulty": "Medium",
+                        "status": "good",
+                    }
+                )
+                score_timeline.append(
+                    {"q": f"Q{len(questions_data)}", "score": _sc_score_i or 0}
+                )
+
+    # Turn-average score fallback: if no EvaluationResult or engine breakdown
+    # exists but individual turns were scored, surface the average as the score.
+    if not _sc_score_i and questions_data:
+        scored_answers = [
+            q.get("score")
+            for q in questions_data
+            if isinstance(q.get("score"), (int, float)) and q.get("score") > 0
+        ]
+        if scored_answers:
+            _sc_score_i = round(sum(scored_answers) / len(scored_answers), 1)
+
+    total_questions = (
+        len(questions_data) or len(safe_load_json(_iv_questions_i, [])) or 15
+    )
+    # Real duration: prefer session started_at/completed_at, then turns'
+    # first/last timestamps, then fall back to an estimate based on question count.
+    duration_seconds = None
+    if _iv:
+        _iv_start = _iv.started_at or getattr(_iv, "created_at", None)
+        if _iv.completed_at and _iv_start:
+            duration_seconds = (_iv.completed_at - _iv_start).total_seconds()
+        elif _iv_start:
+            duration_seconds = (
+                datetime.now(UTC).replace(tzinfo=None) - _iv_start
+            ).total_seconds()
+    if duration_seconds is None:
+        turn_times = [
+            qa.get("answer_timestamp") or qa.get("question_timestamp")
+            for qa in qa_structured
+        ]
+        turn_times = [
+            datetime.fromisoformat(t.replace("Z", "+00:00").replace("+00:00", ""))
+            if isinstance(t, str) and t
+            else (t if isinstance(t, datetime) else None)
+            for t in turn_times
+        ]
+        turn_times = [t for t in turn_times if t]
+        if turn_times:
+            duration_seconds = max(
+                0, (max(turn_times) - min(turn_times)).total_seconds()
+            )
+    if duration_seconds is None:
+        duration_seconds = (total_questions * 2 + 5) * 60
+    duration_minutes = max(1, round(duration_seconds / 60))
+    started_at = app.created_at or app.updated_at
+    submitted_at = app.updated_at or app.created_at
+
+    interview_type = "AI Interview"
+    if app.batch_job and app.batch_job.description:
+        if "technical" in app.batch_job.description.lower():
+            interview_type = "Technical Interview"
+        elif "behavioral" in app.batch_job.description.lower():
+            interview_type = "Behavioral Interview"
+
+    def score_label(s):
+        if s is None:
+            return "N/A"
+        s = float(s)
+        if s >= 85:
+            return "Excellent"
+        if s >= 70:
+            return "Good"
+        if s >= 50:
+            return "Fair"
+        return "Needs Work"
+
+    if isinstance(metrics, list):
+        metrics = {skill: (_sc_score_i or 50) for skill in metrics[:7]}
+
+    if not isinstance(metrics, dict):
+        metrics = {}
+
+    # Never fabricate metric scores. If no rubric/skill metrics exist yet,
+    # derive the 5 standard dimensions from the real scored turns so the
+    # analysis reflects actual performance; if there are no scored turns
+    # either, leave metrics empty and let the frontend show "no data".
+    if not metrics and questions_data:
+        scored_turns = [
+            q.get("score")
+            for q in questions_data
+            if isinstance(q.get("score"), (int, float)) and q.get("score") > 0
+        ]
+        if scored_turns:
+            avg = round(sum(scored_turns) / len(scored_turns))
+            metrics = {
+                "Communication": avg,
+                "Technical Knowledge": avg,
+                "Problem Solving": avg,
+                "Clarity & Structure": avg,
+                "Confidence": avg,
+            }
+
+    performance_overview = []
+    for k, v in metrics.items():
+        performance_overview.append(
+            {
+                "label": str(k),
+                "score": round(float(v)) if v else 0,
+                "label_score": score_label(v),
+            }
+        )
+
+    recommendations = None
+    try:
+        interview_results = {
+            "final_score": _sc_score_i or 0,
+            "declared_role": _cv_role_i or "",
+            "cv_text": _cv_text_i or "",
+            "strengths": analysis.get("strengths", []),
+            "weaknesses": analysis.get("missing_skills", [])
+            or analysis.get("weaknesses", []),
+            "skill_gaps": analysis.get("missing_skills", []) or [],
+        }
+        recs = await get_ai_recommendations(
+            db=db,
+            user_id=current_user.id if current_user else None,
+            interview_results=interview_results,
+            limit=5,
+        )
+        recommendations = recs
+    except Exception as e:
+        logger.error(f"Failed to fetch recommendations for app {app_id}: {e}")
+
+    roadmap = None
+    try:
+        if _roadmap_i:
+            roadmap = json.loads(_roadmap_i)
+    except Exception:
+        pass
+
+    return {
+        "id": app.id,
+        "role": _cv_role_i or "General Assessment",
+        "company": app.job.company_name
+        if app.job
+        else (
+            get_user_company_name(app.batch_job.recruiter)
+            if (app.batch_job and app.batch_job.recruiter)
+            else "Direct Audit"
+        ),
+        "date": (app.updated_at or app.created_at).isoformat(),
+        "score": round(float(_sc_score_i)) if _sc_score_i else 0,
+        "score_label": "Expired" if is_expired else score_label(_sc_score_i),
+        "ranking": _ranking,
+        "scoring_breakdown": _scoring_breakdown,
+        "verdict": "Rejected (Expired)"
+        if is_expired
+        else (_sc_verdict_i or "Completed"),
+        "interview_type": interview_type,
+        "duration": f"{duration_minutes} min",
+        "reasoning": "This interview has expired as it was not completed within the 7-day window."
+        if is_expired
+        else (
+            getattr(app, "score_reasoning", None)
+            or analysis.get("summary")
+            or "Analysis complete."
+        ),
+        "strengths": [] if is_expired else analysis.get("strengths", []),
+        "weaknesses": []
+        if is_expired
+        else (analysis.get("weaknesses", []) or analysis.get("gaps", [])),
+        "metrics": metrics,
+        "performance_overview": performance_overview,
+        "questions": questions_data,
+        "total_questions": total_questions,
+        "completed_questions": len([q for q in questions_data if q.get("answer")])
+        or total_questions,
+        "score_timeline": score_timeline,
+        "highlights": {
+            "best_moment": best_moment
+            or {
+                "question": 1,
+                "topic": "Interview Start",
+                "score": _sc_score_i or 0,
+            },
+            "worst_moment": worst_moment
+            or {
+                "question": total_questions,
+                "topic": "Final Question",
+                "score": max(0, (_sc_score_i or 0) - 15),
+            },
+            "longest_answer": longest_answer
+            or {"question": 1, "topic": "Introduction", "duration": "2:30"},
+        },
+        "interview_details": {
+            "interview_id": f"INT-{str(app.id).zfill(9)}",
+            "started_at": started_at.strftime("%b %d, %Y • %I:%M %p")
+            if started_at
+            else "N/A",
+            "submitted_at": submitted_at.strftime("%b %d, %Y • %I:%M %p")
+            if submitted_at
+            else "N/A",
+            "total_questions": total_questions,
+            "responses": len([q for q in questions_data if q.get("answer")])
+            or total_questions,
+            "status": "Expired"
+            if is_expired
+            else ("Completed" if _iv_state == "completed" else "In Progress"),
+            "days_remaining": max(0, 7 - days_elapsed)
+            if _iv_state != "completed"
+            else 0,
+            "is_expired": is_expired,
+        },
+        "status": "expired" if is_expired else app.status,
+        "is_expired": is_expired,
+        "days_remaining": max(0, 7 - days_elapsed) if _iv_state != "completed" else 0,
+        "interview_state": _iv_state,
+        "recommendations": recommendations,
+        "roadmap": roadmap,
+        # Phase A: Rubric-driven analysis
+        "is_rubric_driven": is_rubric_driven,
+        "rubric_version": rubric_version,
+        "rubric_score": rubric_score,
+        "rubric_coverage_pct": rubric_coverage_pct,
+        "category_breakdown": category_breakdown,
+        "skill_breakdown": skill_breakdown,
+        "gaps": gaps,
+    }

@@ -1,0 +1,1146 @@
+import json
+import logging
+import os
+import time
+import uuid
+
+from fastapi import (
+    APIRouter,
+    Body,
+    Depends,
+    File,
+    Form,
+    HTTPException,
+    UploadFile,
+)
+from sqlalchemy import func
+from sqlalchemy.orm import Session, selectinload
+
+from backend.ai.privacy import scrub_pii
+from backend.candidate_subscription_service import CandidateSubscriptionService
+from backend.database import Application, AuditLog, CvDocument, User
+from backend.dependencies import get_current_user, get_db, require_credits
+from backend.entity_writer import sync_cv_document
+from backend.models.ats.types import ApplicationType
+from backend.models.evaluation.profile import CandidateProfile
+from backend.profile_helpers import get_user_email, get_user_name, get_user_phone
+from backend.scoring_service import ScoringService
+from backend.services.application_service import ApplicationService
+
+from .common import _check_api_rate_limit, safe_load_json
+
+router = APIRouter(tags=["candidate"])
+
+logger = logging.getLogger(__name__)
+
+BASE_DIR = os.path.dirname(os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
+UPLOAD_DIR = os.path.join(BASE_DIR, "uploads")
+
+
+@router.get("/cv-documents")
+def list_cv_documents(
+    current_user: User = Depends(get_current_user),
+    db: Session = Depends(get_db),
+):
+    """List the candidate's CV documents (newest first) so they can pick one
+    to attach when applying via the public careers form.
+
+    Only light metadata is returned — the raw CV text is deferred and never
+    loaded here (it is large and unnecessary for a picker list).
+    """
+    if current_user.role != "candidate":
+        raise HTTPException(
+            status_code=403, detail="This feature is only available to candidates"
+        )
+    rows = (
+        db.query(CvDocument)
+        .join(Application, Application.id == CvDocument.application_id)
+        .filter(Application.user_id == current_user.id)
+        .order_by(CvDocument.created_at.desc())
+        .all()
+    )
+    documents = []
+    for doc in rows:
+        documents.append(
+            {
+                "id": doc.id,
+                "application_id": doc.application_id,
+                "declared_role": doc.declared_role,
+                "detected_role": doc.detected_role,
+                "file_name": (doc.cv_file_path or "").rsplit("/", 1)[-1] or None,
+                "created_at": doc.created_at.isoformat() if doc.created_at else None,
+            }
+        )
+    return {"documents": documents}
+
+
+def _synthesize_cv_text(builder_data: dict) -> str:
+    """Build a plain-text CV from builder data so AI review works without a file upload."""
+    lines = []
+    personal = builder_data.get("personal_info") or {}
+    name = personal.get("name") or builder_data.get("name")
+    role = personal.get("role") or builder_data.get("role")
+    phone = personal.get("phone")
+    location = personal.get("location")
+    if name:
+        lines.append(f"{name}")
+    if role:
+        lines.append(role)
+    contact_bits = [b for b in [phone, location] if b]
+    if contact_bits:
+        lines.append(" | ".join(contact_bits))
+
+    summary = builder_data.get("summary")
+    if summary:
+        lines.append("")
+        lines.append("PROFESSIONAL SUMMARY")
+        lines.append(str(summary))
+
+    skills = builder_data.get("skills") or []
+    if skills:
+        lines.append("")
+        lines.append("SKILLS")
+        skill_names = []
+        for s in skills:
+            if isinstance(s, dict):
+                skill_names.append(s.get("name") or "")
+            elif s:
+                skill_names.append(str(s))
+        lines.append(", ".join(n for n in skill_names if n))
+
+    experience = builder_data.get("experience") or []
+    if experience:
+        lines.append("")
+        lines.append("WORK EXPERIENCE")
+        for exp in experience:
+            if not isinstance(exp, dict):
+                continue
+            title = exp.get("title") or ""
+            company = exp.get("company") or ""
+            period = exp.get("period") or exp.get("duration") or ""
+            head = ", ".join(x for x in [title, company, period] if x)
+            if head:
+                lines.append(head)
+            desc = exp.get("description") or exp.get("achievements")
+            if desc:
+                lines.append(str(desc))
+
+    education = builder_data.get("education") or []
+    if education:
+        lines.append("")
+        lines.append("EDUCATION")
+        for edu in education:
+            if not isinstance(edu, dict):
+                continue
+            degree = edu.get("degree") or ""
+            school = edu.get("school") or ""
+            year = edu.get("year") or ""
+            bits = [b for b in [degree, school, year] if b]
+            if bits:
+                lines.append(" - ".join(bits))
+
+    return "\n".join(line for line in lines if line.strip())
+
+
+def _load_builder_data(current_user: User, db: Session) -> dict:
+    """Load CV builder data, preferring the user-scoped CandidateProfile.
+
+    Falls back to the legacy Application.analysis_json payload so CVs saved
+    before the Profile-first migration are still readable.
+    """
+    profile = getattr(current_user, "candidate_profile", None)
+    if profile and profile.builder_data:
+        try:
+            return safe_load_json(profile.builder_data) or {}
+        except Exception:
+            logger.warning(
+                "Failed to parse CandidateProfile.builder_data", exc_info=True
+            )
+
+    app = (
+        db.query(Application)
+        .options(selectinload(Application.cv_document))
+        .filter(Application.user_id == current_user.id)
+        .order_by(Application.created_at.desc())
+        .first()
+    )
+    if not app:
+        return {}
+    _cv = app.cv_document
+    raw = getattr(_cv, "analysis_json", None) or app.analysis_json
+    if not raw:
+        return {}
+    analysis = safe_load_json(raw)
+    return analysis.get("builder_data", {}) or {}
+
+
+@router.get("/cv-data")
+def get_cv_builder_data(
+    current_user: User = Depends(get_current_user), db: Session = Depends(get_db)
+):
+    builder_data = _load_builder_data(current_user, db)
+    if not builder_data:
+        return {"found": False, "data": {}}
+    data = dict(builder_data)
+    raw_skills = data.get("skills") or []
+    if isinstance(raw_skills, list):
+        data["skills"] = [
+            s.get("name") if isinstance(s, dict) else str(s) for s in raw_skills if s
+        ]
+    elif isinstance(raw_skills, str):
+        data["skills"] = [s.strip() for s in raw_skills.split(",") if s.strip()]
+    return {"found": True, "data": data}
+
+
+@router.put("/builder-data")
+async def update_builder_data(
+    data: dict = Body(...),
+    current_user: User = Depends(get_current_user),
+    db: Session = Depends(get_db),
+):
+    profile = getattr(current_user, "candidate_profile", None)
+    if profile is None:
+        profile = CandidateProfile(user_id=current_user.id)
+        db.add(profile)
+        db.flush()
+
+    builder_data = {}
+    if profile.builder_data:
+        try:
+            builder_data = safe_load_json(profile.builder_data) or {}
+        except Exception:
+            builder_data = {}
+    for key, value in data.items():
+        builder_data[key] = value
+    profile.builder_data = json.dumps(builder_data)
+
+    _sync_builder_personal_info(db, current_user, profile, builder_data)
+
+    audit = AuditLog(
+        user_id=current_user.id,
+        action="builder_data_update",
+        target_id=str(current_user.id),
+        details=f"Updated builder sections: {', '.join(data.keys())}",
+        ip_address="system",
+    )
+    db.add(audit)
+    db.commit()
+
+    return {
+        "message": "Builder data updated successfully",
+        "sections": list(data.keys()),
+    }
+
+
+def _sync_builder_personal_info(
+    db: Session, current_user: User, profile: CandidateProfile, builder_data: dict
+) -> None:
+    """Dual-write personal info fields so the profile page reflects builder edits."""
+    personal = builder_data.get("personal_info") or {}
+    name = personal.get("name") or builder_data.get("name")
+    if name:
+        profile.name = name
+    role = personal.get("role") or builder_data.get("role")
+    if role:
+        profile.headline = role
+    if personal.get("phone"):
+        profile.phone = personal["phone"]
+    if personal.get("location"):
+        profile.location = personal["location"]
+    summary = builder_data.get("summary")
+    if summary:
+        profile.bio = summary
+    skills = builder_data.get("skills")
+    if skills:
+        if isinstance(skills, list):
+            profile.skills = json.dumps(
+                [s.get("name") if isinstance(s, dict) else s for s in skills if s]
+            )
+        elif isinstance(skills, str):
+            profile.skills = skills
+
+
+def _persist_review_score(db: Session, current_user: User, result: dict) -> None:
+    """Store the numeric score + grade from a CV review into CandidateProfile.builder_data.
+
+    This makes the profile page's professional score match the AI review score,
+    even when the candidate has no Application / EvaluationResult row.
+    """
+    try:
+        grade = result.get("overall_grade")
+        score = result.get("score")
+        if score is None:
+            mapped = {"A": 90, "B": 80, "C": 70, "D": 60, "F": 50}.get(
+                str(grade).strip().upper()[0:1] if grade else "", None
+            )
+            if mapped is not None:
+                score = mapped
+        if score is None and result.get("rubric_dimension_scores"):
+            dims = result.get("rubric_dimension_scores") or []
+            vals = [
+                d.get("score")
+                for d in dims
+                if isinstance(d, dict) and isinstance(d.get("score"), (int, float))
+            ]
+            if vals:
+                score = int(sum(vals) / len(vals))
+        if score is None:
+            return
+
+        profile = getattr(current_user, "candidate_profile", None)
+        if profile is None:
+            profile = CandidateProfile(user_id=current_user.id)
+            db.add(profile)
+            db.flush()
+
+        builder_data = {}
+        if profile.builder_data:
+            try:
+                builder_data = safe_load_json(profile.builder_data) or {}
+            except Exception:
+                builder_data = {}
+        builder_data["score"] = int(float(score))
+        if grade:
+            builder_data["overall_grade"] = grade
+        if result.get("verdict"):
+            builder_data["verdict"] = result["verdict"]
+        profile.builder_data = json.dumps(builder_data)
+        db.commit()
+    except Exception as e:
+        db.rollback()
+        logger.error(f"Failed to persist review score for user {current_user.id}: {e}")
+
+
+@router.get("/cv-review")
+async def get_cv_review(
+    force: bool = False,
+    current_user: User = Depends(get_current_user),
+    db: Session = Depends(get_db),
+):
+    from backend.ai.llm import call_groq_cascade
+    from backend.ai.prompts import get_cv_improvement_prompt
+
+    latest_app = (
+        db.query(Application)
+        .join(CvDocument, CvDocument.application_id == Application.id)
+        .filter(
+            Application.user_id == current_user.id,
+            CvDocument.cv_text_anonymized.isnot(None),
+        )
+        .order_by(Application.created_at.desc())
+        .first()
+    )
+
+    cv_text = None
+    if latest_app and latest_app.cv_document and latest_app.cv_document.cv_text_anonymized:
+        cv_text = latest_app.cv_document.cv_text_anonymized
+    elif latest_app and latest_app.cv_text_anonymized:
+        cv_text = latest_app.cv_text_anonymized
+    else:
+        builder_data = _load_builder_data(current_user, db)
+        if builder_data:
+            cv_text = _synthesize_cv_text(builder_data)
+        elif latest_app and latest_app.cv_text_anonymized:
+            cv_text = latest_app.cv_text_anonymized
+
+    if not cv_text:
+        raise HTTPException(
+            status_code=404, detail="No CV found. Please upload your CV first."
+        )
+
+    cv_text = cv_text.strip()
+    if len(cv_text) < 50:
+        raise HTTPException(
+            status_code=400, detail="CV text is too short for analysis."
+        )
+
+    declared_role = (
+        latest_app.cv_document.declared_role
+        if latest_app and latest_app.cv_document and latest_app.cv_document.declared_role
+        else (latest_app.declared_role if latest_app else None)
+        or ""
+    )
+
+    if not force and latest_app and (
+        (latest_app.cv_document and latest_app.cv_document.cv_review_json)
+        or latest_app.cv_review_json
+    ):
+        try:
+            cached_data = json.loads(
+                latest_app.cv_document.cv_review_json
+                if latest_app.cv_document and latest_app.cv_document.cv_review_json
+                else latest_app.cv_review_json
+            )
+            cached_data["declared_role"] = declared_role
+            cached_data["cv_length"] = len(cv_text)
+            return cached_data
+        except Exception as e:
+            logger.warning(
+                f"Failed to parse cached cv_review_json for app {latest_app.id}: {e}"
+            )
+
+    prompt = get_cv_improvement_prompt(cv_text, declared_role)
+
+    from backend.credit_service import consume_credits_or_402, rollback_credits
+
+    credit_tx = consume_credits_or_402(
+        db,
+        current_user,
+        3,
+        "cv_analysis",
+        reference_type="cv_review",
+        reference_id=latest_app.id if latest_app else None,
+    )
+
+    try:
+        result = await call_groq_cascade(
+            [{"role": "system", "content": prompt}],
+            temperature=0.3,
+            max_tokens=2048,
+            json_mode=True,
+        )
+
+        if isinstance(result, dict):
+            result.setdefault("overall_grade", "C")
+            result.setdefault("grade_explanation", "Analysis complete.")
+            result.setdefault("summary", "CV analysis completed.")
+            result.setdefault("improved_summary", "")
+            result.setdefault("spelling_errors", [])
+            result.setdefault("grammar_issues", [])
+            result.setdefault("improvement_suggestions", [])
+            result.setdefault("keyword_suggestions", [])
+            result.setdefault("strengths", [])
+
+            if latest_app:
+                try:
+                    sync_cv_document(db, latest_app, cv_review_json=result)
+                    db.commit()
+                except Exception as e:
+                    db.rollback()
+                    logger.error(f"Failed to save cv_review_json cache: {e}")
+
+            _persist_review_score(db, current_user, result)
+
+            result["declared_role"] = declared_role
+            result["cv_length"] = len(cv_text)
+            return result
+
+        return {
+            "overall_grade": "C",
+            "grade_explanation": "Analysis returned unexpected format.",
+            "summary": str(result)[:500]
+            if result
+            else "Analysis could not be completed.",
+            "improved_summary": "",
+            "spelling_errors": [],
+            "grammar_issues": [],
+            "improvement_suggestions": [],
+            "keyword_suggestions": [],
+            "strengths": [],
+            "declared_role": declared_role,
+            "cv_length": len(cv_text),
+        }
+
+    except Exception as e:
+        logger.error(f"CV Review AI failed for user {current_user.id}: {e}")
+        try:
+            rollback_credits(db, credit_tx)
+        except Exception:
+            pass
+        raise HTTPException(
+            status_code=500,
+            detail="AI analysis is temporarily unavailable. Please try again later.",
+        )
+
+
+@router.get("/cv-review/enriched")
+async def get_cv_review_enriched(
+    force: bool = False,
+    current_user: User = Depends(get_current_user),
+    db: Session = Depends(get_db),
+):
+    from backend.ai.llm import call_groq_cascade
+    from backend.ai.prompts import get_cv_review_enriched_prompt
+    from backend.database import Rubric
+
+    latest_app = (
+        db.query(Application)
+        .join(CvDocument, CvDocument.application_id == Application.id)
+        .filter(
+            Application.user_id == current_user.id,
+            CvDocument.cv_text_anonymized.isnot(None),
+        )
+        .order_by(Application.created_at.desc())
+        .first()
+    )
+
+    cv_text = None
+    if latest_app and latest_app.cv_document and latest_app.cv_document.cv_text_anonymized:
+        cv_text = latest_app.cv_document.cv_text_anonymized
+    elif latest_app and latest_app.cv_text_anonymized:
+        cv_text = latest_app.cv_text_anonymized
+    else:
+        builder_data = _load_builder_data(current_user, db)
+        if builder_data:
+            cv_text = _synthesize_cv_text(builder_data)
+
+    if not cv_text:
+        raise HTTPException(
+            status_code=404, detail="No CV found. Please upload your CV first."
+        )
+
+    cv_text = cv_text.strip()
+    if len(cv_text) < 50:
+        raise HTTPException(
+            status_code=400, detail="CV text is too short for analysis."
+        )
+
+    declared_role = (
+        latest_app.cv_document.declared_role
+        if latest_app and latest_app.cv_document and latest_app.cv_document.declared_role
+        else (latest_app.declared_role if latest_app else None)
+    ) or "General Software Engineer"
+
+    if not force and latest_app and (
+        (latest_app.cv_document and latest_app.cv_document.cv_review_json)
+        or latest_app.cv_review_json
+    ):
+        try:
+            cached_data = json.loads(
+                latest_app.cv_document.cv_review_json
+                if latest_app.cv_document and latest_app.cv_document.cv_review_json
+                else latest_app.cv_review_json
+            )
+            if "rubric_dimension_scores" in cached_data:
+                cached_data["declared_role"] = declared_role
+                cached_data["cv_length"] = len(cv_text)
+                return cached_data
+        except Exception as e:
+            logger.warning(
+                f"Failed to parse cached cv_review_json for app {latest_app.id}: {e}"
+            )
+
+    rubric_context = ""
+    skill_tree_context = ""
+
+    try:
+        # Candidate-facing CV review must never load global rubrics from
+        # unrelated company tenants. Use only the rubric attached to the
+        # candidate's latest application.
+        rubric = None
+
+        if latest_app and getattr(latest_app, "rubric_id", None):
+            rubric = (
+                db.query(Rubric)
+                .filter(
+                    Rubric.id == latest_app.rubric_id,
+                    Rubric.company_id == latest_app.company_id,
+                    Rubric.is_active,
+                )
+                .first()
+            )
+
+        if rubric:
+            title = rubric.title or "General Rubric"
+            rubric_context = (
+                f"Rubric Title: {title}\n"
+                f"Criteria: {str(rubric.criteria_json)[:500]}"
+            )
+    except Exception as err:
+        logger.warning(f"Could not load application rubric for CV review enrichment: {err}")
+
+    prompt = get_cv_review_enriched_prompt(
+        cv_text=cv_text,
+        declared_role=declared_role,
+        rubric_context=rubric_context,
+        skill_tree_context=skill_tree_context,
+    )
+
+    from backend.credit_service import consume_credits_or_402, rollback_credits
+
+    credit_tx = consume_credits_or_402(
+        db,
+        current_user,
+        3,
+        "cv_analysis",
+        reference_type="cv_review_enriched",
+        reference_id=latest_app.id if latest_app else None,
+    )
+
+    try:
+        result = await call_groq_cascade(
+            [{"role": "system", "content": prompt}],
+            temperature=0.3,
+            max_tokens=2048,
+            json_mode=True,
+        )
+
+        if isinstance(result, dict):
+            result.setdefault("overall_grade", "C")
+            result.setdefault("grade_explanation", "Enriched analysis complete.")
+            result.setdefault("summary", "CV analysis completed.")
+            result.setdefault("rubric_dimension_scores", [])
+            result.setdefault(
+                "skill_tree_coverage",
+                {"tree_name": declared_role, "covered": [], "missing": []},
+            )
+            result.setdefault("gap_analysis", [])
+            result.setdefault("spelling_errors", [])
+            result.setdefault("grammar_issues", [])
+            result.setdefault("improvement_suggestions", [])
+            result.setdefault("keyword_suggestions", [])
+            result.setdefault("strengths", [])
+
+            try:
+                if latest_app:
+                    sync_cv_document(db, latest_app, cv_review_json=result)
+                    db.commit()
+            except Exception as e:
+                db.rollback()
+                logger.error(f"Failed to save cv_review_json cache: {e}")
+
+            _persist_review_score(db, current_user, result)
+
+            result["declared_role"] = declared_role
+            result["cv_length"] = len(cv_text)
+            return result
+
+        return {
+            "overall_grade": "C",
+            "grade_explanation": "Analysis returned unexpected format.",
+            "summary": str(result)[:500]
+            if result
+            else "Analysis could not be completed.",
+            "rubric_dimension_scores": [],
+            "skill_tree_coverage": {
+                "tree_name": declared_role,
+                "covered": [],
+                "missing": [],
+            },
+            "gap_analysis": [],
+            "spelling_errors": [],
+            "grammar_issues": [],
+            "improvement_suggestions": [],
+            "keyword_suggestions": [],
+            "strengths": [],
+            "declared_role": declared_role,
+            "cv_length": len(cv_text),
+        }
+
+    except Exception as e:
+        logger.error(f"CV Review Enriched AI failed for user {current_user.id}: {e}")
+        try:
+            rollback_credits(db, credit_tx)
+        except Exception:
+            pass
+        raise HTTPException(
+            status_code=500,
+            detail="AI analysis is temporarily unavailable. Please try again later.",
+        )
+
+
+@router.post("/analyze")
+async def analyze_application_endpoint(
+    declared_role: str = Form(...),
+    file: UploadFile = File(...),
+    _credit_tx: object = Depends(require_credits("cv_analysis", credits=3)),
+    current_user: User = Depends(get_current_user),
+    db: Session = Depends(get_db),
+):
+    file_ext = os.path.splitext(file.filename)[1].lower()
+    allowed_extensions = [".pdf", ".docx", ".doc", ".txt"]
+
+    if file_ext not in allowed_extensions:
+        raise HTTPException(
+            status_code=400,
+            detail="Unsupported format. Please use PDF, DOCX, DOC or TXT.",
+        )
+
+    if file.content_type.lower().startswith("image/"):
+        raise HTTPException(
+            status_code=400,
+            detail="Images are not accepted. Please use a PDF or DOCX file.",
+        )
+
+    from backend.cv_service import extract_text_from_file
+
+    content = await file.read()
+    text = extract_text_from_file(content, file.filename)
+
+    if text.startswith("ERROR"):
+        raise HTTPException(status_code=400, detail=text)
+    if not text or len(text.strip()) < 20:
+        raise HTTPException(
+            status_code=400,
+            detail="The file appears to be a scanned PDF (image). Please use a PDF with selectable text.",
+        )
+
+    company_id = getattr(current_user, "_company_id", None)
+    if not company_id:
+        last_app = (
+            db.query(Application)
+            .filter(
+                Application.user_id == current_user.id,
+                Application.company_id.isnot(None),
+            )
+            .order_by(Application.created_at.desc())
+            .first()
+        )
+        if last_app:
+            company_id = last_app.company_id
+
+    app_record = ApplicationService.create_application(
+        db,
+        company_id=company_id,
+        application_type=ApplicationType.MANUAL,
+        user_id=current_user.id,
+        candidate_email=get_user_email(current_user),
+        candidate_phone=get_user_phone(current_user),
+        candidate_name=get_user_name(current_user),
+        status="analyzing",
+    )
+    db.commit()
+    db.refresh(app_record)
+    sync_cv_document(
+        db, app_record, cv_text_anonymized=text, declared_role=declared_role
+    )
+    ai_analysis_reserved = False
+
+    try:
+        from backend.ai import analyze_cv
+
+        # Reserve one candidate AI-analysis entitlement only after
+        # file validation and text extraction have succeeded.
+        CandidateSubscriptionService.check_ai_analysis_limit(current_user, db)
+        ai_analysis_reserved = True
+
+        result = await analyze_cv(text, declared_role)
+        if result:
+            old_app = (
+                db.query(Application)
+                .filter(
+                    Application.user_id == current_user.id,
+                    Application.id != app_record.id,
+                    Application.analysis_json.isnot(None),
+                )
+                .order_by(Application.created_at.desc())
+                .first()
+            )
+            if old_app:
+                try:
+                    old_data = json.loads(old_app.analysis_json)
+                    if "builder_data" in old_data:
+                        result["builder_data"] = old_data["builder_data"]
+                except Exception:
+                    pass
+            sync_cv_document(
+                db,
+                app_record,
+                analysis_json=json.dumps(result),
+                detected_role=result.get("detected_role"),
+            )
+            if result.get("score"):
+                score_val = float(result["score"])
+                ScoringService.set_cv_only(
+                    app_record, db, cv_score=score_val, computed_by="cv_analysis"
+                )
+            if result.get("verdict"):
+                ScoringService.set_verdict(
+                    app_record, db, verdict=result["verdict"], computed_by="cv_analysis"
+                )
+            # Bug B-31: mirror the four most-read keys to dedicated
+            # columns so list/recruiter queries don't have to
+            # json.loads the bag.
+            try:
+                from backend.analysis_columns import write_analysis_columns
+
+                write_analysis_columns(
+                    db,
+                    app_record,
+                    strengths=result.get("strengths"),
+                    weaknesses=result.get("weaknesses") or result.get("missing_skills"),
+                    score_breakdown=result.get("final_score_breakdown"),
+                    score=result.get("score"),
+                    also_write_bag=False,  # bag is already updated above
+                )
+            except Exception as col_err:
+                logger.warning(
+                    f"[CV-ANALYSIS] Could not lift analysis keys to "
+                    f"columns for app {app_record.id}: {col_err}"
+                )
+        app_record.status = "analyzed"
+        db.commit()
+        return result
+    except Exception as e:
+        error_msg = str(e).lower()
+        app_record.status = "failed"
+
+        # Return the reserved AI-analysis entitlement when the analysis
+        # itself fails. Never rollback unless this request actually
+        # reserved an entitlement.
+        if ai_analysis_reserved:
+            try:
+                CandidateSubscriptionService.rollback_ai_analysis_limit(
+                    current_user, db
+                )
+            except Exception as rollback_err:
+                logger.error(
+                    f"Failed to roll back AI analysis quota "
+                    f"for user {current_user.id}: {rollback_err}"
+                )
+
+        db.commit()
+
+        if "image" in error_msg and (
+            "does not support" in error_msg or "vision" in error_msg
+        ):
+            raise HTTPException(
+                status_code=400,
+                detail="Image files (JPG, PNG) are not accepted. Please use PDF or DOCX.",
+            )
+        else:
+            logger.error(
+                f"CV analysis failed for user {current_user.id}: {str(e)[:200]}"
+            )
+            raise HTTPException(
+                status_code=500,
+                detail="An error occurred while analyzing your CV. Please try again.",
+            )
+
+
+@router.post("/upload-cv")
+async def upload_cv_file(
+    file: UploadFile = File(...),
+    declared_role: str = Form("General"),
+    current_user: User = Depends(get_current_user),
+    db: Session = Depends(get_db),
+):
+    if current_user.role != "candidate":
+        raise HTTPException(
+            status_code=403, detail="This feature is only available to candidates"
+        )
+    is_allowed, retry_after = await _check_api_rate_limit(
+        identifier=f"cv_upload_{current_user.id}",
+        max_requests=10,
+        window_seconds=3600,
+    )
+    if not is_allowed:
+        raise HTTPException(
+            status_code=429,
+            detail=f"Too many CV uploads. Please wait {retry_after} seconds before trying again.",
+        )
+
+    CandidateSubscriptionService.reset_usage_if_needed(current_user, db)
+    plan = CandidateSubscriptionService.get_candidate_plan(current_user, db)
+    if plan.candidate_cv_uploads_limit != -1:
+        if (
+            getattr(
+                getattr(current_user, "candidate_profile", None),
+                "candidate_cv_uploads_this_month",
+                0,
+            )
+            or 0
+        ) >= plan.candidate_cv_uploads_limit:
+            raise HTTPException(
+                status_code=403,
+                detail=f"CV upload limit reached ({plan.candidate_cv_uploads_limit}/month). Upgrade your plan for more uploads.",
+            )
+
+    ALLOWED_EXTENSIONS = {".pdf", ".docx", ".doc", ".txt"}
+    ext = os.path.splitext(file.filename)[1].lower()
+    if ext not in ALLOWED_EXTENSIONS:
+        raise HTTPException(
+            status_code=400,
+            detail="Unsupported format. Please use PDF, DOCX, DOC or TXT.",
+        )
+
+    if file.content_type.lower().startswith("image/"):
+        raise HTTPException(
+            status_code=400,
+            detail="Images are not accepted. Please use PDF or DOCX.",
+        )
+
+    content = await file.read()
+    if len(content) > 10 * 1024 * 1024:
+        raise HTTPException(status_code=400, detail="File too large (max 10MB).")
+
+    from backend.file_security import scan_for_malware
+    from backend.security import secure_filename
+
+    safe_filename = secure_filename(file.filename)
+    is_safe, scan_result = scan_for_malware(content, safe_filename)
+    if not is_safe:
+        logger.warning(
+            f"MALWARE DETECTED in CV upload by user {current_user.id}: {scan_result}"
+        )
+        raise HTTPException(
+            status_code=400,
+            detail="File contains potentially malicious content and was rejected.",
+        )
+
+    from backend.ai import analyze_cv
+    from backend.cv_service import extract_text_from_file
+
+    text = extract_text_from_file(content, safe_filename)
+
+    if text.startswith("ERROR"):
+        raise HTTPException(status_code=400, detail=text)
+    if not text or len(text.strip()) < 20:
+        raise HTTPException(
+            status_code=400,
+            detail="The file appears to be a scanned PDF (image). Please use a PDF with selectable text.",
+        )
+
+    try:
+        text = scrub_pii(text)
+    except Exception as e:
+        logger.error(f"PII Scrubbing failed: {e}")
+    if len(text) > 40000:
+        text = text[:40000] + "...(truncated)"
+
+    try:
+        company_id = getattr(current_user, "_company_id", None)
+        if not company_id:
+            last_app = (
+                db.query(Application)
+                .filter(
+                    Application.user_id == current_user.id,
+                    Application.company_id.isnot(None),
+                )
+                .order_by(Application.created_at.desc())
+                .first()
+            )
+            if last_app:
+                company_id = last_app.company_id
+
+        app_record = ApplicationService.create_application(
+            db,
+            company_id=company_id,
+            application_type=ApplicationType.MANUAL,
+            user_id=current_user.id,
+            candidate_email=get_user_email(current_user),
+            candidate_phone=get_user_phone(current_user),
+            candidate_name=get_user_name(current_user),
+            status="analyzing",
+        )
+
+        db.query(CandidateProfile).filter(
+            CandidateProfile.user_id == current_user.id
+        ).update(
+            {
+                CandidateProfile.candidate_cv_uploads_this_month: func.coalesce(
+                    CandidateProfile.candidate_cv_uploads_this_month, 0
+                )
+                + 1
+            },
+            synchronize_session="fetch",
+        )
+
+        # Persist the original CV privately.
+        #
+        # The storage filename intentionally contains the candidate user_id
+        # because /uploads uses this pattern for ownership enforcement.
+        # Never use the original client filename as the storage filename.
+        os.makedirs(UPLOAD_DIR, exist_ok=True)
+
+        stored_filename = (
+            f"upload_{current_user.id}_"
+            f"{int(time.time())}_"
+            f"{uuid.uuid4().hex[:12]}{ext}"
+        )
+        stored_path = os.path.join(UPLOAD_DIR, stored_filename)
+
+        try:
+            # 0600: only the backend process owner can read the file directly.
+            fd = os.open(
+                stored_path,
+                os.O_WRONLY | os.O_CREAT | os.O_EXCL,
+                0o600,
+            )
+            try:
+                with os.fdopen(fd, "wb") as buffer:
+                    buffer.write(content)
+            except Exception:
+                try:
+                    os.close(fd)
+                except OSError:
+                    pass
+                raise
+
+            cv_file_url = f"/uploads/{stored_filename}"
+
+            sync_cv_document(
+                db,
+                app_record,
+                cv_text_anonymized=text,
+                declared_role=declared_role,
+                cv_file_path=cv_file_url,
+            )
+
+            db.commit()
+            db.refresh(app_record)
+
+        except Exception:
+            if os.path.exists(stored_path):
+                try:
+                    os.remove(stored_path)
+                except OSError:
+                    logger.exception(
+                        "Failed to clean up CV file: %s",
+                        stored_path,
+                    )
+            raise
+
+        # Reserve one candidate AI-analysis entitlement only after
+        # the file has passed validation, extraction, security scanning,
+        # and the application record has been created.
+        ai_analysis_reserved = False
+
+        CandidateSubscriptionService.check_ai_analysis_limit(current_user, db)
+        ai_analysis_reserved = True
+
+        try:
+            result = await analyze_cv(text, declared_role)
+            if result:
+                old_app = (
+                    db.query(Application)
+                    .filter(
+                        Application.user_id == current_user.id,
+                        Application.id != app_record.id,
+                        Application.analysis_json.isnot(None),
+                    )
+                    .order_by(Application.created_at.desc())
+                    .first()
+                )
+                if old_app:
+                    try:
+                        old_data = json.loads(old_app.analysis_json)
+                        if "builder_data" in old_data:
+                            result["builder_data"] = old_data["builder_data"]
+                    except Exception:
+                        pass
+                sync_cv_document(
+                    db,
+                    app_record,
+                    analysis_json=json.dumps(result),
+                    detected_role=result.get("detected_role"),
+                )
+                score_val = result.get("score") or result.get("match_score")
+                if score_val:
+                    try:
+                        score_val = float(score_val)
+                        ScoringService.set_cv_only(
+                            app_record,
+                            db,
+                            cv_score=score_val,
+                            computed_by="cv_analysis",
+                        )
+                    except (ValueError, TypeError):
+                        pass
+                if result.get("verdict"):
+                    ScoringService.set_verdict(
+                        app_record,
+                        db,
+                        verdict=result["verdict"],
+                        computed_by="cv_analysis",
+                    )
+            app_record.status = "analyzed"
+
+            from backend.database import AuditLog
+
+            score = ScoringService.get_canonical_score(app_record.id, db)
+            audit = AuditLog(
+                user_id=current_user.id,
+                action="cv_upload",
+                target_id=str(app_record.id),
+                details=f"Uploaded CV: {file.filename}, Role: {declared_role}, Score: {score.final_score if score else 'N/A'}",
+                ip_address="system",
+            )
+            db.add(audit)
+            db.commit()
+
+            score = ScoringService.get_canonical_score(app_record.id, db)
+            cv_doc = app_record.cv_document
+            return {
+                "success": True,
+                "application_id": app_record.id,
+                "cv_document_id": cv_doc.id if cv_doc else None,
+                "status": app_record.status,
+                "score": score.final_score if score else None,
+                "verdict": score.verdict if score else None,
+                "detected_role": getattr(cv_doc, "detected_role", None),
+                "analysis": result,
+                "message": "CV uploaded and analyzed successfully",
+            }
+        except Exception as e:
+            error_msg = str(e).lower()
+            app_record.status = "failed"
+            ScoringService.set_verdict(
+                app_record, db, verdict="analysis_failed", computed_by="cv_analysis"
+            )
+            # Roll back the CV upload reservation.
+            # AI analysis quota is also rolled back below because the
+            # analysis did not complete successfully.
+            #
+            # We charge-on-success only; a failed analysis must not burn
+            # the candidate's monthly allowance.
+
+            try:
+                db.query(CandidateProfile).filter(
+                    CandidateProfile.user_id == current_user.id
+                ).update(
+                    {
+                        CandidateProfile.candidate_cv_uploads_this_month: func.greatest(
+                            func.coalesce(
+                                CandidateProfile.candidate_cv_uploads_this_month, 0
+                            )
+                            - 1,
+                            0,
+                        )
+                    },
+                    synchronize_session="fetch",
+                )
+            except Exception as rollback_err:
+                logger.error(
+                    f"Failed to roll back CV quota for user {current_user.id}: {rollback_err}"
+                )
+
+            # Roll back the reserved AI analysis only if this request
+            # actually acquired an entitlement.
+            if ai_analysis_reserved:
+                try:
+                    CandidateSubscriptionService.rollback_ai_analysis_limit(
+                        current_user, db
+                    )
+                except Exception as rollback_err:
+                    logger.error(
+                        f"Failed to roll back AI analysis quota "
+                        f"for user {current_user.id}: {rollback_err}"
+                    )
+
+            db.commit()
+            logger.error(f"AI Analysis error: {e}")
+
+            if "image" in error_msg and (
+                "does not support" in error_msg or "vision" in error_msg
+            ):
+                return {
+                    "success": False,
+                    "detail": "Image files are not accepted. Please use PDF or DOCX.",
+                }
+
+            return {
+                "success": False,
+                "application_id": app_record.id,
+                "status": "failed",
+                "message": "An error occurred while analyzing your CV. Please try again.",
+            }
+    except HTTPException:
+        db.rollback()
+        raise
+    except Exception as e:
+        db.rollback()
+        logger.error(f"CV Upload Transaction error: {e}", exc_info=True)
+        raise HTTPException(
+            status_code=500, detail="Processing error. Please try again."
+        )

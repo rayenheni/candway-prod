@@ -1,0 +1,31 @@
+{
+  "name": "masar_landing_page",
+  "version": "1.0.0",
+  "description": "**AI-Powered Recruitment & Learning Ecosystem**",
+  "main": "tailwind.config.js",
+  "directories": {
+    "doc": "docs",
+    "test": "tests"
+  },
+  "scripts": {
+    "build:css": "npx tailwindcss -i ./css/tailwind-landing.input.css -o ./css/tailwind-landing.css --minify",
+    "watch:css": "npx tailwindcss -i ./css/tailwind-landing.input.css -o ./css/tailwind-landing.css --watch",
+    "build:js": "node scripts/build-js.js",
+    "build": "npm run build:css && npm run build:js",
+    "test": "echo \"Error: no test specified\" && exit 1",
+    "frontend:install": "cd frontend && npm install",
+    "frontend:dev": "cd frontend && npm run dev",
+    "frontend:build": "cd frontend && npm run build",
+    "frontend:preview": "cd frontend && npm run preview"
+  },
+  "keywords": [],
+  "author": "",
+  "license": "ISC",
+  "devDependencies": {
+    "@tailwindcss/cli": "^4.2.4",
+    "autoprefixer": "^10.5.0",
+    "esbuild": "^0.25.12",
+    "postcss": "^8.5.10",
+    "tailwindcss": "^4.2.4"
+  }
+}

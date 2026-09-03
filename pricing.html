@@ -1,0 +1,994 @@
+<!DOCTYPE html>
+<html lang="en" class="scroll-smooth">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title data-i18n="pricing.page_title">Pricing - Candway Intelligence</title>
+
+    <!-- SEO Meta Tags -->
+    <meta name="description"
+        content="Choose the perfect plan for your career. Free basic verification or upgrade to Pro/Premium for unlimited assessments, courses, mentorship, and priority support." data-i18n-attr="content:pricing.meta_desc">
+
+    <!-- Fonts -->
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Outfit:wght@300;400;500;600;700;800&display=swap"
+        rel="stylesheet">
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+
+    <!-- Tailwind -->
+    <link rel="stylesheet" href="/css/tailwind-landing.css">
+    <script>
+        tailwind.config = {
+            theme: {
+                extend: {
+                    fontFamily: {
+                        sans: ['Outfit', 'sans-serif'],
+                    },
+                    colors: {
+                        indigo: { 50: '#eef2ff', 400: '#818cf8', 500: '#6366f1', 600: '#4f46e5', 900: '#312e81' },
+                        slate: { 850: '#1e293b', 900: '#0f172a', 950: '#020617' },
+                    }
+                }
+            }
+        }
+    </script>
+    <link rel="stylesheet" href="/css/custom.css">
+
+    <style>
+        /* Animated gradient background */
+        @keyframes gradient-shift {
+
+            0%,
+            100% {
+                background-position: 0% 50%;
+            }
+
+            50% {
+                background-position: 100% 50%;
+            }
+        }
+
+        .animated-gradient {
+            background: linear-gradient(-45deg, #eef2ff, #f0f9ff, #faf5ff, #fef3c7);
+            background-size: 400% 400%;
+            animation: gradient-shift 15s ease infinite;
+        }
+
+        /* Floating animation */
+        @keyframes float {
+
+            0%,
+            100% {
+                transform: translateY(0px);
+            }
+
+            50% {
+                transform: translateY(-20px);
+            }
+        }
+
+        .float-animation {
+            animation: float 6s ease-in-out infinite;
+        }
+
+        /* Pulse glow effect */
+        @keyframes pulse-glow {
+
+            0%,
+            100% {
+                box-shadow: 0 0 20px rgba(99, 102, 241, 0.3);
+            }
+
+            50% {
+                box-shadow: 0 0 40px rgba(99, 102, 241, 0.6), 0 0 60px rgba(99, 102, 241, 0.3);
+            }
+        }
+
+        .pulse-glow {
+            animation: pulse-glow 3s ease-in-out infinite;
+        }
+
+        /* Glassmorphism card */
+        .glass-card {
+            background: rgba(255, 255, 255, 0.7);
+            backdrop-filter: blur(10px);
+            border: 1px solid rgba(255, 255, 255, 0.3);
+        }
+
+        /* Gradient border animation */
+        @keyframes border-rotate {
+            0% {
+                background-position: 0% 50%;
+            }
+
+            50% {
+                background-position: 100% 50%;
+            }
+
+            100% {
+                background-position: 0% 50%;
+            }
+        }
+
+        .gradient-border {
+            position: relative;
+            background: white;
+            border-radius: 1.5rem;
+        }
+
+        .gradient-border::before {
+            content: '';
+            position: absolute;
+            inset: -2px;
+            border-radius: 1.5rem;
+            padding: 2px;
+            background: linear-gradient(45deg, #6366f1, #8b5cf6, #ec4899, #f59e0b, #6366f1);
+            background-size: 300% 300%;
+            animation: border-rotate 3s linear infinite;
+            -webkit-mask: linear-gradient(#fff 0 0) content-box, linear-gradient(#fff 0 0);
+            -webkit-mask-composite: xor;
+            mask: linear-gradient(#fff 0 0) content-box, linear-gradient(#fff 0 0);
+            mask-composite: exclude;
+            z-index: -1;
+        }
+
+        /* Shimmer effect */
+        @keyframes shimmer {
+            0% {
+                background-position: -1000px 0;
+            }
+
+            100% {
+                background-position: 1000px 0;
+            }
+        }
+
+        .shimmer {
+            background: linear-gradient(90deg, transparent, rgba(255, 255, 255, 0.3), transparent);
+            background-size: 1000px 100%;
+            animation: shimmer 3s infinite;
+        }
+
+        /* Scale on hover */
+        .hover-scale {
+            transition: transform 0.3s ease, box-shadow 0.3s ease;
+        }
+
+        .hover-scale:hover {
+            transform: scale(1.02) translateY(-5px);
+            box-shadow: 0 20px 40px rgba(0, 0, 0, 0.1);
+        }
+
+        /* Gradient text */
+        .gradient-text {
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            -webkit-background-clip: text;
+            -webkit-text-fill-color: transparent;
+            background-clip: text;
+        }
+
+        /* Particle background */
+        .particles {
+            position: absolute;
+            width: 100%;
+            height: 100%;
+            overflow: hidden;
+            pointer-events: none;
+        }
+
+        .particle {
+            position: absolute;
+            width: 4px;
+            height: 4px;
+            background: rgba(99, 102, 241, 0.3);
+            border-radius: 50%;
+            animation: particle-float 20s infinite;
+        }
+
+        @keyframes particle-float {
+            0% {
+                transform: translateY(100vh) translateX(0);
+                opacity: 0;
+            }
+
+            10% {
+                opacity: 1;
+            }
+
+            90% {
+                opacity: 1;
+            }
+
+            100% {
+                transform: translateY(-100vh) translateX(100px);
+                opacity: 0;
+            }
+        }
+
+        .particle:nth-child(1) {
+            left: 10%;
+            animation-delay: 0s;
+        }
+
+        .particle:nth-child(2) {
+            left: 20%;
+            animation-delay: 2s;
+        }
+
+        .particle:nth-child(3) {
+            left: 30%;
+            animation-delay: 4s;
+        }
+
+        .particle:nth-child(4) {
+            left: 40%;
+            animation-delay: 1s;
+        }
+
+        .particle:nth-child(5) {
+            left: 50%;
+            animation-delay: 3s;
+        }
+
+        .particle:nth-child(6) {
+            left: 60%;
+            animation-delay: 5s;
+        }
+
+        .particle:nth-child(7) {
+            left: 70%;
+            animation-delay: 2.5s;
+        }
+
+        .particle:nth-child(8) {
+            left: 80%;
+            animation-delay: 4.5s;
+        }
+
+        .particle:nth-child(9) {
+            left: 90%;
+            animation-delay: 1.5s;
+        }
+    </style>
+
+    <script src="/js/config.js"></script>
+    <script src="/js/translations.js"></script>
+    <script src="/js/localization.js"></script>
+</head>
+
+<body class="antialiased font-sans text-slate-900 bg-slate-50">
+
+    <!-- Navigation -->
+    <nav class="fixed top-6 left-1/2 -translate-x-1/2 z-50 w-full max-w-5xl px-4">
+        <div class="glass-nav rounded-2xl px-6 py-3 flex items-center justify-between shadow-lg relative">
+            <a href="/" class="flex items-center gap-3">
+                <img src="/assets/images/candway_logo_dark.png" alt="Candway Logo" class="h-14 w-auto">
+            </a>
+            <div class="flex items-center gap-4">
+                <a href="/" class="text-sm font-medium text-slate-500 hover:text-indigo-600 transition" data-i18n="nav.home">Home</a>
+                <div class="flex items-center gap-2 text-sm font-medium text-slate-500 bg-slate-100 rounded-lg p-1">
+                    <button onclick="setLanguage('en')" class="px-2 py-1 rounded transition hover:bg-white/50">EN</button>
+                    <button onclick="setLanguage('fr')" class="px-2 py-1 rounded transition hover:bg-white/50">FR</button>
+                </div>
+                <a href="/signup"
+                    class="px-5 py-2 rounded-xl bg-indigo-600 text-white text-sm font-bold hover:shadow-lg hover:shadow-indigo-500/30 transition" data-i18n="nav.get_started">
+                    Get Started
+                </a>
+            </div>
+        </div>
+    </nav>
+
+    <!-- Hero Section -->
+    <header class="pt-40 pb-20 animated-gradient relative overflow-hidden">
+        <!-- Floating particles -->
+        <div class="particles">
+            <div class="particle"></div>
+            <div class="particle"></div>
+            <div class="particle"></div>
+            <div class="particle"></div>
+            <div class="particle"></div>
+            <div class="particle"></div>
+            <div class="particle"></div>
+            <div class="particle"></div>
+            <div class="particle"></div>
+        </div>
+
+        <div class="max-w-7xl mx-auto px-6 text-center relative z-10">
+            <span
+                class="px-4 py-1.5 bg-indigo-100 text-indigo-700 rounded-full text-xs font-black uppercase tracking-widest mb-6 inline-block" data-i18n="pricing.transparent_pricing">
+                Transparent Pricing
+            </span>
+            <h1 class="text-5xl lg:text-6xl font-black text-slate-900 mb-6 tracking-tight">
+                <span id="hero-title-candidate" data-i18n="pricing.hero_title_candidate_html">Choose Your <span
+                        class="text-transparent bg-clip-text bg-gradient-to-r from-indigo-600 to-purple-600">Career
+                        Path</span></span>
+                <span id="hero-title-recruiter" class="hidden" data-i18n="pricing.hero_title_recruiter_html">Find Your Next <span
+                        class="text-transparent bg-clip-text bg-gradient-to-r from-indigo-600 to-purple-600">Star
+                        Hire</span></span>
+            </h1>
+            <p class="text-xl text-slate-600 max-w-2xl mx-auto font-light leading-relaxed mb-8">
+                <span id="hero-subtitle-candidate" data-i18n="pricing.hero_subtitle_candidate">Start free and upgrade as you grow. All plans include AI-powered
+                    verification and job matching.</span>
+                <span id="hero-subtitle-recruiter" class="hidden" data-i18n="pricing.hero_subtitle_recruiter">Powerful AI recruiting tools to find, assess, and hire
+                    top talent faster than ever.</span>
+            </p>
+
+            <!-- Toggle: Candidate vs Recruiter -->
+            <div class="flex justify-center gap-2 mb-12">
+                <button onclick="showPricing('candidate')" id="btn-candidate"
+                    class="px-6 py-3 rounded-xl bg-indigo-600 text-white font-bold transition" data-i18n="pricing.btn_candidate">
+                    For Candidates
+                </button>
+                <button onclick="showPricing('recruiter')" id="btn-recruiter"
+                    class="px-6 py-3 rounded-xl bg-slate-200 text-slate-700 font-bold transition" data-i18n="pricing.btn_recruiter">
+                    For Recruiters
+                </button>
+            </div>
+        </div>
+    </header>
+
+    <!-- CANDIDATE PRICING -->
+    <section id="pricing-candidate" class="py-20 bg-white">
+        <div class="max-w-7xl mx-auto px-6">
+            <div class="grid md:grid-cols-3 gap-8">
+
+                <!-- Candidate Free Tier -->
+                <div
+                    class="p-8 bg-slate-50 rounded-3xl border-2 border-slate-100 hover:border-slate-200 transition-all hover-scale">
+                    <div class="mb-6">
+                        <h3 class="text-2xl font-black text-slate-900 mb-2" data-i18n="pricing.free">Free</h3>
+                        <div class="flex items-baseline gap-2 mb-4">
+                            <span class="text-5xl font-black text-slate-900">0 TND</span>
+                            <span class="text-slate-500 font-medium" data-i18n="pricing.per_month">/month</span>
+                        </div>
+                        <p class="text-slate-600 text-sm" data-i18n="pricing.free_desc">Perfect for getting started</p>
+                    </div>
+
+                    <ul class="space-y-3 mb-8 text-sm">
+                        <li class="flex items-start gap-3">
+                            <i class="fas fa-check-circle text-indigo-600 mt-0.5"></i>
+                            <span class="text-slate-700"><strong>2 CV uploads</strong> per month</span>
+                        </li>
+                        <li class="flex items-start gap-3">
+                            <i class="fas fa-check-circle text-indigo-600 mt-0.5"></i>
+                            <span class="text-slate-700"><strong>1 AI analysis</strong> per month</span>
+                        </li>
+                        <li class="flex items-start gap-3">
+                            <i class="fas fa-check-circle text-indigo-600 mt-0.5"></i>
+                            <span class="text-slate-700"><strong>5 job matches</strong> shown</span>
+                        </li>
+                        <li class="flex items-start gap-3">
+                            <i class="fas fa-check-circle text-indigo-600 mt-0.5"></i>
+                            <span class="text-slate-700">Basic profile</span>
+                        </li>
+                        <li class="flex items-start gap-3">
+                            <i class="fas fa-check-circle text-indigo-600 mt-0.5"></i>
+                            <span class="text-slate-700">AI interview practice</span>
+                        </li>
+                        <li class="flex items-start gap-3 opacity-40">
+                            <i class="fas fa-times-circle text-slate-400 mt-0.5"></i>
+                            <span class="text-slate-400">No PDF downloads</span>
+                        </li>
+                        <li class="flex items-start gap-3 opacity-40">
+                            <i class="fas fa-times-circle text-slate-400 mt-0.5"></i>
+                            <span class="text-slate-400">No courses access</span>
+                        </li>
+                        <li class="flex items-start gap-3 opacity-40">
+                            <i class="fas fa-times-circle text-slate-400 mt-0.5"></i>
+                            <span class="text-slate-400">No mentorship</span>
+                        </li>
+                    </ul>
+
+                    <a href="/signup"
+                        class="block w-full py-3 px-6 bg-slate-200 text-slate-900 rounded-xl font-bold text-center hover:bg-slate-300 transition" data-i18n="pricing.get_started_free">
+                        Get Started Free
+                    </a>
+                </div>
+
+                <!-- Candidate Pro Tier (Most Popular) -->
+                <div
+                    class="p-8 bg-gradient-to-br from-indigo-600 to-purple-600 rounded-3xl border-2 border-indigo-500 shadow-2xl shadow-indigo-500/30 transform scale-105 relative pulse-glow gradient-border float-animation">
+                    <div
+                        class="absolute -top-4 left-1/2 -translate-x-1/2 px-4 py-1 bg-yellow-400 text-slate-900 rounded-full text-xs font-black uppercase" data-i18n="pricing.most_popular">
+                        Most Popular
+                    </div>
+
+                    <div class="mb-6">
+                        <h3 class="text-2xl font-black text-white mb-2" data-i18n="pricing.pro">Pro</h3>
+                        <div class="flex items-baseline gap-2 mb-2">
+                            <span class="text-5xl font-black text-white">29 TND</span>
+                            <span class="text-indigo-200 font-black text-xl">HT</span>
+                            <span class="text-indigo-200 font-medium">/month</span>
+                        </div>
+                        <p class="text-[10px] text-white/60 mb-4 italic">+ 19% VAT & 1.000 TND Stamp Duty</p>
+                        <p class="text-indigo-100 text-sm">For active job seekers</p>
+                    </div>
+
+                    <ul class="space-y-3 mb-8 text-sm">
+                        <li class="flex items-start gap-3">
+                            <i class="fas fa-check-circle text-white mt-0.5"></i>
+                            <span class="text-white"><strong>10 CV uploads</strong> per month</span>
+                        </li>
+                        <li class="flex items-start gap-3">
+                            <i class="fas fa-check-circle text-white mt-0.5"></i>
+                            <span class="text-white"><strong>10 AI analyses</strong> per month</span>
+                        </li>
+                        <li class="flex items-start gap-3">
+                            <i class="fas fa-check-circle text-white mt-0.5"></i>
+                            <span class="text-white"><strong>Unlimited job matching</strong></span>
+                        </li>
+                        <li class="flex items-start gap-3">
+                            <i class="fas fa-check-circle text-white mt-0.5"></i>
+                            <span class="text-white"><strong>5 PDF downloads</strong> per month</span>
+                        </li>
+                        <li class="flex items-start gap-3">
+                            <i class="fas fa-check-circle text-white mt-0.5"></i>
+                            <span class="text-white">Enhanced profile with badge</span>
+                        </li>
+                        <li class="flex items-start gap-3">
+                            <i class="fas fa-check-circle text-white mt-0.5"></i>
+                            <span class="text-white">Access to <strong>3 courses</strong></span>
+                        </li>
+                        <li class="flex items-start gap-3">
+                            <i class="fas fa-check-circle text-white mt-0.5"></i>
+                            <span class="text-white">AI career roadmap</span>
+                        </li>
+                        <li class="flex items-start gap-3">
+                            <i class="fas fa-check-circle text-white mt-0.5"></i>
+                            <span class="text-white">Priority support</span>
+                        </li>
+                    </ul>
+
+                    <a href="/signup"
+                        class="block w-full py-3 px-6 bg-white text-indigo-600 rounded-xl font-bold text-center hover:bg-indigo-50 transition shadow-lg">
+                        Start Pro Trial
+                    </a>
+                </div>
+
+                <!-- Candidate Premium Tier -->
+                <div
+                    class="p-8 bg-slate-50 rounded-3xl border-2 border-slate-100 hover:border-indigo-200 transition-all hover-scale">
+                    <div class="mb-6">
+                        <h3 class="text-2xl font-black text-slate-900 mb-2" data-i18n="pricing.premium">Premium</h3>
+                        <div class="flex items-baseline gap-2 mb-2">
+                            <span class="text-5xl font-black text-slate-900">49 TND</span>
+                            <span class="text-slate-500 font-black text-xl">HT</span>
+                            <span class="text-slate-500 font-medium">/month</span>
+                        </div>
+                        <p class="text-[10px] text-slate-400 mb-4 italic">+ 19% VAT & 1.000 TND Stamp Duty</p>
+                        <p class="text-slate-600 text-sm">For career professionals</p>
+                    </div>
+
+                    <ul class="space-y-3 mb-8 text-sm">
+                        <li class="flex items-start gap-3">
+                            <i class="fas fa-check-circle text-indigo-600 mt-0.5"></i>
+                            <span class="text-slate-700"><strong>Unlimited CV uploads</strong></span>
+                        </li>
+                        <li class="flex items-start gap-3">
+                            <i class="fas fa-check-circle text-indigo-600 mt-0.5"></i>
+                            <span class="text-slate-700"><strong>Unlimited AI analyses</strong></span>
+                        </li>
+                        <li class="flex items-start gap-3">
+                            <i class="fas fa-check-circle text-indigo-600 mt-0.5"></i>
+                            <span class="text-slate-700"><strong>Unlimited everything</strong></span>
+                        </li>
+                        <li class="flex items-start gap-3">
+                            <i class="fas fa-check-circle text-indigo-600 mt-0.5"></i>
+                            <span class="text-slate-700">Premium profile badge</span>
+                        </li>
+                        <li class="flex items-start gap-3">
+                            <i class="fas fa-check-circle text-indigo-600 mt-0.5"></i>
+                            <span class="text-slate-700"><strong>All courses</strong> included</span>
+                        </li>
+                        <li class="flex items-start gap-3">
+                            <i class="fas fa-check-circle text-indigo-600 mt-0.5"></i>
+                            <span class="text-slate-700"><strong>1-on-1 mentorship</strong> sessions</span>
+                        </li>
+                        <li class="flex items-start gap-3">
+                            <i class="fas fa-check-circle text-indigo-600 mt-0.5"></i>
+                            <span class="text-slate-700">Featured in recruiter search</span>
+                        </li>
+                        <li class="flex items-start gap-3">
+                            <i class="fas fa-check-circle text-indigo-600 mt-0.5"></i>
+                            <span class="text-slate-700">Dedicated career coach</span>
+                        </li>
+                    </ul>
+
+                    <a href="/signup"
+                        class="block w-full py-3 px-6 bg-indigo-600 text-white rounded-xl font-bold text-center hover:bg-indigo-700 transition">
+                        Go Premium
+                    </a>
+                </div>
+
+            </div>
+        </div>
+    </section>
+
+    <!-- RECRUITER PRICING -->
+    <section id="pricing-recruiter" class="py-20 bg-white hidden">
+        <div class="max-w-7xl mx-auto px-6">
+            <div class="grid md:grid-cols-3 gap-8">
+
+                <!-- Recruiter Starter -->
+                <div
+                    class="p-8 bg-slate-50 rounded-3xl border-2 border-slate-100 hover:border-slate-200 transition-all hover-scale">
+                    <div class="mb-6">
+                        <h3 class="text-2xl font-black text-slate-900 mb-2" data-i18n="pricing.starter">Starter</h3>
+                        <div class="flex items-baseline gap-2 mb-2">
+                            <span class="text-5xl font-black text-slate-900">49 TND</span>
+                            <span class="text-slate-500 font-black text-xl">HT</span>
+                            <span class="text-slate-500 font-medium">/month</span>
+                        </div>
+                        <p class="text-[10px] text-slate-400 mb-4 italic">+ 19% VAT & 1.000 TND Stamp Duty</p>
+                        <p class="text-slate-600 text-sm">For small teams</p>
+                    </div>
+
+                    <ul class="space-y-3 mb-8 text-sm">
+                        <li class="flex items-start gap-3">
+                            <i class="fas fa-check-circle text-indigo-600 mt-0.5"></i>
+                            <span class="text-slate-700"><strong>5 active jobs</strong></span>
+                        </li>
+                        <li class="flex items-start gap-3">
+                            <i class="fas fa-check-circle text-indigo-600 mt-0.5"></i>
+                            <span class="text-slate-700"><strong>50 CV reviews</strong> per month</span>
+                        </li>
+                        <li class="flex items-start gap-3">
+                            <i class="fas fa-check-circle text-indigo-600 mt-0.5"></i>
+                            <span class="text-slate-700"><strong>10 AI interviews</strong> per month</span>
+                        </li>
+                        <li class="flex items-start gap-3">
+                            <i class="fas fa-check-circle text-indigo-600 mt-0.5"></i>
+                            <span class="text-slate-700"><strong>1 team seat</strong></span>
+                        </li>
+                        <li class="flex items-start gap-3">
+                            <i class="fas fa-check-circle text-indigo-600 mt-0.5"></i>
+                            <span class="text-slate-700">Candidate database access</span>
+                        </li>
+                        <li class="flex items-start gap-3">
+                            <i class="fas fa-check-circle text-indigo-600 mt-0.5"></i>
+                            <span class="text-slate-700">Email invitations</span>
+                        </li>
+                        <li class="flex items-start gap-3 opacity-40">
+                            <i class="fas fa-times-circle text-slate-400 mt-0.5"></i>
+                            <span class="text-slate-400">No AI Talent Scout</span>
+                        </li>
+                        <li class="flex items-start gap-3 opacity-40">
+                            <i class="fas fa-times-circle text-slate-400 mt-0.5"></i>
+                            <span class="text-slate-400">No Ghost Formatter</span>
+                        </li>
+                    </ul>
+
+                    <a href="/signup"
+                        class="block w-full py-3 px-6 bg-slate-200 text-slate-900 rounded-xl font-bold text-center hover:bg-slate-300 transition">
+                        Start Free Trial
+                    </a>
+                </div>
+
+                <!-- Recruiter Professional (Most Popular) -->
+                <div
+                    class="p-8 bg-gradient-to-br from-indigo-600 to-purple-600 rounded-3xl border-2 border-indigo-500 shadow-2xl shadow-indigo-500/30 transform scale-105 relative pulse-glow gradient-border float-animation">
+                    <div
+                        class="absolute -top-4 left-1/2 -translate-x-1/2 px-4 py-1 bg-yellow-400 text-slate-900 rounded-full text-xs font-black uppercase" data-i18n="pricing.most_popular">
+                        Most Popular
+                    </div>
+
+                    <div class="mb-6">
+                        <h3 class="text-2xl font-black text-white mb-2" data-i18n="pricing.professional">Professional</h3>
+                        <div class="flex items-baseline gap-2 mb-2">
+                            <span class="text-5xl font-black text-white">149 TND</span>
+                            <span class="text-indigo-200 font-black text-xl">HT</span>
+                            <span class="text-indigo-200 font-medium">/month</span>
+                        </div>
+                        <p class="text-[10px] text-white/60 mb-4 italic">+ 19% VAT & 1.000 TND Stamp Duty</p>
+                        <p class="text-indigo-100 text-sm">For growing companies</p>
+                    </div>
+
+                    <ul class="space-y-3 mb-8 text-sm">
+                        <li class="flex items-start gap-3">
+                            <i class="fas fa-check-circle text-white mt-0.5"></i>
+                            <span class="text-white"><strong>25 active jobs</strong></span>
+                        </li>
+                        <li class="flex items-start gap-3">
+                            <i class="fas fa-check-circle text-white mt-0.5"></i>
+                            <span class="text-white"><strong>200 CV reviews</strong> per month</span>
+                        </li>
+                        <li class="flex items-start gap-3">
+                            <i class="fas fa-check-circle text-white mt-0.5"></i>
+                            <span class="text-white"><strong>50 AI interviews</strong> per month</span>
+                        </li>
+                        <li class="flex items-start gap-3">
+                            <i class="fas fa-check-circle text-white mt-0.5"></i>
+                            <span class="text-white"><strong>5 team seats</strong></span>
+                        </li>
+                        <li class="flex items-start gap-3">
+                            <i class="fas fa-check-circle text-white mt-0.5"></i>
+                            <span class="text-white"><strong>AI Talent Scout</strong> 🔍</span>
+                        </li>
+                        <li class="flex items-start gap-3">
+                            <i class="fas fa-check-circle text-white mt-0.5"></i>
+                            <span class="text-white"><strong>Ghost Formatter</strong> 👻</span>
+                        </li>
+                        <li class="flex items-start gap-3">
+                            <i class="fas fa-check-circle text-white mt-0.5"></i>
+                            <span class="text-white">Bulk campaign management</span>
+                        </li>
+                        <li class="flex items-start gap-3">
+                            <i class="fas fa-check-circle text-white mt-0.5"></i>
+                            <span class="text-white">Analytics dashboard</span>
+                        </li>
+                        <li class="flex items-start gap-3">
+                            <i class="fas fa-check-circle text-white mt-0.5"></i>
+                            <span class="text-white">Priority support</span>
+                        </li>
+                    </ul>
+
+                    <a href="/signup"
+                        class="block w-full py-3 px-6 bg-white text-indigo-600 rounded-xl font-bold text-center hover:bg-indigo-50 transition shadow-lg">
+                        Start Pro Trial
+                    </a>
+                </div>
+
+                <!-- Recruiter Enterprise -->
+                <div
+                    class="p-8 bg-slate-50 rounded-3xl border-2 border-slate-100 hover:border-indigo-200 transition-all hover-scale">
+                    <div class="mb-6">
+                        <h3 class="text-2xl font-black text-slate-900 mb-2" data-i18n="pricing.enterprise">Enterprise</h3>
+                        <div class="flex items-baseline gap-2 mb-2">
+                            <span class="text-5xl font-black text-slate-900">499 TND</span>
+                            <span class="text-slate-500 font-black text-xl">HT</span>
+                            <span class="text-slate-500 font-medium">/month</span>
+                        </div>
+                        <p class="text-[10px] text-slate-400 mb-4 italic">+ 19% VAT & 1.000 TND Stamp Duty</p>
+                        <p class="text-slate-600 text-sm">For large organizations</p>
+                    </div>
+
+                    <ul class="space-y-3 mb-8 text-sm">
+                        <li class="flex items-start gap-3">
+                            <i class="fas fa-check-circle text-indigo-600 mt-0.5"></i>
+                            <span class="text-slate-700"><strong>Unlimited jobs</strong></span>
+                        </li>
+                        <li class="flex items-start gap-3">
+                            <i class="fas fa-check-circle text-indigo-600 mt-0.5"></i>
+                            <span class="text-slate-700"><strong>Unlimited CV reviews</strong></span>
+                        </li>
+                        <li class="flex items-start gap-3">
+                            <i class="fas fa-check-circle text-indigo-600 mt-0.5"></i>
+                            <span class="text-slate-700"><strong>Unlimited AI interviews</strong></span>
+                        </li>
+                        <li class="flex items-start gap-3">
+                            <i class="fas fa-check-circle text-indigo-600 mt-0.5"></i>
+                            <span class="text-slate-700"><strong>Unlimited team seats</strong></span>
+                        </li>
+                        <li class="flex items-start gap-3">
+                            <i class="fas fa-check-circle text-indigo-600 mt-0.5"></i>
+                            <span class="text-slate-700">All Pro features included</span>
+                        </li>
+                        <li class="flex items-start gap-3">
+                            <i class="fas fa-check-circle text-indigo-600 mt-0.5"></i>
+                            <span class="text-slate-700">Custom SMTP integration</span>
+                        </li>
+                        <li class="flex items-start gap-3">
+                            <i class="fas fa-check-circle text-indigo-600 mt-0.5"></i>
+                            <span class="text-slate-700">White-label branding</span>
+                        </li>
+                        <li class="flex items-start gap-3">
+                            <i class="fas fa-check-circle text-indigo-600 mt-0.5"></i>
+                            <span class="text-slate-700">Dedicated account manager</span>
+                        </li>
+                        <li class="flex items-start gap-3">
+                            <i class="fas fa-check-circle text-indigo-600 mt-0.5"></i>
+                            <span class="text-slate-700">SLA guarantee</span>
+                        </li>
+                    </ul>
+
+                    <a href="/signup"
+                        class="block w-full py-3 px-6 bg-indigo-600 text-white rounded-xl font-bold text-center hover:bg-indigo-700 transition">
+                        Contact Sales
+                    </a>
+                </div>
+
+            </div>
+        </div>
+    </section>
+
+    <!-- Feature Comparison Table -->
+    <section class="py-20 bg-slate-50">
+        <div class="max-w-7xl mx-auto px-6">
+            <h2 class="text-3xl font-black text-slate-900 mb-12 text-center" data-i18n="pricing.full_comparison">Full Feature Comparison</h2>
+
+            <div class="overflow-x-auto">
+                <!-- CANDIDATE COMPARISON TABLE -->
+                <table id="comparison-candidate" class="w-full bg-white rounded-2xl overflow-hidden shadow-lg">
+                    <thead class="bg-slate-900 text-white">
+                        <tr>
+                            <th class="px-6 py-4 text-left font-bold">Feature</th>
+                            <th class="px-6 py-4 text-center font-bold">Free</th>
+                            <th class="px-6 py-4 text-center font-bold bg-indigo-600">Pro</th>
+                            <th class="px-6 py-4 text-center font-bold">Premium</th>
+                        </tr>
+                    </thead>
+                    <tbody class="divide-y divide-slate-100">
+                        <tr class="hover:bg-slate-50">
+                            <td class="px-6 py-4 font-medium text-slate-900">CV Uploads/Month</td>
+                            <td class="px-6 py-4 text-center text-slate-600">2</td>
+                            <td class="px-6 py-4 text-center text-indigo-600 font-bold bg-indigo-50">10</td>
+                            <td class="px-6 py-4 text-center text-slate-600">Unlimited</td>
+                        </tr>
+                        <tr class="hover:bg-slate-50">
+                            <td class="px-6 py-4 font-medium text-slate-900">AI Analyses/Month</td>
+                            <td class="px-6 py-4 text-center text-slate-600">1</td>
+                            <td class="px-6 py-4 text-center text-indigo-600 font-bold bg-indigo-50">10</td>
+                            <td class="px-6 py-4 text-center text-slate-600">Unlimited</td>
+                        </tr>
+                        <tr class="hover:bg-slate-50">
+                            <td class="px-6 py-4 font-medium text-slate-900">Job Matching</td>
+                            <td class="px-6 py-4 text-center text-slate-600">5 jobs</td>
+                            <td class="px-6 py-4 text-center text-indigo-600 font-bold bg-indigo-50">Unlimited</td>
+                            <td class="px-6 py-4 text-center text-slate-600">Unlimited</td>
+                        </tr>
+                        <tr class="hover:bg-slate-50">
+                            <td class="px-6 py-4 font-medium text-slate-900">PDF Downloads</td>
+                            <td class="px-6 py-4 text-center text-slate-400">❌</td>
+                            <td class="px-6 py-4 text-center text-indigo-600 font-bold bg-indigo-50">5/month</td>
+                            <td class="px-6 py-4 text-center text-slate-600">Unlimited</td>
+                        </tr>
+                        <tr class="hover:bg-slate-50">
+                            <td class="px-6 py-4 font-medium text-slate-900">Course Access</td>
+                            <td class="px-6 py-4 text-center text-slate-400">❌</td>
+                            <td class="px-6 py-4 text-center text-indigo-600 font-bold bg-indigo-50">3 courses</td>
+                            <td class="px-6 py-4 text-center text-slate-600">All courses</td>
+                        </tr>
+                        <tr class="hover:bg-slate-50">
+                            <td class="px-6 py-4 font-medium text-slate-900">Mentorship</td>
+                            <td class="px-6 py-4 text-center text-slate-400">❌</td>
+                            <td class="px-6 py-4 text-center text-slate-400 bg-indigo-50">❌</td>
+                            <td class="px-6 py-4 text-center text-green-600">✅</td>
+                        </tr>
+                        <tr class="hover:bg-slate-50">
+                            <td class="px-6 py-4 font-medium text-slate-900">Featured Profile</td>
+                            <td class="px-6 py-4 text-center text-slate-400">❌</td>
+                            <td class="px-6 py-4 text-center text-slate-400 bg-indigo-50">❌</td>
+                            <td class="px-6 py-4 text-center text-green-600">✅</td>
+                        </tr>
+                        <tr class="hover:bg-slate-50">
+                            <td class="px-6 py-4 font-medium text-slate-900">Career Coach</td>
+                            <td class="px-6 py-4 text-center text-slate-400">❌</td>
+                            <td class="px-6 py-4 text-center text-slate-400 bg-indigo-50">❌</td>
+                            <td class="px-6 py-4 text-center text-green-600">✅</td>
+                        </tr>
+                    </tbody>
+                </table>
+
+                <!-- RECRUITER COMPARISON TABLE -->
+                <table id="comparison-recruiter" class="w-full bg-white rounded-2xl overflow-hidden shadow-lg hidden">
+                    <thead class="bg-slate-900 text-white">
+                        <tr>
+                            <th class="px-6 py-4 text-left font-bold">Feature</th>
+                            <th class="px-6 py-4 text-center font-bold">Starter</th>
+                            <th class="px-6 py-4 text-center font-bold bg-indigo-600">Professional</th>
+                            <th class="px-6 py-4 text-center font-bold">Enterprise</th>
+                        </tr>
+                    </thead>
+                    <tbody class="divide-y divide-slate-100">
+                        <tr class="hover:bg-slate-50">
+                            <td class="px-6 py-4 font-medium text-slate-900">Active Jobs</td>
+                            <td class="px-6 py-4 text-center text-slate-600">5</td>
+                            <td class="px-6 py-4 text-center text-indigo-600 font-bold bg-indigo-50">25</td>
+                            <td class="px-6 py-4 text-center text-slate-600">Unlimited</td>
+                        </tr>
+                        <tr class="hover:bg-slate-50">
+                            <td class="px-6 py-4 font-medium text-slate-900">CV Reviews/Month</td>
+                            <td class="px-6 py-4 text-center text-slate-600">50</td>
+                            <td class="px-6 py-4 text-center text-indigo-600 font-bold bg-indigo-50">200</td>
+                            <td class="px-6 py-4 text-center text-slate-600">Unlimited</td>
+                        </tr>
+                        <tr class="hover:bg-slate-50">
+                            <td class="px-6 py-4 font-medium text-slate-900">AI Interviews/Month</td>
+                            <td class="px-6 py-4 text-center text-slate-600">10</td>
+                            <td class="px-6 py-4 text-center text-indigo-600 font-bold bg-indigo-50">50</td>
+                            <td class="px-6 py-4 text-center text-slate-600">Unlimited</td>
+                        </tr>
+                        <tr class="hover:bg-slate-50">
+                            <td class="px-6 py-4 font-medium text-slate-900">Team Seats</td>
+                            <td class="px-6 py-4 text-center text-slate-600">1</td>
+                            <td class="px-6 py-4 text-center text-indigo-600 font-bold bg-indigo-50">5</td>
+                            <td class="px-6 py-4 text-center text-slate-600">Unlimited</td>
+                        </tr>
+                        <tr class="hover:bg-slate-50">
+                            <td class="px-6 py-4 font-medium text-slate-900">AI Talent Scout 🔍</td>
+                            <td class="px-6 py-4 text-center text-slate-400">❌</td>
+                            <td class="px-6 py-4 text-center text-green-600 font-bold bg-indigo-50">✅</td>
+                            <td class="px-6 py-4 text-center text-green-600">✅</td>
+                        </tr>
+                        <tr class="hover:bg-slate-50">
+                            <td class="px-6 py-4 font-medium text-slate-900">Ghost Formatter 👻</td>
+                            <td class="px-6 py-4 text-center text-slate-400">❌</td>
+                            <td class="px-6 py-4 text-center text-green-600 font-bold bg-indigo-50">✅</td>
+                            <td class="px-6 py-4 text-center text-green-600">✅</td>
+                        </tr>
+                        <tr class="hover:bg-slate-50">
+                            <td class="px-6 py-4 font-medium text-slate-900">Bulk Campaigns</td>
+                            <td class="px-6 py-4 text-center text-slate-400">❌</td>
+                            <td class="px-6 py-4 text-center text-green-600 font-bold bg-indigo-50">✅</td>
+                            <td class="px-6 py-4 text-center text-green-600">✅</td>
+                        </tr>
+                        <tr class="hover:bg-slate-50">
+                            <td class="px-6 py-4 font-medium text-slate-900">Custom SMTP</td>
+                            <td class="px-6 py-4 text-center text-slate-400">❌</td>
+                            <td class="px-6 py-4 text-center text-slate-400 bg-indigo-50">❌</td>
+                            <td class="px-6 py-4 text-center text-green-600">✅</td>
+                        </tr>
+                        <tr class="hover:bg-slate-50">
+                            <td class="px-6 py-4 font-medium text-slate-900">White-Label Branding</td>
+                            <td class="px-6 py-4 text-center text-slate-400">❌</td>
+                            <td class="px-6 py-4 text-center text-slate-400 bg-indigo-50">❌</td>
+                            <td class="px-6 py-4 text-center text-green-600">✅</td>
+                        </tr>
+                        <tr class="hover:bg-slate-50">
+                            <td class="px-6 py-4 font-medium text-slate-900">Dedicated Account Manager</td>
+                            <td class="px-6 py-4 text-center text-slate-400">❌</td>
+                            <td class="px-6 py-4 text-center text-slate-400 bg-indigo-50">❌</td>
+                            <td class="px-6 py-4 text-center text-green-600">✅</td>
+                        </tr>
+                    </tbody>
+                </table>
+            </div>
+        </div>
+    </section>
+
+    <!-- FAQ Section -->
+    <section class="py-20 bg-white">
+        <div class="max-w-4xl mx-auto px-6">
+            <h2 class="text-3xl font-black text-slate-900 mb-12 text-center" data-i18n="pricing.faq_title">Frequently Asked Questions</h2>
+
+            <div class="space-y-6">
+                <div class="p-6 bg-slate-50 rounded-2xl border border-slate-200">
+                    <h3 class="font-bold text-slate-900 mb-2 flex items-center gap-2">
+                        <i class="fas fa-question-circle text-indigo-600"></i>
+                        Can I upgrade or downgrade anytime?
+                    </h3>
+                    <p class="text-slate-600 text-sm">Yes! You can change your plan at any time. Upgrades take effect
+                        immediately, and downgrades apply at the end of your billing cycle.</p>
+                </div>
+
+                <div class="p-6 bg-slate-50 rounded-2xl border border-slate-200">
+                    <h3 class="font-bold text-slate-900 mb-2 flex items-center gap-2">
+                        <i class="fas fa-question-circle text-indigo-600"></i>
+                        What payment methods do you accept?
+                    </h3>
+                    <p class="text-slate-600 text-sm">We accept all major credit cards (Visa, Mastercard, Amex), PayPal,
+                        and local Tunisian payment methods including D17 and Flouci.</p>
+                </div>
+
+                <div class="p-6 bg-slate-50 rounded-2xl border border-slate-200">
+                    <h3 class="font-bold text-slate-900 mb-2 flex items-center gap-2">
+                        <i class="fas fa-question-circle text-indigo-600"></i>
+                        Is there a free trial for Pro/Premium?
+                    </h3>
+                    <p class="text-slate-600 text-sm">Yes! Pro and Premium plans come with a 7-day free trial. No credit
+                        card required to start. You can cancel anytime during the trial period.</p>
+                </div>
+
+                <div class="p-6 bg-slate-50 rounded-2xl border border-slate-200">
+                    <h3 class="font-bold text-slate-900 mb-2 flex items-center gap-2">
+                        <i class="fas fa-question-circle text-indigo-600"></i>
+                        What happens when I reach my monthly limit?
+                    </h3>
+                    <p class="text-slate-600 text-sm">You'll receive a notification when you're close to your limit. You
+                        can either wait for the monthly reset (1st of each month) or upgrade to a higher tier for
+                        immediate access.</p>
+                </div>
+
+                <div class="p-6 bg-slate-50 rounded-2xl border border-slate-200">
+                    <h3 class="font-bold text-slate-900 mb-2 flex items-center gap-2">
+                        <i class="fas fa-question-circle text-indigo-600"></i>
+                        What's included in the courses?
+                    </h3>
+                    <p class="text-slate-600 text-sm">Our courses cover technical skills (programming, data science,
+                        design), soft skills (communication, leadership), and career development. Pro members get access
+                        to 3 courses, Premium members get unlimited access to our entire library.</p>
+                </div>
+
+                <div class="p-6 bg-slate-50 rounded-2xl border border-slate-200">
+                    <h3 class="font-bold text-slate-900 mb-2 flex items-center gap-2">
+                        <i class="fas fa-question-circle text-indigo-600"></i>
+                        How does mentorship work?
+                    </h3>
+                    <p class="text-slate-600 text-sm">Premium members get matched with industry mentors based on their
+                        career goals. You'll have monthly 1-on-1 video sessions to discuss career strategy, skill
+                        development, and job search tactics.</p>
+                </div>
+            </div>
+        </div>
+    </section>
+
+    <!-- CTA Section -->
+    <section class="py-20 bg-gradient-to-br from-indigo-600 to-purple-600 text-white">
+        <div class="max-w-4xl mx-auto px-6 text-center">
+            <h2 class="text-4xl font-black mb-6" data-i18n="pricing.cta_title">Ready to Accelerate Your Career?</h2>
+            <p class="text-xl text-indigo-100 mb-8" data-i18n="pricing.cta_subtitle">Join 1,200+ verified professionals in Tunisia</p>
+            <div class="flex flex-col sm:flex-row gap-4 justify-center">
+                <a href="/signup"
+                    class="inline-block px-10 py-4 bg-white text-indigo-600 rounded-xl font-bold text-lg hover:bg-indigo-50 transition shadow-xl">
+                    Get Started Free
+                </a>
+                <a href="#pricing-candidate"
+                    class="inline-block px-10 py-4 bg-white/10 border-2 border-white text-white rounded-xl font-bold text-lg hover:bg-white/20 transition">
+                    View All Plans
+                </a>
+            </div>
+            <p class="text-sm text-indigo-200 mt-6">No credit card required • 7-day free trial • Cancel anytime</p>
+        </div>
+    </section>
+
+    <!-- Footer -->
+    <footer class="bg-slate-950 py-12 text-white">
+        <div class="max-w-7xl mx-auto px-6 text-center">
+            <p class="text-slate-400 text-sm" data-i18n="landing_page.footer.rights">&copy; 2026 Candway Intelligence Inc. All rights reserved.</p>
+        </div>
+    </footer>
+
+    <script>
+        function showPricing(type) {
+            const candidateSection = document.getElementById('pricing-candidate');
+            const recruiterSection = document.getElementById('pricing-recruiter');
+            const candidateComparison = document.getElementById('comparison-candidate');
+            const recruiterComparison = document.getElementById('comparison-recruiter');
+            const btnCandidate = document.getElementById('btn-candidate');
+            const btnRecruiter = document.getElementById('btn-recruiter');
+
+            // Hero elements
+            const heroTitleCandidate = document.getElementById('hero-title-candidate');
+            const heroTitleRecruiter = document.getElementById('hero-title-recruiter');
+            const heroSubtitleCandidate = document.getElementById('hero-subtitle-candidate');
+            const heroSubtitleRecruiter = document.getElementById('hero-subtitle-recruiter');
+
+            if (type === 'candidate') {
+                // Show candidate pricing and comparison
+                candidateSection.classList.remove('hidden');
+                recruiterSection.classList.add('hidden');
+                candidateComparison.classList.remove('hidden');
+                recruiterComparison.classList.add('hidden');
+
+                // Show candidate hero text
+                heroTitleCandidate.classList.remove('hidden');
+                heroTitleRecruiter.classList.add('hidden');
+                heroSubtitleCandidate.classList.remove('hidden');
+                heroSubtitleRecruiter.classList.add('hidden');
+
+                // Update button styles
+                btnCandidate.classList.add('bg-indigo-600', 'text-white');
+                btnCandidate.classList.remove('bg-slate-200', 'text-slate-700');
+                btnRecruiter.classList.add('bg-slate-200', 'text-slate-700');
+                btnRecruiter.classList.remove('bg-indigo-600', 'text-white');
+            } else {
+                // Show recruiter pricing and comparison
+                candidateSection.classList.add('hidden');
+                recruiterSection.classList.remove('hidden');
+                candidateComparison.classList.add('hidden');
+                recruiterComparison.classList.remove('hidden');
+
+                // Show recruiter hero text
+                heroTitleCandidate.classList.add('hidden');
+                heroTitleRecruiter.classList.remove('hidden');
+                heroSubtitleCandidate.classList.add('hidden');
+                heroSubtitleRecruiter.classList.remove('hidden');
+
+                // Update button styles
+                btnRecruiter.classList.add('bg-indigo-600', 'text-white');
+                btnRecruiter.classList.remove('bg-slate-200', 'text-slate-700');
+                btnCandidate.classList.add('bg-slate-200', 'text-slate-700');
+                btnCandidate.classList.remove('bg-indigo-600', 'text-white');
+            }
+        }
+    </script>
+
+    <script src="/js/csrf.js"></script>
+    <!-- XSS Protection -->
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/dompurify/3.0.8/purify.min.js"></script>
+    <script src="/js/xss-protection.js"></script>
+</body>
+
+</html>

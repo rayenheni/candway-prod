@@ -1,0 +1,695 @@
+@import "tailwindcss";
+
+/* ============================================================
+   CRITICAL FIX: Class-based dark mode
+   Tailwind v4 (CSS-first config, no tailwind.config.js) defaults the
+   `dark:` variant to the `prefers-color-scheme` MEDIA QUERY, not a CSS
+   class. Since our ThemeProvider toggles a `.dark` class on <html> to
+   let users manually pick Light/Dark/System, we MUST redeclare the
+   `dark` variant to key off that class — otherwise every `dark:` utility
+   silently follows the OS theme instead of the in-app toggle, which is
+   exactly what broke "Light Mode" (OS dark + app set to light rendered
+   dark: styles anyway, and vice versa).
+   ============================================================ */
+@custom-variant dark (&:where(.dark, .dark *));
+
+/* ============================================================
+   Candway Intelligence Platform - Purple Glassmorphism Design System
+   ============================================================ */
+
+/* Design Tokens */
+:root {
+  --font-sans: 'Inter', -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, 'Helvetica Neue', Arial, sans-serif;
+  --font-arabic: 'Zain', 'Inter', -apple-system, BlinkMacSystemFont, 'Segoe UI', Tahoma, sans-serif;
+
+  /* Purple Brand Scale */
+  --candway-purple-50:  #FAF5FF;
+  --candway-purple-100: #F3E8FF;
+  --candway-purple-200: #E9D5FF;
+  --candway-purple-400: #C084FC;
+  --candway-purple-500: #A855F7;
+  --candway-purple-600: #9333EA;
+  --candway-purple-700: #7E22CE;
+  --candway-violet-600: #7C3AED;
+  --candway-indigo-600: #4F46E5;
+
+  /* Glass Tokens */
+  --glass-white: rgba(255, 255, 255, 0.65);
+  --glass-white-strong: rgba(255, 255, 255, 0.8);
+  --glass-purple: rgba(147, 51, 234, 0.08);
+  --glass-border: rgba(255, 255, 255, 0.45);
+  --glass-border-purple: rgba(168, 85, 247, 0.2);
+  --glass-shadow: 0 8px 32px rgba(124, 58, 237, 0.10);
+  --glass-shadow-lg: 0 16px 48px rgba(124, 58, 237, 0.14);
+}
+
+/* ============================================================
+   Base Styles
+   IMPORTANT: All base element defaults MUST live inside @layer base.
+   Tailwind v4 registers `@layer theme, base, components, utilities;`
+   Any CSS declared OUTSIDE a layer is treated as "unlayered" and will
+   always beat layered rules (including utilities like dark:text-white),
+   regardless of specificity. Previously this file set raw `p, span, div`
+   color rules outside a layer, which silently broke every text/badge/
+   dark-mode color utility across the app. Wrapping in @layer base fixes
+   this so component utility classes (and dark: variants) correctly win.
+   ============================================================ */
+@layer base {
+  html {
+    font-family: var(--font-sans);
+    -webkit-font-smoothing: antialiased;
+    -moz-osx-font-smoothing: grayscale;
+  }
+
+  /* Zain font for Arabic and Tunisian Derja (auto-applied via <html dir="rtl">) */
+  html[dir='rtl'],
+  html[lang='ar'] {
+    font-family: var(--font-arabic);
+    letter-spacing: 0;
+  }
+
+  html[dir='rtl'] * {
+    font-family: var(--font-arabic);
+  }
+
+  /* Slightly larger sizing for Arabic script since Zain runs a bit tighter */
+  html[dir='rtl'] body {
+    font-size: 16px;
+    line-height: 1.65;
+  }
+
+  body {
+    @apply text-gray-900 bg-[#FAF7FF] transition-colors duration-300;
+  }
+
+  .dark body {
+    @apply text-gray-100 bg-[#0D0A1A];
+  }
+
+  /* Sensible defaults only — components can always override with utilities */
+  h1, h2, h3, h4, h5, h6 {
+    @apply text-gray-900 dark:text-white;
+  }
+
+  p {
+    @apply text-gray-700 dark:text-gray-300;
+  }
+}
+
+/* ============================================================
+   Page Background - White Purple Glass Mesh
+   ============================================================ */
+.candway-page-bg {
+  position: relative;
+  background:
+    radial-gradient(ellipse 80% 50% at 20% -10%, rgba(168, 85, 247, 0.14), transparent 60%),
+    radial-gradient(ellipse 60% 40% at 90% 10%, rgba(99, 102, 241, 0.12), transparent 55%),
+    radial-gradient(ellipse 50% 40% at 60% 90%, rgba(192, 132, 252, 0.10), transparent 55%),
+    linear-gradient(180deg, #FDFBFF 0%, #F8F4FF 50%, #FAF7FF 100%);
+}
+
+.dark .candway-page-bg {
+  background:
+    radial-gradient(ellipse 80% 50% at 20% -10%, rgba(147, 51, 234, 0.18), transparent 60%),
+    radial-gradient(ellipse 60% 40% at 90% 10%, rgba(79, 70, 229, 0.15), transparent 55%),
+    radial-gradient(ellipse 50% 40% at 60% 90%, rgba(124, 58, 237, 0.10), transparent 55%),
+    linear-gradient(180deg, #0D0A1A 0%, #120D24 50%, #0E0A1D 100%);
+}
+
+/* Floating decorative orbs */
+.candway-orb {
+  position: fixed;
+  border-radius: 9999px;
+  filter: blur(90px);
+  pointer-events: none;
+  z-index: 0;
+  opacity: 0.5;
+}
+
+/* ============================================================
+   Glass Utilities
+   ============================================================ */
+
+/* White-purple glass panel (pages, cards, topbar) */
+.glass-panel {
+  background: var(--glass-white);
+  backdrop-filter: blur(20px) saturate(160%);
+  -webkit-backdrop-filter: blur(20px) saturate(160%);
+  border: 1px solid var(--glass-border);
+  box-shadow: var(--glass-shadow);
+}
+
+.dark .glass-panel {
+  background: rgba(30, 20, 55, 0.55);
+  border: 1px solid rgba(168, 85, 247, 0.15);
+  box-shadow: 0 8px 32px rgba(0, 0, 0, 0.35);
+}
+
+/* Strong glass (topbar / sticky headers) */
+.glass-strong {
+  background: var(--glass-white-strong);
+  backdrop-filter: blur(24px) saturate(180%);
+  -webkit-backdrop-filter: blur(24px) saturate(180%);
+  border-color: rgba(233, 213, 255, 0.6);
+}
+
+.dark .glass-strong {
+  background: rgba(20, 13, 40, 0.75);
+  border-color: rgba(168, 85, 247, 0.15);
+}
+
+/* Purple glass sidebar */
+.glass-sidebar {
+  background: rgba(255, 255, 255, 0.75);
+  backdrop-filter: blur(24px) saturate(160%);
+  -webkit-backdrop-filter: blur(24px) saturate(160%);
+  border-right: 1px solid rgba(168, 85, 247, 0.2);
+  box-shadow: 4px 0 40px rgba(124, 58, 237, 0.08);
+}
+
+.dark .glass-sidebar {
+  background: linear-gradient(
+    175deg,
+    rgba(59, 18, 95, 0.85) 0%,
+    rgba(46, 16, 82, 0.88) 40%,
+    rgba(30, 12, 60, 0.92) 100%
+  );
+  border-right: 1px solid rgba(168, 85, 247, 0.18);
+  box-shadow: none;
+}
+
+/* Sidebar inner glass surfaces (search, banners, nav hover) */
+.glass-sidebar-item {
+  background: rgba(168, 85, 247, 0.08);
+  backdrop-filter: blur(8px);
+  border: 1px solid rgba(168, 85, 247, 0.12);
+}
+.dark .glass-sidebar-item {
+  background: rgba(255, 255, 255, 0.08);
+  border: 1px solid rgba(255, 255, 255, 0.10);
+}
+
+.glass-sidebar-item:hover {
+  background: rgba(168, 85, 247, 0.12);
+}
+.dark .glass-sidebar-item:hover {
+  background: rgba(255, 255, 255, 0.14);
+}
+
+.glass-sidebar-active {
+  background: rgba(147, 51, 234, 0.12);
+  backdrop-filter: blur(12px);
+  border: 1px solid rgba(147, 51, 234, 0.25);
+  box-shadow: 0 4px 16px rgba(124, 58, 237, 0.12);
+}
+.dark .glass-sidebar-active {
+  background: rgba(255, 255, 255, 0.18);
+  border: 1px solid rgba(255, 255, 255, 0.22);
+  box-shadow: 0 4px 16px rgba(0, 0, 0, 0.12), inset 0 1px 0 rgba(255, 255, 255, 0.15);
+}
+
+/* Animated contour ring on the active sidebar item */
+@property --contour-angle {
+  syntax: '<angle>';
+  initial-value: 0deg;
+  inherits: false;
+}
+
+@keyframes contour-rotate {
+  to { --contour-angle: 360deg; }
+}
+
+.glass-sidebar-active {
+  position: relative;
+  z-index: 0;
+}
+
+.glass-sidebar-active::before {
+  content: '';
+  position: absolute;
+  inset: -1px;
+  border-radius: 10px;
+  padding: 1.5px;
+  background: conic-gradient(
+    from var(--contour-angle),
+    transparent 0%,
+    rgba(147, 51, 234, 0) 18%,
+    rgba(196, 181, 253, 0.95) 32%,
+    rgba(147, 51, 234, 0.85) 40%,
+    rgba(147, 51, 234, 0) 55%,
+    transparent 100%
+  );
+  -webkit-mask: linear-gradient(#fff 0 0) content-box, linear-gradient(#fff 0 0);
+  -webkit-mask-composite: xor;
+  mask: linear-gradient(#fff 0 0) content-box, linear-gradient(#fff 0 0);
+  mask-composite: exclude;
+  animation: contour-rotate 3s linear infinite;
+  pointer-events: none;
+  z-index: 0;
+}
+
+.dark .glass-sidebar-active::before {
+  background: conic-gradient(
+    from var(--contour-angle),
+    transparent 0%,
+    rgba(255, 255, 255, 0) 18%,
+    rgba(255, 255, 255, 0.95) 32%,
+    rgba(196, 181, 253, 0.9) 40%,
+    rgba(255, 255, 255, 0) 55%,
+    transparent 100%
+  );
+}
+
+
+/* Glass card hover elevation */
+.glass-card {
+  background: rgba(255, 255, 255, 0.62);
+  backdrop-filter: blur(18px) saturate(150%);
+  -webkit-backdrop-filter: blur(18px) saturate(150%);
+  border: 1px solid rgba(255, 255, 255, 0.55);
+  box-shadow: 0 4px 24px rgba(124, 58, 237, 0.08);
+  transition: box-shadow 0.25s ease, border-color 0.25s ease, transform 0.25s ease;
+}
+
+.glass-card:hover {
+  border-color: var(--glass-border-purple);
+  box-shadow: var(--glass-shadow-lg);
+}
+
+.dark .glass-card {
+  background: rgba(38, 25, 70, 0.45);
+  border: 1px solid rgba(168, 85, 247, 0.14);
+  box-shadow: 0 4px 24px rgba(0, 0, 0, 0.3);
+}
+
+.dark .glass-card:hover {
+  border-color: rgba(168, 85, 247, 0.3);
+}
+
+/* Smooth scrollbar */
+::-webkit-scrollbar {
+  width: 6px;
+  height: 6px;
+}
+
+::-webkit-scrollbar-track {
+  background: transparent;
+}
+
+::-webkit-scrollbar-thumb {
+  background: rgba(147, 51, 234, 0.25);
+  border-radius: 100px;
+}
+
+::-webkit-scrollbar-thumb:hover {
+  background: rgba(147, 51, 234, 0.4);
+}
+
+.dark ::-webkit-scrollbar-thumb {
+  background: rgba(168, 85, 247, 0.25);
+}
+
+.dark ::-webkit-scrollbar-thumb:hover {
+  background: rgba(168, 85, 247, 0.4);
+}
+
+/* Sidebar scrollbar (on purple glass) */
+.glass-sidebar ::-webkit-scrollbar-thumb {
+  background: rgba(255, 255, 255, 0.2);
+}
+
+.glass-sidebar ::-webkit-scrollbar-thumb:hover {
+  background: rgba(255, 255, 255, 0.35);
+}
+
+/* Toast animations */
+@keyframes enter {
+  0% {
+    transform: translateX(100%);
+    opacity: 0;
+  }
+  100% {
+    transform: translateX(0);
+    opacity: 1;
+  }
+}
+
+@keyframes leave {
+  0% {
+    transform: translateX(0);
+    opacity: 1;
+  }
+  100% {
+    transform: translateX(100%);
+    opacity: 0;
+  }
+}
+
+.animate-enter {
+  animation: enter 0.3s ease-out;
+}
+
+.animate-leave {
+  animation: leave 0.2s ease-in;
+}
+
+/* Soft float animation for decorative orbs */
+@keyframes float-slow {
+  0%, 100% { transform: translateY(0) translateX(0); }
+  50% { transform: translateY(-24px) translateX(16px); }
+}
+
+.animate-float-slow {
+  animation: float-slow 14s ease-in-out infinite;
+}
+
+/* Selection */
+::selection {
+  background-color: rgba(147, 51, 234, 0.22);
+  color: inherit;
+}
+
+/* Focus visible ring */
+*:focus-visible {
+  outline: 2px solid #9333EA;
+  outline-offset: 2px;
+  border-radius: 4px;
+}
+
+/* =====================================================================
+   CANDWAY LANDING — portable styling
+   ===================================================================== */
+
+@theme {
+  --font-sans: "Inter", "SF Pro Display", -apple-system, BlinkMacSystemFont,
+    "Segoe UI", system-ui, "Helvetica Neue", Arial, sans-serif;
+  --font-accent: "Iowan Old Style", "Palatino Linotype", "Book Antiqua",
+    Palatino, Georgia, serif;
+
+  --color-ink: #191331;
+  --color-ink-soft: #4f4969;
+  --color-ink-faint: #8b84a8;
+
+  --color-primary-50: #f6f2ff;
+  --color-primary-100: #ede4ff;
+  --color-primary-200: #dbc9ff;
+  --color-primary-300: #bfa3ff;
+  --color-primary-400: #9d72ff;
+  --color-primary-500: #7c4dff;
+  --color-primary-600: #6c39e8;
+  --color-primary-700: #5a2cc7;
+  --color-primary-800: #4a24a3;
+
+  --color-lilac-50: #f8f6ff;
+  --color-lilac-100: #f1ecff;
+  --color-lilac-200: #e4dbff;
+}
+
+/* ---------- glass surfaces ---------- */
+
+.cw-glass {
+  background: linear-gradient(
+    150deg,
+    rgba(255, 255, 255, 0.85) 0%,
+    rgba(255, 255, 255, 0.55) 55%,
+    rgba(240, 235, 255, 0.5) 100%
+  );
+  backdrop-filter: blur(16px);
+  -webkit-backdrop-filter: blur(16px);
+  border: 1px solid rgba(255, 255, 255, 0.9);
+  box-shadow:
+    0 1px 2px rgba(23, 18, 58, 0.04),
+    0 12px 32px -12px rgba(108, 57, 232, 0.16);
+}
+
+.cw-glass-strong {
+  background: rgba(255, 255, 255, 0.8);
+  backdrop-filter: blur(20px);
+  -webkit-backdrop-filter: blur(20px);
+  border: 1px solid rgba(255, 255, 255, 0.95);
+  box-shadow:
+    0 24px 60px -24px rgba(108, 57, 232, 0.28),
+    0 2px 8px rgba(23, 18, 58, 0.05);
+}
+
+.cw-stage {
+  background: linear-gradient(
+    180deg,
+    rgba(255, 255, 255, 0.94) 0%,
+    rgba(250, 248, 255, 0.88) 100%
+  );
+  border: 1px solid rgba(255, 255, 255, 0.95);
+  box-shadow:
+    0 1px 1px rgba(23, 18, 58, 0.04),
+    0 30px 80px -28px rgba(108, 57, 232, 0.38),
+    0 8px 24px rgba(23, 18, 58, 0.04);
+}
+
+/* ---------- textures ---------- */
+
+.cw-noise {
+  background-image: url("data:image/svg+xml;utf8,<svg xmlns='http://www.w3.org/2000/svg' width='160' height='160'><filter id='n'><feTurbulence type='fractalNoise' baseFrequency='0.9' numOctaves='2' stitchTiles='stitch'/></filter><rect width='100%25' height='100%25' filter='url(%23n)' opacity='0.55'/></svg>");
+  opacity: 0.05;
+  mix-blend-mode: multiply;
+}
+
+.cw-dots {
+  background-image: radial-gradient(
+    circle,
+    rgba(108, 57, 232, 0.16) 1.2px,
+    transparent 1.3px
+  );
+  background-size: 22px 22px;
+}
+
+/* ---------- keyframes ---------- */
+
+@keyframes cw-float {
+  0%,
+  100% {
+    transform: translateY(0);
+  }
+  50% {
+    transform: translateY(-10px);
+  }
+}
+
+@keyframes cw-spin-slow {
+  to {
+    transform: rotate(360deg);
+  }
+}
+
+@keyframes cw-pulse-ring {
+  0% {
+    transform: scale(0.94);
+    opacity: 0.55;
+  }
+  70% {
+    transform: scale(1.16);
+    opacity: 0;
+  }
+  100% {
+    transform: scale(1.16);
+    opacity: 0;
+  }
+}
+
+@keyframes cw-scan {
+  0% {
+    top: -18%;
+    opacity: 0;
+  }
+  14% {
+    opacity: 0.7;
+  }
+  60% {
+    opacity: 0.7;
+  }
+  100% {
+    top: 104%;
+    opacity: 0;
+  }
+}
+
+@keyframes cw-blink {
+  0%,
+  100% {
+    opacity: 1;
+  }
+  50% {
+    opacity: 0.3;
+  }
+}
+
+@keyframes cw-marquee {
+  from {
+    transform: translateX(0);
+  }
+  to {
+    transform: translateX(-50%);
+  }
+}
+
+@keyframes cw-fade-in {
+  from {
+    opacity: 0;
+    transform: translateY(10px) scale(0.995);
+  }
+  to {
+    opacity: 1;
+    transform: none;
+  }
+}
+
+@keyframes cw-drift {
+  0%,
+  100% {
+    transform: translate(0, 0) scale(1);
+  }
+  50% {
+    transform: translate(26px, -18px) scale(1.06);
+  }
+}
+
+@keyframes cw-pulse-soft {
+  0%,
+  100% {
+    box-shadow: 0 0 0 0 rgba(124, 77, 255, 0.35);
+  }
+  50% {
+    box-shadow: 0 0 0 9px rgba(124, 77, 255, 0);
+  }
+}
+
+@keyframes cw-scan-x {
+  0% {
+    transform: translateX(-130%);
+  }
+  100% {
+    transform: translateX(430%);
+  }
+}
+
+.cw-float {
+  animation: cw-float 7s ease-in-out infinite;
+}
+
+.cw-spin-slow {
+  animation: cw-spin-slow 32s linear infinite;
+}
+
+.cw-pulse-ring {
+  animation: cw-pulse-ring 3.4s cubic-bezier(0.4, 0, 0.6, 1) infinite;
+}
+
+.cw-scan {
+  position: absolute;
+  left: 6%;
+  right: 6%;
+  height: 22%;
+  border-radius: 9999px;
+  background: linear-gradient(
+    180deg,
+    transparent,
+    rgba(255, 255, 255, 0.65) 50%,
+    transparent
+  );
+  filter: blur(2px);
+  animation: cw-scan 5.5s ease-in-out infinite;
+}
+
+.cw-blink {
+  animation: cw-blink 1.8s ease-in-out infinite;
+}
+
+.cw-marquee {
+  animation: cw-marquee 32s linear infinite;
+}
+
+/* ---------- premium micro-interactions ---------- */
+
+.cw-shine {
+  position: relative;
+  overflow: hidden;
+}
+
+.cw-shine::after {
+  content: "";
+  position: absolute;
+  inset: -1px;
+  background: linear-gradient(
+    110deg,
+    transparent 35%,
+    rgba(255, 255, 255, 0.35) 50%,
+    transparent 65%
+  );
+  transform: translateX(-130%);
+  transition: transform 0.9s cubic-bezier(0.22, 1, 0.36, 1);
+  pointer-events: none;
+}
+
+.cw-shine:hover::after {
+  transform: translateX(130%);
+}
+
+.cw-lift {
+  transition:
+    transform 0.4s cubic-bezier(0.22, 1, 0.36, 1),
+    box-shadow 0.4s ease,
+    border-color 0.4s ease;
+}
+
+.cw-lift:hover {
+  transform: translateY(-5px);
+  box-shadow: 0 26px 60px -26px rgba(108, 57, 232, 0.42);
+}
+
+.cw-fade-x {
+  mask-image: linear-gradient(
+    90deg,
+    transparent,
+    #000 10%,
+    #000 90%,
+    transparent
+  );
+  -webkit-mask-image: linear-gradient(
+    90deg,
+    transparent,
+    #000 10%,
+    #000 90%,
+    transparent
+  );
+}
+
+.cw-fade-in {
+  animation: cw-fade-in 0.55s cubic-bezier(0.22, 1, 0.36, 1) both;
+}
+
+.cw-drift {
+  animation: cw-drift 16s ease-in-out infinite;
+}
+
+.cw-pulse-soft {
+  animation: cw-pulse-soft 2.2s ease-in-out infinite;
+}
+
+.cw-scan-x {
+  animation: cw-scan-x 3.4s cubic-bezier(0.4, 0, 0.2, 1) infinite;
+}
+
+/* ---------- reduced motion ---------- */
+
+@media (prefers-reduced-motion: reduce) {
+  html {
+    scroll-behavior: auto;
+  }
+
+  *,
+  *::before,
+  *::after {
+    animation-duration: 0.01ms !important;
+    animation-iteration-count: 1 !important;
+    transition-duration: 0.01ms !important;
+  }
+}

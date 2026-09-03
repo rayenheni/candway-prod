@@ -1,0 +1,246 @@
+"""InterviewStarter — centralizes the process of starting an AI interview.
+
+Responsibilities:
+1. Ensuring the application is in the correct state.
+2. Resolving and persisting the EvaluationConfigSnapshot.
+3. Initializing the EvaluationSession and Engine state.
+4. Transitioning state to IN_PROGRESS.
+"""
+
+import logging
+from datetime import timedelta
+from typing import Any, Dict, Optional
+
+from sqlalchemy.orm import Session
+
+from backend.database import Application, EvaluationSession
+from backend.entity_writer import sync_ai_interview_session
+from backend.models.evaluation.config_snapshot import EntryPoint
+from backend.rubric.config_resolver import ConfigurationResolver
+from backend.routers.ai_interview.utils import normalize_interview_language
+
+logger = logging.getLogger(__name__)
+
+
+class InterviewStarter:
+    """Service to coordinate the start of an interview.
+
+    This replaces the scattered logic in chat.py, campaign scripts, etc.
+    """
+
+    @classmethod
+    def start(
+        cls,
+        db: Session,
+        app: Application,
+        source_type: str = "job_apply",
+        override_cv_score: Optional[float] = None,
+        override_language: Optional[str] = None,
+    ) -> EvaluationSession:
+        """Starts the interview by resolving config and initializing the session.
+
+        Raises:
+            RuntimeError: if snapshot resolution or session creation fails.
+                The transaction is rolled back and app.interview_state is reverted.
+        """
+        original_state = app.interview_state
+        try:
+            # 1. Transition state to IN_PROGRESS
+            app.interview_state = "in_progress"
+
+            # 2. Define the entry point for configuration resolution
+            entry_point = EntryPoint(
+                source_type=source_type,
+                source_id=app.job_id,
+                application_id=app.id,
+                campaign_id=getattr(app, "batch_id", None),
+            )
+
+            # 3. Resolve the configuration snapshot
+            bj = getattr(app, "batch_job", None)
+            rubric_id = getattr(app, "rubric_id", None) or (
+                getattr(bj, "rubric_id", None) if bj else None
+            )
+
+            # Campaign Optimization: reuse the pre-generated snapshot only
+            # when no explicit language override was supplied.
+            #
+            # An explicit language selected at interview start must be allowed
+            # to flow through ConfigurationResolver so it can be frozen into
+            # this interview's immutable snapshot. Reusing an existing
+            # campaign snapshot here would silently discard the override.
+            config_snapshot = None
+            normalized_start_language = normalize_interview_language(
+                override_language
+            )
+
+            if (
+                not normalized_start_language
+                and bj
+                and getattr(bj, "active_snapshot_id", None)
+            ):
+                from backend.models.evaluation.config_snapshot import (
+                    EvaluationConfigSnapshot,
+                )
+
+                config_snapshot = (
+                    db.query(EvaluationConfigSnapshot)
+                    .filter(EvaluationConfigSnapshot.id == bj.active_snapshot_id)
+                    .first()
+                )
+                if config_snapshot:
+                    # A campaign snapshot is authoritative only when it is
+                    # complete enough to drive an interview. Older snapshots
+                    # may have been created before language/rubric freezing
+                    # was fully implemented; do not silently reuse those.
+                    snapshot_language = getattr(config_snapshot, "language", None)
+                    snapshot_rubric_id = getattr(config_snapshot, "rubric_id", None)
+
+                    if not snapshot_language:
+                        logger.warning(
+                            "Ignoring incomplete campaign snapshot %s for app %s: "
+                            "missing language",
+                            config_snapshot.id,
+                            app.id,
+                        )
+                        config_snapshot = None
+                    elif rubric_id and not snapshot_rubric_id:
+                        logger.warning(
+                            "Ignoring incomplete campaign snapshot %s for app %s: "
+                            "missing rubric_id=%s",
+                            config_snapshot.id,
+                            app.id,
+                            rubric_id,
+                        )
+                        config_snapshot = None
+                    else:
+                        logger.info(
+                            "Reusing campaign pre-generated snapshot %s for app %s",
+                            config_snapshot.id,
+                            app.id,
+                        )
+
+            if not config_snapshot:
+                # Fetch the rubric record if any
+                rubric_record = None
+                if rubric_id:
+                    from backend.rubric.rubric_loader import load_rubric_by_id
+
+                    rubric_record = load_rubric_by_id(
+                        rubric_id,
+                        db=db,
+                        company_id=app.company_id,
+                    )
+
+                # The language explicitly selected when the interview starts
+                # is allowed to seed the frozen snapshot. Once the snapshot
+                # exists, it remains authoritative for every later turn.
+                explicit_overrides = {}
+                if normalized_start_language:
+                    explicit_overrides["language"] = normalized_start_language
+
+                config_snapshot = ConfigurationResolver.resolve(
+                    db,
+                    entry_point,
+                    company_id=app.company_id,
+                    rubric_record=rubric_record,
+                    db_rubric_id=rubric_id,
+                    job=getattr(app, "job", None),
+                    campaign_config=cls._get_campaign_config(app),
+                    explicit_overrides=explicit_overrides or None,
+                )
+
+            # The language explicitly selected when the interview starts
+            # is authoritative for THIS interview session.
+            #
+            # This also applies when a campaign has a pre-generated snapshot.
+            # The campaign snapshot is reusable configuration, but the
+            # candidate/session language must be frozen before the interview
+            # begins. After start, chat reads the snapshot language only.
+            normalized_start_language = normalize_interview_language(
+                override_language
+            )
+            if normalized_start_language:
+                config_snapshot.language = normalized_start_language
+
+                # Keep the serialized config in sync when present.
+                config_json = getattr(config_snapshot, "config_json", None)
+                if isinstance(config_json, dict):
+                    config_json = dict(config_json)
+                    config_json["language"] = normalized_start_language
+                    config_snapshot.config_json = config_json
+
+            # 4. Wire the snapshot to the session
+            # We use sync_ai_interview_session to find/create the session and set all attributes
+            # Establish the authoritative interview deadline exactly once
+            # when the interview is started. Chat/resume logic must never
+            # recreate or extend this deadline.
+            session = sync_ai_interview_session(
+                db,
+                app,
+                interview_state="in_progress",
+                interview_time_left=config_snapshot.time_limit_seconds,
+                evaluation_config_snapshot_id=config_snapshot.id,
+                rubric_id=rubric_id or config_snapshot.rubric_id,
+                rubric_version=config_snapshot.rubric_version,
+            )
+
+            from backend.models.base import utcnow
+
+            if getattr(session, "expires_at", None) is None:
+                # A newly started interview must always get a fresh
+                # authoritative deadline. Never reuse a legacy opened_at
+                # from a previous interview lifecycle.
+                start_time = utcnow()
+                app.opened_at = start_time
+
+                session.expires_at = start_time + timedelta(
+                    seconds=config_snapshot.time_limit_seconds
+                )
+
+            # Propagate the recruiter-configured language onto the application
+            # so the chat uses the configured language even when the candidate
+            # does not pass an explicit language.
+            snap_lang = getattr(config_snapshot, "language", None)
+            if snap_lang:
+                app.language = snap_lang
+
+            db.commit()
+            logger.info(
+                "Started interview for app %s using snapshot %s",
+                app.id,
+                config_snapshot.id,
+            )
+            return session
+
+        except Exception as exc:
+            db.rollback()
+            app.interview_state = original_state
+            logger.error("Failed to start interview for app %s: %s", app.id, exc)
+            raise RuntimeError(
+                f"Interview start failed for app {app.id}: {exc}"
+            ) from exc
+
+    @staticmethod
+    def _get_campaign_config(app: Application) -> Optional[Dict[str, Any]]:
+        if not getattr(app, "batch_job", None):
+            return None
+
+        bj = app.batch_job
+
+        # Campaign Wizard stores the recruiter-selected interview language
+        # on the Campaign itself. batch_job.language is kept as a legacy
+        # fallback for older campaign records.
+        campaign = getattr(bj, "campaign", None)
+
+        campaign_language = getattr(campaign, "language", None)
+        batch_job_language = getattr(bj, "language", None)
+
+        config = {
+            "total_questions": getattr(bj, "max_questions", None),
+            "time_limit_seconds": getattr(bj, "time_limit", None),
+            "interview_instructions": getattr(bj, "interview_instructions", None),
+            "language": campaign_language or batch_job_language,
+        }
+
+        return {k: v for k, v in config.items() if v is not None}
