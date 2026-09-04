@@ -800,3 +800,83 @@ def test_candidate_upload_cv_normalizes_analysis_json(
         assert cv_doc.analysis_json["skill_metrics"]["Python"] == 95
     finally:
         db.close()
+
+
+def test_candidate_onboarding_completion_flow(client, db_session):
+    """Verify explicit onboarding completion endpoint, security isolation, and status retrieval."""
+    from backend.models.evaluation.profile import CandidateProfile
+
+    from backend.database import EmailVerification
+
+    user = User(
+        email="onboarding_test_user@candway.dev",
+        hashed_password=pwd_context.hash("Secret123!"),
+        role="candidate",
+        name="Onboarding Tester",
+        email_verified=True,
+    )
+    db_session.add(user)
+    db_session.commit()
+    db_session.refresh(user)
+
+    ev = EmailVerification(
+        user_id=user.id,
+        token="test_ev_token_123",
+        verified=True,
+    )
+    db_session.add(ev)
+    db_session.commit()
+
+    profile = CandidateProfile(
+        user_id=user.id,
+        name=user.name,
+        email=user.email,
+        onboarding_completed=False,
+    )
+    db_session.add(profile)
+    db_session.commit()
+
+    # Login candidate
+    login_res = client.post(
+        "/api/v1/auth/login",
+        json={"email": "onboarding_test_user@candway.dev", "password": "Secret123!"},
+    )
+    assert login_res.status_code == 200, login_res.text
+    token = login_res.json()["access_token"]
+    csrf = _fetch_csrf_token(client)
+    headers = {"Authorization": f"Bearer {token}", "X-CSRF-Token": csrf}
+
+    # Before completion: dashboard returns onboarding_completed: false
+    dash_res = client.get("/api/v1/candidate/applications/me", headers=headers)
+    assert dash_res.status_code == 200
+    assert dash_res.json()["onboarding_completed"] is False
+
+    # Attempt to hack onboarding_completed via generic update_profile
+    put_res = client.put(
+        "/api/v1/candidate/profile",
+        headers=headers,
+        json={"onboarding_completed": True, "skills": "Python, React"},
+    )
+    assert put_res.status_code == 200
+    db_session.refresh(profile)
+    # Must remain False because update_profile does NOT accept onboarding_completed
+    assert profile.onboarding_completed is False
+
+    # Call dedicated complete onboarding endpoint
+    comp_res = client.post("/api/v1/candidate/onboarding/complete", headers=headers)
+    assert comp_res.status_code == 200, comp_res.text
+    assert comp_res.json()["success"] is True
+    assert comp_res.json()["onboarding_completed"] is True
+
+    # DB state updated
+    db_session.refresh(profile)
+    assert profile.onboarding_completed is True
+
+    # Dashboard and profile data now reflect onboarding_completed: true
+    dash_after = client.get("/api/v1/candidate/applications/me", headers=headers)
+    assert dash_after.status_code == 200
+    assert dash_after.json()["onboarding_completed"] is True
+
+    prof_after = client.get("/api/v1/candidate/profile-data", headers=headers)
+    assert prof_after.status_code == 200
+    assert prof_after.json()["data"]["onboarding_completed"] is True

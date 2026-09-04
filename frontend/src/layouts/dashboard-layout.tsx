@@ -23,7 +23,7 @@ export function DashboardLayout() {
         <div className="relative flex-1 flex flex-col overflow-hidden z-10">
           <Topbar />
           <main className="flex-1 overflow-y-auto">
-            <div className="mx-auto max-w-7xl px-6 py-6">
+            <div className="mx-auto max-w-7xl px-3 sm:px-6 py-4 sm:py-6">
               <OnboardingGuard>
                 <Outlet />
               </OnboardingGuard>

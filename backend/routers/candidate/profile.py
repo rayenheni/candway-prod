@@ -142,6 +142,7 @@ def get_candidate_profile_data(
             "expected_salary": f"{salary_min} - {salary_max}"
             if salary_min and salary_max
             else "Negotiable",
+            "onboarding_completed": summary.get("onboarding_completed", False),
             "links": {
                 "linkedin": get_user_linkedin_url(current_user),
                 "github": get_user_github_url(current_user),
@@ -810,6 +811,43 @@ async def update_profile(
             "avatar": get_user_avatar_url(current_user),
             "skills": _parse_skills_json(get_user_skills(current_user)),
         },
+    }
+
+
+@router.post("/onboarding/complete")
+def complete_onboarding(
+    current_user: User = Depends(get_current_user),
+    db: Session = Depends(get_db),
+):
+    profile = (
+        db.query(CandidateProfile)
+        .filter(CandidateProfile.user_id == current_user.id)
+        .first()
+    )
+    if not profile:
+        profile = CandidateProfile(
+            user_id=current_user.id,
+            company_id=None,
+        )
+        db.add(profile)
+        db.flush()
+
+    profile.onboarding_completed = True
+
+    audit = AuditLog(
+        user_id=current_user.id,
+        action="onboarding_complete",
+        target_id=str(current_user.id),
+        details="Candidate completed onboarding flow",
+        ip_address="system",
+    )
+    db.add(audit)
+    db.commit()
+
+    return {
+        "success": True,
+        "message": "Onboarding marked as completed",
+        "onboarding_completed": True,
     }
 
 

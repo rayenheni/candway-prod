@@ -62,6 +62,7 @@ class CandidateProfile(Base, TenantMixin):
     salary_expectation_min = Column(Integer)
     salary_expectation_max = Column(Integer)
     relocation_willing = Column(Boolean, nullable=True)
+    onboarding_completed = Column(Boolean, default=False, nullable=False)
     linkedin_url = Column(String(255))
     github_url = Column(String(255))
     portfolio_url = Column(String(255))

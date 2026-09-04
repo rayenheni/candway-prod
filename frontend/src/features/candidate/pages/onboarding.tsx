@@ -10,6 +10,7 @@ import { customToast } from '@/shared/components/ui/toast';
 import { candidateService } from '@/services/candidate.service';
 import { cn } from '@/utils/cn';
 import { useLanguage } from '@/contexts/language-context';
+import { resetOnboardingGuardCache } from '@/features/candidate/components/onboarding-guard';
 import { User, Upload, FileText, CheckCircle2, ArrowRight, ArrowLeft, Briefcase, GraduationCap, Star, Sparkles, Save, Loader2 } from 'lucide-react';
 
 const STEPS = ['Profile', 'CV Upload', 'Skills & Experience', 'Preferences'];
@@ -121,6 +122,8 @@ export default function OnboardingPage() {
         ...(availability ? { availability } : {}),
         relocation_willing: relocationWilling,
       });
+      await candidateService.completeOnboarding();
+      resetOnboardingGuardCache();
       customToast({ type: 'success', title: t('onboarding.completeTitle'), message: t('onboarding.completeMsg') });
       navigate('/dashboard');
     } catch {

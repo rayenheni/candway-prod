@@ -1190,7 +1190,7 @@ def _resolve_dashboard_profile_score(current_user, profile):
 
 
 def _is_candidate_onboarding_completed(current_user: User, db: Session) -> bool:
-    """Return True only when the candidate has completed the core onboarding data."""
+    """Return True when candidate profile onboarding_completed flag is set or legacy profile data exists."""
 
     profile = (
         db.query(CandidateProfile)
@@ -1201,8 +1201,11 @@ def _is_candidate_onboarding_completed(current_user: User, db: Session) -> bool:
     if not profile:
         return False
 
+    if getattr(profile, "onboarding_completed", False):
+        return True
+
     has_identity = any(
-        bool(getattr(profile, field, None))
+        bool(getattr(profile, field, None)) or bool(getattr(current_user, field, None))
         for field in (
             "name",
             "headline",
@@ -1210,7 +1213,7 @@ def _is_candidate_onboarding_completed(current_user: User, db: Session) -> bool:
         )
     )
 
-    has_skills = bool(profile.skills)
+    has_skills = bool(profile.skills) and profile.skills != "[]"
 
     has_preferences = any(
         bool(getattr(profile, field, None))
@@ -1232,7 +1235,7 @@ def _is_candidate_onboarding_completed(current_user: User, db: Session) -> bool:
     )
 
     return bool(
-        (has_identity and has_skills and has_preferences)
+        (has_identity and (has_skills or has_preferences))
         or has_cv_or_application
     )
 

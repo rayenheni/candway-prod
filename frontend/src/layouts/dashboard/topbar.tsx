@@ -107,7 +107,7 @@ export function Topbar() {
 
   return (
     <header className="glass-strong h-16 border-b border-purple-100/70 dark:border-purple-500/15 sticky top-0 z-40">
-      <div className="flex items-center justify-between h-full px-6">
+      <div className="flex items-center justify-between h-full px-3 sm:px-6">
         {/* Left - Mobile Menu & Role Workspace Switcher */}
         <div className="flex items-center gap-4">
           <button

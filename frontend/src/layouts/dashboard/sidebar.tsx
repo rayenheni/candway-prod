@@ -2,6 +2,7 @@
 // Dashboard Sidebar - Purple Glassmorphism - Candway Platform
 // ============================================================
 
+import { useEffect } from 'react';
 import { Link, useLocation, useNavigate } from 'react-router';
 import { motion, AnimatePresence } from 'framer-motion';
 import { cn } from '@/utils/cn';
@@ -17,7 +18,7 @@ import {
   Calendar,
   BarChart3,
   MessageSquare,
-   Settings,
+  Settings,
   ChevronLeft,
   ChevronRight,
   FileText,
@@ -45,6 +46,7 @@ import {
   Terminal,
   Volume2,
   FileCheck2,
+  X,
   type LucideIcon,
 } from 'lucide-react';
 
@@ -249,10 +251,14 @@ const roleNavMap: Record<UserRole, NavSection[]> = {
 
 export function Sidebar() {
   const { user, switchRole, isDemoMode } = useAuth();
-  const { isCollapsed, collapse, expand } = useSidebar();
+  const { isOpen, isCollapsed, collapse, expand, close } = useSidebar();
   const { t } = useLanguage();
   const location = useLocation();
   const navigate = useNavigate();
+
+  useEffect(() => {
+    close();
+  }, [location.pathname, close]);
 
   const currentRole: UserRole = user?.role || 'recruiter';
   const navSections = roleNavMap[currentRole] || recruiterNav;
@@ -272,109 +278,185 @@ export function Sidebar() {
   };
 
   return (
-    <motion.aside
-      initial={false}
-      animate={{ width: isCollapsed ? 72 : 260 }}
-      transition={{ duration: 0.2, ease: 'easeInOut' }}
-      className="glass-sidebar relative flex flex-col h-screen shrink-0 overflow-hidden z-30"
-    >
-      {/* Decorative glass shine */}
-      <div className="pointer-events-none absolute inset-x-0 top-0 h-40 bg-gradient-to-b from-white/30 dark:from-white/10 to-transparent" />
-      <div className="pointer-events-none absolute -top-20 -right-20 h-56 w-56 rounded-full bg-fuchsia-400/30 dark:bg-fuchsia-400/20 blur-3xl" />
-      <div className="pointer-events-none absolute bottom-10 -left-24 h-64 w-64 rounded-full bg-indigo-400/30 dark:bg-indigo-400/20 blur-3xl" />
+    <>
+      {/* Desktop Sidebar */}
+      <motion.aside
+        initial={false}
+        animate={{ width: isCollapsed ? 72 : 260 }}
+        transition={{ duration: 0.2, ease: 'easeInOut' }}
+        className="glass-sidebar relative hidden lg:flex flex-col h-screen shrink-0 overflow-hidden z-30"
+      >
+        {/* Decorative glass shine */}
+        <div className="pointer-events-none absolute inset-x-0 top-0 h-40 bg-gradient-to-b from-white/30 dark:from-white/10 to-transparent" />
+        <div className="pointer-events-none absolute -top-20 -right-20 h-56 w-56 rounded-full bg-fuchsia-400/30 dark:bg-fuchsia-400/20 blur-3xl" />
+        <div className="pointer-events-none absolute bottom-10 -left-24 h-64 w-64 rounded-full bg-indigo-400/30 dark:bg-indigo-400/20 blur-3xl" />
 
-      {/* Header & Logo */}
-      <div className="relative flex items-center h-16 px-4 border-b border-purple-100 dark:border-white/10">
-        <Link to="/dashboard" className="flex items-center gap-3 min-w-0">
-          <img
-            src="/candway_logo.png"
-            alt="Candway"
-            className="h-8 w-8 shrink-0 rounded-lg object-contain"
-          />
-          <AnimatePresence mode="wait">
-            {!isCollapsed && (
-              <motion.div
-                initial={{ opacity: 0, width: 0 }}
-                animate={{ opacity: 1, width: 'auto' }}
-                exit={{ opacity: 0, width: 0 }}
-                className="flex flex-col whitespace-nowrap"
-              >
-                <span className="text-lg font-bold text-gray-900 dark:text-white tracking-tight leading-none">
-                  Candway
-                </span>
-                <span className="text-[10px] font-semibold mt-0.5 uppercase tracking-wider text-purple-600 dark:text-purple-200">
-                  {roleLabel} Studio
-                </span>
-              </motion.div>
-            )}
-          </AnimatePresence>
-        </Link>
-      </div>
+        {/* Header & Logo */}
+        <div className="relative flex items-center h-16 px-4 border-b border-purple-100 dark:border-white/10">
+          <Link to="/dashboard" className="flex items-center gap-3 min-w-0">
+            <img
+              src="/candway_logo.png"
+              alt="Candway"
+              className="h-8 w-8 shrink-0 rounded-lg object-contain"
+            />
+            <AnimatePresence mode="wait">
+              {!isCollapsed && (
+                <motion.div
+                  initial={{ opacity: 0, width: 0 }}
+                  animate={{ opacity: 1, width: 'auto' }}
+                  exit={{ opacity: 0, width: 0 }}
+                  className="flex flex-col whitespace-nowrap"
+                >
+                  <span className="text-lg font-bold text-gray-900 dark:text-white tracking-tight leading-none">
+                    Candway
+                  </span>
+                  <span className="text-[10px] font-semibold mt-0.5 uppercase tracking-wider text-purple-600 dark:text-purple-200">
+                    {roleLabel} Studio
+                  </span>
+                </motion.div>
+              )}
+            </AnimatePresence>
+          </Link>
+        </div>
 
-      {/* Navigation */}
-      <nav className="relative flex-1 overflow-y-auto py-3 px-3 space-y-1">
-        {navSections.map((section, i) => (
-          <div key={i}>
-            {section.title && !isCollapsed && (
-              <div className="px-3 py-2 text-[10px] font-bold uppercase tracking-wider text-purple-500 dark:text-purple-200/70">
-                {t(section.title)}
+        {/* Navigation */}
+        <nav className="relative flex-1 overflow-y-auto py-3 px-3 space-y-1">
+          {navSections.map((section, i) => (
+            <div key={i}>
+              {section.title && !isCollapsed && (
+                <div className="px-3 py-2 text-[10px] font-bold uppercase tracking-wider text-purple-500 dark:text-purple-200/70">
+                  {t(section.title)}
+                </div>
+              )}
+              <div className="space-y-0.5">
+                {section.items.map((item) => (
+                  <SidebarNavItem
+                    key={item.href + item.label}
+                    item={item}
+                    isActive={location.pathname === item.href || (item.href !== '/dashboard' && location.pathname.startsWith(item.href))}
+                    isCollapsed={isCollapsed}
+                    t={t}
+                  />
+                ))}
               </div>
-            )}
-            <div className="space-y-0.5">
-              {section.items.map((item) => (
-                <SidebarNavItem
-                  key={item.href + item.label}
-                  item={item}
-                  isActive={location.pathname === item.href || (item.href !== '/dashboard' && location.pathname.startsWith(item.href))}
-                  isCollapsed={isCollapsed}
-                  t={t}
-                />
-              ))}
+              {i < navSections.length - 1 && <div className="my-2 mx-3 h-px bg-purple-100/80 dark:bg-white/10" />}
             </div>
-            {i < navSections.length - 1 && <div className="my-2 mx-3 h-px bg-purple-100/80 dark:bg-white/10" />}
-          </div>
-        ))}
-      </nav>
+          ))}
+        </nav>
 
-      {/* Role Workspace Banner / Quick Switcher */}
-      <AnimatePresence mode="wait">
-        {isDemoMode && !isCollapsed && (
-          <motion.div
-            initial={{ opacity: 0 }}
-            animate={{ opacity: 1 }}
-            exit={{ opacity: 0 }}
-            className="glass-sidebar-item relative p-3 mx-3 mb-2 rounded-xl"
-          >
-            <div className="flex items-center justify-between text-xs font-semibold text-purple-900 dark:text-white">
-              <span>{t('sidebar.active_workspace')}</span>
-              <span className="px-1.5 py-0.5 rounded font-bold text-[10px] bg-purple-200/60 text-purple-900 border border-purple-300/50 dark:bg-white/20 dark:text-white dark:border-white/20">
-                {roleLabel}
-              </span>
-            </div>
-            <p className="text-[11px] text-purple-700/80 mt-1 leading-normal dark:text-purple-200/80">
-              {t('sidebar.viewing_as')} {roleLabel}.
-            </p>
-            <button
-              onClick={cycleNextRole}
-              className="mt-2 w-full text-center py-1.5 text-xs font-semibold rounded-lg bg-white/90 text-purple-800 hover:bg-white transition-all shadow-md shadow-purple-950/20"
+        {/* Role Workspace Banner / Quick Switcher */}
+        <AnimatePresence mode="wait">
+          {isDemoMode && !isCollapsed && (
+            <motion.div
+              initial={{ opacity: 0 }}
+              animate={{ opacity: 1 }}
+              exit={{ opacity: 0 }}
+              className="glass-sidebar-item relative p-3 mx-3 mb-2 rounded-xl"
             >
-              {t('sidebar.cycle_role')} &rarr;
-            </button>
-          </motion.div>
+              <div className="flex items-center justify-between text-xs font-semibold text-purple-900 dark:text-white">
+                <span>{t('sidebar.active_workspace')}</span>
+                <span className="px-1.5 py-0.5 rounded font-bold text-[10px] bg-purple-200/60 text-purple-900 border border-purple-300/50 dark:bg-white/20 dark:text-white dark:border-white/20">
+                  {roleLabel}
+                </span>
+              </div>
+              <p className="text-[11px] text-purple-700/80 mt-1 leading-normal dark:text-purple-200/80">
+                {t('sidebar.viewing_as')} {roleLabel}.
+              </p>
+              <button
+                onClick={cycleNextRole}
+                className="mt-2 w-full text-center py-1.5 text-xs font-semibold rounded-lg bg-white/90 text-purple-800 hover:bg-white transition-all shadow-md shadow-purple-950/20"
+              >
+                {t('sidebar.cycle_role')} &rarr;
+              </button>
+            </motion.div>
+          )}
+        </AnimatePresence>
+
+        {/* Collapse Toggle */}
+        <div className="relative border-t border-purple-100 dark:border-white/10 p-3">
+          <button
+            onClick={isCollapsed ? expand : collapse}
+            className="glass-sidebar-item flex items-center justify-center w-full h-8 rounded-lg text-purple-700 hover:text-purple-900 dark:text-purple-100 dark:hover:text-white transition-colors"
+            title={isCollapsed ? t('sidebar.expand') : t('sidebar.collapse')}
+          >
+            {isCollapsed ? <ChevronRight className="h-4 w-4" /> : <ChevronLeft className="h-4 w-4" />}
+          </button>
+        </div>
+      </motion.aside>
+
+      {/* Mobile Drawer */}
+      <AnimatePresence>
+        {isOpen && (
+          <>
+            <motion.div
+              initial={{ opacity: 0 }}
+              animate={{ opacity: 1 }}
+              exit={{ opacity: 0 }}
+              onClick={close}
+              className="fixed inset-0 z-40 bg-black/50 backdrop-blur-sm lg:hidden"
+            />
+            <motion.aside
+              initial={{ x: '-100%' }}
+              animate={{ x: 0 }}
+              exit={{ x: '-100%' }}
+              transition={{ type: 'spring', damping: 25, stiffness: 200 }}
+              className="fixed inset-y-0 left-0 z-50 w-72 glass-sidebar flex flex-col h-full lg:hidden overflow-hidden shadow-2xl"
+            >
+              {/* Header & Logo */}
+              <div className="relative flex items-center justify-between h-16 px-4 border-b border-purple-100 dark:border-white/10">
+                <Link to="/dashboard" onClick={close} className="flex items-center gap-3 min-w-0">
+                  <img
+                    src="/candway_logo.png"
+                    alt="Candway"
+                    className="h-8 w-8 shrink-0 rounded-lg object-contain"
+                  />
+                  <div className="flex flex-col whitespace-nowrap">
+                    <span className="text-lg font-bold text-gray-900 dark:text-white tracking-tight leading-none">
+                      Candway
+                    </span>
+                    <span className="text-[10px] font-semibold mt-0.5 uppercase tracking-wider text-purple-600 dark:text-purple-200">
+                      {roleLabel} Studio
+                    </span>
+                  </div>
+                </Link>
+                <button
+                  onClick={close}
+                  className="p-1.5 rounded-lg text-purple-700 hover:text-purple-900 dark:text-purple-200 hover:bg-purple-100/50 dark:hover:bg-white/10 transition-colors"
+                >
+                  <X className="h-5 w-5" />
+                </button>
+              </div>
+
+              {/* Mobile Navigation */}
+              <nav className="relative flex-1 overflow-y-auto py-3 px-3 space-y-1">
+                {navSections.map((section, i) => (
+                  <div key={i}>
+                    {section.title && (
+                      <div className="px-3 py-2 text-[10px] font-bold uppercase tracking-wider text-purple-500 dark:text-purple-200/70">
+                        {t(section.title)}
+                      </div>
+                    )}
+                    <div className="space-y-0.5">
+                      {section.items.map((item) => (
+                        <SidebarNavItem
+                          key={item.href + item.label}
+                          item={item}
+                          isActive={location.pathname === item.href || (item.href !== '/dashboard' && location.pathname.startsWith(item.href))}
+                          isCollapsed={false}
+                          t={t}
+                          onClick={close}
+                        />
+                      ))}
+                    </div>
+                    {i < navSections.length - 1 && <div className="my-2 mx-3 h-px bg-purple-100/80 dark:bg-white/10" />}
+                  </div>
+                ))}
+              </nav>
+            </motion.aside>
+          </>
         )}
       </AnimatePresence>
-
-      {/* Collapse Toggle */}
-      <div className="relative border-t border-purple-100 dark:border-white/10 p-3">
-        <button
-          onClick={isCollapsed ? expand : collapse}
-          className="glass-sidebar-item flex items-center justify-center w-full h-8 rounded-lg text-purple-700 hover:text-purple-900 dark:text-purple-100 dark:hover:text-white transition-colors"
-          title={isCollapsed ? t('sidebar.expand') : t('sidebar.collapse')}
-        >
-          {isCollapsed ? <ChevronRight className="h-4 w-4" /> : <ChevronLeft className="h-4 w-4" />}
-        </button>
-      </div>
-    </motion.aside>
+    </>
   );
 }
 
@@ -383,19 +465,21 @@ function SidebarNavItem({
   isActive,
   isCollapsed,
   t,
+  onClick,
 }: {
   item: NavItem;
   isActive: boolean;
   isCollapsed: boolean;
   t: (key: string) => string;
+  onClick?: () => void;
 }) {
   const label = t(item.label);
-  // Badge can be a translation key (e.g. "nav.badge.active") or a raw number/string
   const badge = typeof item.badge === 'string' ? t(item.badge) : item.badge;
 
   return (
     <Link
       to={item.href}
+      onClick={onClick}
       className={cn(
         'group flex items-center gap-3 h-9 rounded-lg px-3 text-sm font-medium transition-all duration-150 relative',
         isActive

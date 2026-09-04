@@ -8,6 +8,11 @@ import { candidateService } from '@/services/candidate.service';
 let cachedBlocked: boolean | null = null;
 let cachedUserId: string | number | null = null;
 
+export function resetOnboardingGuardCache() {
+  cachedBlocked = null;
+  cachedUserId = null;
+}
+
 export function OnboardingGuard({ children }: { children: React.ReactNode }) {
   const { user } = useAuth();
   const navigate = useNavigate();

@@ -167,6 +167,9 @@ export const candidateService = {
   updateProfile: (data: any) =>
     apiClient.put<any>('/candidate/profile', data),
 
+  completeOnboarding: () =>
+    apiClient.post<any>('/candidate/onboarding/complete', {}),
+
   uploadAvatar: (formData: FormData) =>
     apiClient.postFormData<any>('/candidate/avatar', formData),
 
