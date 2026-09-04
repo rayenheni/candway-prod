@@ -1,6 +1,6 @@
 import asyncio
 import json
-from datetime import UTC, datetime
+from datetime import UTC, datetime, timedelta
 from typing import Optional, Tuple
 
 from fastapi import APIRouter, Depends, HTTPException
@@ -95,6 +95,7 @@ async def run_background_final_evaluation(application_id: int, company_id: int):
                 )
                 return
 
+            now_claim = datetime.now(UTC)
             result = (
                 db.query(EvaluationSession)
                 .filter(
@@ -102,7 +103,11 @@ async def run_background_final_evaluation(application_id: int, company_id: int):
                     EvaluationSession.status == "pending",
                 )
                 .update(
-                    {"status": "running", "started_at": datetime.now(UTC)},
+                    {
+                        "status": "running",
+                        "started_at": now_claim,
+                        "updated_at": now_claim,
+                    },
                     synchronize_session=False,
                 )
             )
@@ -123,7 +128,7 @@ async def run_background_final_evaluation(application_id: int, company_id: int):
                     reverse=True,
                 )[0]
                 _es_bg.status = "running"
-                _es_bg.started_at = datetime.now(UTC)
+                _es_bg.started_at = now_claim
 
             _interview_log_bg = (
                 getattr(_es, "interview_log", None)
@@ -350,6 +355,31 @@ async def run_background_final_evaluation(application_id: int, company_id: int):
                 db.commit()
                 return
 
+            # Verify claim validity BEFORE performing scoring, credit consumption, or emails
+            session_check = (
+                db.query(EvaluationSession)
+                .filter(
+                    EvaluationSession.application_id == application_id,
+                    EvaluationSession.status == "running",
+                )
+                .first()
+            )
+            now_claim_naive = now_claim.replace(tzinfo=None) if now_claim.tzinfo else now_claim
+            session_started_naive = (
+                session_check.started_at.replace(tzinfo=None)
+                if session_check and session_check.started_at and session_check.started_at.tzinfo
+                else (session_check.started_at if session_check else None)
+            )
+
+            if not session_check or (
+                session_started_naive and session_started_naive > now_claim_naive
+            ):
+                logger.warning(
+                    f"[BG EVAL] Session claim lost or reclaimed for app {application_id}. "
+                    "Skipping scoring, credit charge, and emails to prevent zombie side effects."
+                )
+                return
+
             if result.get("final_score") is not None:
                 eval_score = float(result["final_score"])
 
@@ -540,6 +570,31 @@ async def run_background_final_evaluation(application_id: int, company_id: int):
                             f"[BG EVAL] Failed to send candidate completion notification: {cand_email_err}"
                         )
 
+            # Verify that this worker still holds the claim before finalizing
+            session_check = (
+                db.query(EvaluationSession)
+                .filter(
+                    EvaluationSession.application_id == application_id,
+                    EvaluationSession.status == "running",
+                )
+                .first()
+            )
+            now_claim_naive = now_claim.replace(tzinfo=None) if now_claim.tzinfo else now_claim
+            session_started_naive = (
+                session_check.started_at.replace(tzinfo=None)
+                if session_check and session_check.started_at and session_check.started_at.tzinfo
+                else (session_check.started_at if session_check else None)
+            )
+
+            if not session_check or (
+                session_started_naive and session_started_naive > now_claim_naive
+            ):
+                logger.warning(
+                    f"[BG EVAL] Session claim lost or reclaimed for app {application_id}. "
+                    "Skipping completion updates to prevent stale overwrite."
+                )
+                return
+
             sync_evaluation_state(db, app, evaluation_state="completed")
             app.interview_state = "completed"
             app.final_eval_timestamp = datetime.now(UTC)
@@ -560,10 +615,31 @@ async def run_background_final_evaluation(application_id: int, company_id: int):
                 f"[BG EVAL] Unhandled error for app {application_id}: {e}",
                 exc_info=True,
             )
-            sync_evaluation_state(db, app, evaluation_state="failed")
-            if app.evaluation_sessions:
-                app.evaluation_sessions[-1].status = "failed"
-            db.commit()
+            try:
+                session_check = (
+                    db.query(EvaluationSession)
+                    .filter(
+                        EvaluationSession.application_id == application_id,
+                        EvaluationSession.status == "running",
+                    )
+                    .first()
+                )
+                now_claim_naive = now_claim.replace(tzinfo=None) if now_claim.tzinfo else now_claim
+                session_started_naive = (
+                    session_check.started_at.replace(tzinfo=None)
+                    if session_check and session_check.started_at and session_check.started_at.tzinfo
+                    else (session_check.started_at if session_check else None)
+                )
+                if session_check and (
+                    not session_started_naive
+                    or session_started_naive <= now_claim_naive
+                ):
+                    sync_evaluation_state(db, app, evaluation_state="failed")
+                    if app.evaluation_sessions:
+                        app.evaluation_sessions[-1].status = "failed"
+                    db.commit()
+            except Exception as fail_err:
+                logger.error(f"[BG EVAL] Error marking session failed: {fail_err}")
             raise
 
 
@@ -882,3 +958,103 @@ async def report_fraud(
         "message": "Fraud report submitted successfully",
         "fraud_score": app.fraud_score,
     }
+
+
+STALE_PENDING_THRESHOLD_SECONDS = 180  # 3 minutes
+STALE_RUNNING_THRESHOLD_SECONDS = 600  # 10 minutes (> 300s eval timeout)
+
+
+async def recover_stale_evaluations(
+    db: Session,
+    pending_threshold_seconds: int = STALE_PENDING_THRESHOLD_SECONDS,
+    running_threshold_seconds: int = STALE_RUNNING_THRESHOLD_SECONDS,
+) -> int:
+    """Recover orphaned EvaluationSessions stuck in 'pending' or 'running'.
+
+    1. Identify stale 'running' sessions (>10 min) and reset them to 'pending'
+       via atomic conditional UPDATE (CAS).
+    2. Collect all sessions requiring recovery (stale pending OR reset running).
+    3. Invoke run_background_final_evaluation() for each.
+    """
+    now = datetime.now(UTC)
+    running_cutoff = now - timedelta(seconds=running_threshold_seconds)
+    pending_cutoff = now - timedelta(seconds=pending_threshold_seconds)
+
+    # 1. Find candidate stale running sessions
+    stale_running_candidates = (
+        db.query(
+            EvaluationSession.id,
+            EvaluationSession.application_id,
+            EvaluationSession.company_id,
+        )
+        .filter(
+            EvaluationSession.status == "running",
+            EvaluationSession.updated_at < running_cutoff,
+        )
+        .all()
+    )
+
+    reset_app_pairs = set()
+    reset_count = 0
+
+    for sid, app_id, company_id in stale_running_candidates:
+        # Atomic CAS update: only succeeds if DB row is STILL status='running' AND updated_at < running_cutoff
+        rows_updated = (
+            db.query(EvaluationSession)
+            .filter(
+                EvaluationSession.id == sid,
+                EvaluationSession.status == "running",
+                EvaluationSession.updated_at < running_cutoff,
+            )
+            .update(
+                {"status": "pending", "updated_at": now},
+                synchronize_session=False,
+            )
+        )
+        if rows_updated > 0:
+            reset_count += 1
+            if app_id:
+                reset_app_pairs.add((app_id, company_id))
+
+    if reset_count > 0:
+        db.commit()
+        logger.info(
+            f"[EVAL RECOVERY] Reset {reset_count} stale 'running' EvaluationSession(s) to 'pending'"
+        )
+
+    # 2. Fetch stale pending sessions (updated_at < pending_cutoff)
+    stale_pending = (
+        db.query(
+            EvaluationSession.application_id,
+            EvaluationSession.company_id,
+        )
+        .filter(
+            EvaluationSession.status == "pending",
+            EvaluationSession.updated_at < pending_cutoff,
+        )
+        .all()
+    )
+
+    to_evaluate = set()
+    for app_id, company_id in stale_pending:
+        if app_id:
+            to_evaluate.add((app_id, company_id))
+
+    # Also include the reset running sessions so they evaluate in this pass
+    to_evaluate.update(reset_app_pairs)
+
+    if not to_evaluate:
+        return reset_count
+
+    recovered_count = 0
+    for app_id, company_id in to_evaluate:
+        try:
+            await run_background_final_evaluation(app_id, company_id)
+            recovered_count += 1
+        except Exception as err:
+            logger.error(
+                f"[EVAL RECOVERY] Failed to recover app {app_id} evaluation: {err}"
+            )
+
+    return reset_count + recovered_count
+

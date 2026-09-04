@@ -890,6 +890,23 @@ async def _pending_payment_reminder_cron():
         db.close()
 
 
+async def _stale_evaluation_recovery_cron():
+    """Periodically recover stale pending or running evaluation sessions."""
+    from backend.routers.ai_interview.evaluation import recover_stale_evaluations
+
+    db = SessionLocal()
+    try:
+        recovered = await recover_stale_evaluations(db)
+        if recovered:
+            logger.info(
+                f"[EVAL RECOVERY] Cron recovered {recovered} stale evaluation session(s)"
+            )
+    except Exception as e:
+        logger.error(f"[EVAL RECOVERY] Recovery cron failed: {e}", exc_info=True)
+    finally:
+        db.close()
+
+
 def start_scheduler():
     jobs = [
         (
@@ -959,6 +976,11 @@ def start_scheduler():
             "pending_payment_reminder",
             _pending_payment_reminder_cron,
             CronTrigger(hour=9, minute=30),
+        ),
+        (
+            "stale_evaluation_recovery",
+            _stale_evaluation_recovery_cron,
+            IntervalTrigger(minutes=5),
         ),
     ]
 
