@@ -86,13 +86,14 @@ class TestWorkflow2JobApplication:
     """Workflow 2: From job application (with job_id)"""
 
     def test_application_has_job_id(
-        self, client, db_session, test_user, test_recruiter
+        self, client, db_session, test_user, test_recruiter, test_company
     ):
         """Application to job should have job_id set"""
         from backend.database import Job
 
         job = Job(
             recruiter_id=test_recruiter.id,
+            company_id=test_company.id,
             title="Senior Python Developer",
             location="Remote",
         )
@@ -102,6 +103,7 @@ class TestWorkflow2JobApplication:
 
         app = Application(
             user_id=test_user.id,
+            company_id=test_company.id,
             declared_role="Python Developer",
             full_name=test_user.name,
             email=test_user.email,
@@ -118,7 +120,7 @@ class TestWorkflow2JobApplication:
         assert app.batch_id is None
 
     def test_interview_with_job_context(
-        self, client, auth_headers, db_session, test_user, test_recruiter
+        self, client, auth_headers, db_session, test_user, test_recruiter, test_company
     ):
         """Interview from job should have job context"""
         if not os.environ.get("GROQ_API_KEY"):
@@ -126,13 +128,17 @@ class TestWorkflow2JobApplication:
         from backend.database import Job
 
         job = Job(
-            recruiter_id=test_recruiter.id, title="Backend Engineer", location="Remote"
+            recruiter_id=test_recruiter.id,
+            company_id=test_company.id,
+            title="Backend Engineer",
+            location="Remote",
         )
         db_session.add(job)
         db_session.commit()
 
         app = Application(
             user_id=test_user.id,
+            company_id=test_company.id,
             declared_role="Backend Engineer",
             full_name=test_user.name,
             email=test_user.email,
@@ -160,11 +166,14 @@ class TestWorkflow3CampaignInvite:
     """Workflow 3: From campaign invitation (with batch_id)"""
 
     def test_invited_application_has_batch_id(
-        self, client, db_session, test_user, test_recruiter
+        self, client, db_session, test_user, test_recruiter, test_company
     ):
         """Invited application should have batch_id set"""
         batch = BatchJob(
-            recruiter_id=test_recruiter.id, title="Q2 2024 Hiring", status="active"
+            recruiter_id=test_recruiter.id,
+            company_id=test_company.id,
+            title="Q2 2024 Hiring",
+            status="active",
         )
         db_session.add(batch)
         db_session.commit()
@@ -172,6 +181,7 @@ class TestWorkflow3CampaignInvite:
 
         app = Application(
             user_id=test_user.id,
+            company_id=test_company.id,
             declared_role="Data Scientist",
             full_name=test_user.name,
             email=test_user.email,
@@ -189,19 +199,23 @@ class TestWorkflow3CampaignInvite:
         assert app.status == "invited"
 
     def test_interview_with_campaign_context(
-        self, client, auth_headers, db_session, test_user, test_recruiter
+        self, client, auth_headers, db_session, test_user, test_recruiter, test_company
     ):
         """Interview from campaign should have campaign/batch context"""
         if not os.environ.get("GROQ_API_KEY"):
             pytest.skip("GROQ_API_KEY not set — requires a real API key")
         batch = BatchJob(
-            recruiter_id=test_recruiter.id, title="Summer Campaign", status="active"
+            recruiter_id=test_recruiter.id,
+            company_id=test_company.id,
+            title="Summer Campaign",
+            status="active",
         )
         db_session.add(batch)
         db_session.commit()
 
         app = Application(
             user_id=test_user.id,
+            company_id=test_company.id,
             declared_role="Marketing Manager",
             full_name=test_user.name,
             email=test_user.email,
@@ -229,10 +243,14 @@ class TestWorkflow3CampaignInvite:
 class TestWorkflowTransitions:
     """Test status transitions across all 3 workflows"""
 
-    def test_audit_status_transition(self, client, auth_headers, db_session, test_user):
+    def test_audit_status_transition(self, client, auth_headers, db_session, test_user, test_company):
         """Audit: pending -> analyzed -> interviewing"""
         app = Application(
-            user_id=test_user.id, status="pending", job_id=None, batch_id=None
+            user_id=test_user.id,
+            company_id=test_company.id,
+            status="pending",
+            job_id=None,
+            batch_id=None,
         )
         db_session.add(app)
         db_session.commit()
@@ -251,16 +269,26 @@ class TestWorkflowTransitions:
         assert app.interview_state in ["IN_PROGRESS", "in_progress", "completed"]
 
     def test_apply_status_transition(
-        self, client, auth_headers, db_session, test_user, test_recruiter
+        self, client, auth_headers, db_session, test_user, test_recruiter, test_company
     ):
         """Apply: applied -> interviewing"""
         from backend.database import Job
 
-        job = Job(recruiter_id=test_recruiter.id, title="Dev", location="Remote")
+        job = Job(
+            recruiter_id=test_recruiter.id,
+            company_id=test_company.id,
+            title="Dev",
+            location="Remote",
+        )
         db_session.add(job)
         db_session.commit()
 
-        app = Application(user_id=test_user.id, status="invited", job_id=job.id)
+        app = Application(
+            user_id=test_user.id,
+            company_id=test_company.id,
+            status="invited",
+            job_id=job.id,
+        )
         db_session.add(app)
         db_session.commit()
 
@@ -275,14 +303,24 @@ class TestWorkflowTransitions:
         assert app.interview_state in ["IN_PROGRESS", "in_progress", "completed"]
 
     def test_invited_status_transition(
-        self, client, auth_headers, db_session, test_user, test_recruiter
+        self, client, auth_headers, db_session, test_user, test_recruiter, test_company
     ):
         """Invite: invited -> interviewing"""
-        batch = BatchJob(recruiter_id=test_recruiter.id, title="Test", status="active")
+        batch = BatchJob(
+            recruiter_id=test_recruiter.id,
+            company_id=test_company.id,
+            title="Test",
+            status="active",
+        )
         db_session.add(batch)
         db_session.commit()
 
-        app = Application(user_id=test_user.id, status="invited", batch_id=batch.id)
+        app = Application(
+            user_id=test_user.id,
+            company_id=test_company.id,
+            status="invited",
+            batch_id=batch.id,
+        )
         db_session.add(app)
         db_session.commit()
 

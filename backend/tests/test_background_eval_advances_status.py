@@ -14,7 +14,7 @@ import asyncio
 from datetime import UTC, datetime
 from unittest.mock import AsyncMock, patch
 
-from backend.database import Application, EvaluationSession
+from backend.database import Application, EvaluationResult, EvaluationSession
 
 
 class TestBackgroundEvalAdvancesStatus:
@@ -49,7 +49,7 @@ class TestBackgroundEvalAdvancesStatus:
         db_session.commit()
         return es
 
-    def _run_bg_eval(self, app):
+    def _run_bg_eval(self, db_session, app, es):
         from backend.routers.ai_interview import evaluation as eval_mod
 
         holder = {}
@@ -63,6 +63,18 @@ class TestBackgroundEvalAdvancesStatus:
             "explainability": None,
             "detailed_feedback": "ok",
         }
+
+        # A detached, transient EvaluationResult bound to the session. Production
+        # code sets `verdict` on the record returned by set_evaluation_result and
+        # db.add()s it into ITS OWN SessionLocal, so the mock must return a
+        # transient object (not attached to the test session) that production can
+        # attach and persist.
+        eval_result = EvaluationResult(
+            company_id=app.company_id,
+            evaluation_session_id=es.id,
+            scoring_status="SCORED",
+            final_score=71.0,
+        )
 
         async def run():
             with patch.object(
@@ -80,6 +92,7 @@ class TestBackgroundEvalAdvancesStatus:
                         eval_mod.ScoringService, "set_evaluation_result"
                     ) as set_er:
                         holder["set_er"] = set_er
+                        set_er.return_value = eval_result
                         with patch.object(eval_mod, "sync_cv_document") as sync_cv:
                             with patch(
                                 "backend.email_service.email_service.send_interview_complete_email"
@@ -99,10 +112,14 @@ class TestBackgroundEvalAdvancesStatus:
         self, db_session, test_user, test_company
     ):
         app = self._make_app(db_session, test_user, test_company, status="invited")
-        self._make_session(db_session, app)
+        es = self._make_session(db_session, app)
 
-        set_er = self._run_bg_eval(app)
+        set_er = self._run_bg_eval(db_session, app, es)
 
+        # The background flow updates Application columns AND the delegated
+        # EvaluationSession-backed properties (interview_state, interview_progress).
+        # Expire the identity map so relationship-backed properties reload from DB.
+        db_session.expire_all()
         db_session.refresh(app)
         assert app.status == "screening"
         assert app.interview_state == "completed"
@@ -113,9 +130,9 @@ class TestBackgroundEvalAdvancesStatus:
         self, db_session, test_user, test_company
     ):
         app = self._make_app(db_session, test_user, test_company, status="interviewing")
-        self._make_session(db_session, app)
+        es = self._make_session(db_session, app)
 
-        self._run_bg_eval(app)
+        self._run_bg_eval(db_session, app, es)
 
         db_session.refresh(app)
         assert app.status == "screening"
@@ -124,9 +141,9 @@ class TestBackgroundEvalAdvancesStatus:
         self, db_session, test_user, test_company
     ):
         app = self._make_app(db_session, test_user, test_company, status="hired")
-        self._make_session(db_session, app)
+        es = self._make_session(db_session, app)
 
-        self._run_bg_eval(app)
+        self._run_bg_eval(db_session, app, es)
 
         db_session.refresh(app)
         assert app.status == "hired"

@@ -142,11 +142,16 @@ class ScoringService:
         # A rubric may legitimately have a score of 0, and during an
         # intermediate scoring step the rubric_score may still be NULL.
         # Neither case means "no rubric".
+        #
+        # rubric_coverage_pct alone does NOT imply a rubric is present:
+        # a no-rubric CV-only application can still carry a coverage
+        # metric (documented formula: no-rubric weight cv=0.75,
+        # coverage=0.25). Only a real rubric signal (session rubric /
+        # rubric score override) selects rubric weighting.
         has_rubric = (
             es.rubric_id is not None
             or es.evaluation_config_snapshot_id is not None
             or override_rubric_score is not None
-            or override_rubric_coverage_pct is not None
         )
 
         if override_rubric_score is not None:

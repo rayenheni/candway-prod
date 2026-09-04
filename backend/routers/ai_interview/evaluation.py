@@ -312,7 +312,21 @@ async def run_background_final_evaluation(application_id: int, company_id: int):
             )
             validated = validator.validate("final_evaluation", result)
             if validated is not None:
-                result = validated.model_dump()
+                if isinstance(validated, dict):
+                    result = validated
+                elif hasattr(validated, "model_dump"):
+                    result = validated.model_dump()
+                else:
+                    logger.warning(
+                        f"[BG EVAL] Unexpected validation return type "
+                        f"{type(validated).__name__} for app {application_id}; "
+                        f"marking evaluation_state='failed'."
+                    )
+                    sync_evaluation_state(db, app, evaluation_state="failed")
+                    if app.evaluation_sessions:
+                        app.evaluation_sessions[-1].status = "failed"
+                    db.commit()
+                    return
             else:
                 logger.warning(
                     f"[BG EVAL] AI output validation failed for app {application_id}; "
@@ -603,7 +617,7 @@ async def evaluate_final_interview(
 
     result = db.execute(
         text(
-            "UPDATE applications SET evaluation_state='running', evaluation_started_at=NOW() "
+            "UPDATE applications SET evaluation_state='running' "
             "WHERE id=:id AND company_id=:company_id AND evaluation_state='pending'"
         ),
         {"id": application_id, "company_id": app.company_id},
@@ -638,12 +652,41 @@ async def evaluate_final_interview(
     except Exception as viol_err:
         logger.error(f"Violation loading failed for app {application_id}: {viol_err}")
 
-    result = await evaluate_complete_interview(
-        cv_text=app.cv_text_anonymized,
-        declared_role=app.declared_role,
-        qa_pairs=qa_pairs,
-        violations=violations,
-    )
+    try:
+        result = await asyncio.wait_for(
+            evaluate_complete_interview(
+                cv_text=app.cv_text_anonymized,
+                declared_role=app.declared_role,
+                qa_pairs=qa_pairs,
+                violations=violations,
+            ),
+            timeout=300,
+        )
+    except asyncio.TimeoutError:
+        logger.error(f"[EVAL-FINAL] Evaluation timeout for app {application_id}")
+        app.evaluation_state = "failed"
+        sync_evaluation_state(db, app, evaluation_state="failed")
+        if app.evaluation_sessions:
+            app.evaluation_sessions[-1].status = "failed"
+        db.commit()
+        raise HTTPException(
+            status_code=504,
+            detail="Interview evaluation timed out while processing. Please try again.",
+        )
+    except Exception as e:
+        logger.error(
+            f"[EVAL-FINAL] Evaluation failed for app {application_id}: {e}",
+            exc_info=True,
+        )
+        app.evaluation_state = "failed"
+        sync_evaluation_state(db, app, evaluation_state="failed")
+        if app.evaluation_sessions:
+            app.evaluation_sessions[-1].status = "failed"
+        db.commit()
+        raise HTTPException(
+            status_code=500,
+            detail="Interview evaluation failed. Please try again.",
+        )
 
     if result.get("final_score") is not None:
         eval_score = float(result["final_score"])

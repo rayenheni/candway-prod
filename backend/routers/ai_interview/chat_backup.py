@@ -2149,7 +2149,7 @@ async def run_background_final_evaluation(application_id: int, company_id: int):
                 # Tenant isolation: include company_id to prevent cross-tenant claims
                 result = db.execute(
                     text(
-                        "UPDATE applications SET evaluation_state='running', evaluation_started_at=NOW() "
+                        "UPDATE applications SET evaluation_state='running' "
                         "WHERE id=:id AND company_id=:company_id AND evaluation_state='pending'"
                     ),
                     {"id": application_id, "company_id": app.company_id},
@@ -2444,7 +2444,7 @@ async def evaluate_final_interview(
     # Tenant isolation: include company_id to prevent cross-tenant claims
     result = db.execute(
         text(
-            "UPDATE applications SET evaluation_state='running', evaluation_started_at=NOW() "
+            "UPDATE applications SET evaluation_state='running' "
             "WHERE id=:id AND company_id=:company_id AND evaluation_state='pending'"
         ),
         {"id": application_id, "company_id": app.company_id},

@@ -25,6 +25,7 @@ class RubricSnapshotter:
         db: Session,
         *,
         rubric_id: Optional[int] = None,
+        company_id: Optional[int] = None,
         job_id: Optional[int] = None,
         version: int = 1,
         criteria_json: Optional[dict] = None,
@@ -36,6 +37,7 @@ class RubricSnapshotter:
     ) -> RubricSnapshot:
         snapshot = RubricSnapshot(
             original_rubric_id=rubric_id,
+            company_id=company_id,
             job_id=job_id,
             version=version,
             criteria_json=criteria_json,
@@ -85,6 +87,7 @@ class RubricSnapshotter:
         return RubricSnapshotter.create_snapshot(
             db,
             rubric_id=getattr(rubric_record, "id", None),
+            company_id=getattr(rubric_record, "company_id", None),
             job_id=getattr(rubric_record, "job_id", None),
             version=getattr(rubric_record, "version", 1),
             criteria_json=criteria,

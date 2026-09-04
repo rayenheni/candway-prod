@@ -194,6 +194,7 @@ def test_dashboard_normalizes_legacy_qa_log(
             {"question": "Q1", "answer": "A1", "feedback": "Need more detail"}
         ],
     )
+    db_session.commit()
 
     dashboard = client.get("/api/v1/candidate/dashboard", headers=auth_headers)
     assert dashboard.status_code == status.HTTP_200_OK
@@ -461,6 +462,7 @@ def test_candidate_reset_interview(
         interview_log=[{"role": "assistant", "content": "Q1"}],
         interview_progress=3,
     )
+    db_session.commit()
 
     response = client.post(
         "/api/v1/candidate/reset-interview",

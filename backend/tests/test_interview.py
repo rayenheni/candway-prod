@@ -717,7 +717,10 @@ class TestProctoring:
 
         violations = json.loads(getattr(_iv, "proctoring_violations", None) or "[]")
         assert len(violations) == 1
-        assert violations[0]["type"] == "Face not detected"
+        # Violation types are normalized to canonical snake_case keys (see
+        # scoring_transparent.normalize_violation_type) so penalty computation
+        # is consistent regardless of the display name sent by the client.
+        assert violations[0]["type"] == "no_face_detected"
 
     def test_proctoring_auto_flags_at_threshold(
         self, client, auth_headers, test_application, db_session

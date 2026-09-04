@@ -5,6 +5,7 @@ import json
 import pytest
 
 from backend.database import (
+    Company,
     EvaluationResult,
     EvaluationSession,
 )
@@ -16,8 +17,12 @@ from backend.rubric.rubric_snapshotter import RubricSnapshotter
 
 @pytest.fixture
 def rubric_record(db_session):
+    company = Company(name="Rubric Snapshot Co", slug="rubric-snapshot-co")
+    db_session.add(company)
+    db_session.flush()
     rec = RubricDB(
         job_id=1,
+        company_id=company.id,
         version=1,
         title="Test Rubric",
         criteria_json=json.dumps(
@@ -57,9 +62,13 @@ class TestRubricSnapshotModel:
         assert snapshot.passing_score == 60.0
 
     def test_create_snapshot_from_scratch(self, db_session):
+        company = Company(name="Manual Snapshot Co", slug="manual-snapshot-co")
+        db_session.add(company)
+        db_session.flush()
         snapshot = RubricSnapshotter.create_snapshot(
             db_session,
             rubric_id=42,
+            company_id=company.id,
             job_id=1,
             version=2,
             criteria_json={"test": "data"},
@@ -78,7 +87,7 @@ class TestRubricSnapshotScoringIntegration:
         )
         session = EvaluationSession(
             application_id=1,
-            company_id=1,
+            company_id=rubric_record.company_id,
             rubric_id=rubric_record.id,
             rubric_snapshot_id=snapshot.id,
             status="completed",
@@ -95,7 +104,7 @@ class TestRubricSnapshotScoringIntegration:
         )
         session = EvaluationSession(
             application_id=1,
-            company_id=1,
+            company_id=rubric_record.company_id,
             rubric_id=rubric_record.id,
             status="completed",
         )
