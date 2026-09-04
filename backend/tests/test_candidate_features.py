@@ -995,7 +995,45 @@ def test_authenticated_candidate_cv_upload_flow(client, db_session, monkeypatch)
     rec_upload = client.post(
         "/api/v1/candidate/upload-cv",
         headers=rec_headers,
-        files={"file": ("resume.txt", b"Recruiter file", "text/plain")},
+        files={"file": ("rec.txt", b"Recruiter file", "text/plain")},
         data={"declared_role": "Recruiter"},
     )
     assert rec_upload.status_code == status.HTTP_403_FORBIDDEN
+
+
+def test_cv_analysis_sends_user_message_last(monkeypatch):
+    """Regression: Groq compound models reject a system-only message list
+    with 'last message role must be user', so fallback CV analysis must end
+    with a user turn to succeed against the production cascade."""
+    import asyncio
+
+    from backend.ai import cv_analysis
+
+    monkeypatch.setenv("ADVANCED_CV_ANALYZER_ENABLED", "0")
+
+    captured = {}
+
+    async def fake_call_groq_cascade(messages, **kwargs):
+        captured["messages"] = messages
+        return {
+            "score": 70,
+            "detected_role": "Python Developer",
+            "verdict": "qualified",
+        }
+
+    monkeypatch.setattr(cv_analysis, "call_groq_cascade", fake_call_groq_cascade)
+
+    result = asyncio.run(
+        cv_analysis.analyze_cv(
+            "Experienced Python developer with FastAPI and SQLAlchemy. "
+            "Built production APIs, wrote automated tests, and shipped "
+            "features across multiple teams.",
+            "Python Developer",
+        )
+    )
+
+    messages = captured["messages"]
+    assert [m["role"] for m in messages] == ["system", "user"]
+    assert messages[-1]["role"] == "user"
+    assert result["score"] == 70
+    assert result["detected_role"] == "Python Developer"

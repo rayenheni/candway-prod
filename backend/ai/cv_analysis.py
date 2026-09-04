@@ -276,7 +276,17 @@ async def analyze_cv(
 
         try:
             result = await call_groq_cascade(
-                [{"role": "system", "content": prompt}], temperature=0.3
+                [
+                    {"role": "system", "content": prompt},
+                    {
+                        "role": "user",
+                        "content": (
+                            "Analyze the CV text described in the system instructions "
+                            "and return the requested JSON analysis."
+                        ),
+                    },
+                ],
+                temperature=0.3,
             )
 
             # Track successful prompt usage

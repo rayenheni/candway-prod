@@ -13,7 +13,6 @@ from fastapi import (
     HTTPException,
     UploadFile,
 )
-from sqlalchemy import func
 from sqlalchemy.orm import Session, selectinload
 
 from backend.ai.privacy import scrub_pii
@@ -924,17 +923,27 @@ async def upload_cv_file(
             status="analyzing",
         )
 
-        db.query(CandidateProfile).filter(
-            CandidateProfile.user_id == current_user.id
-        ).update(
-            {
-                CandidateProfile.candidate_cv_uploads_this_month: func.coalesce(
-                    CandidateProfile.candidate_cv_uploads_this_month, 0
-                )
-                + 1
-            },
-            synchronize_session="fetch",
+        profile = (
+            db.query(CandidateProfile)
+            .filter(CandidateProfile.user_id == current_user.id)
+            .with_for_update()
+            .first()
         )
+        if profile is None:
+            profile = CandidateProfile(
+                user_id=current_user.id, candidate_cv_uploads_this_month=0
+            )
+            db.add(profile)
+            db.flush()
+
+        plan_limit = plan.candidate_cv_uploads_limit
+        used = profile.candidate_cv_uploads_this_month or 0
+        if plan_limit != -1 and used >= plan_limit:
+            raise HTTPException(
+                status_code=403,
+                detail=f"CV upload limit reached ({plan_limit}/month). Upgrade your plan for more uploads.",
+            )
+        profile.candidate_cv_uploads_this_month = used + 1
 
         # Persist the original CV privately.
         #
@@ -1001,6 +1010,11 @@ async def upload_cv_file(
 
         try:
             result = await analyze_cv(text, declared_role)
+            if not result or (isinstance(result, dict) and result.get("error")):
+                failure_detail = (
+                    result.get("error") if isinstance(result, dict) else "no result"
+                )
+                raise RuntimeError(f"CV analysis failed: {failure_detail}")
             if result:
                 old_app = (
                     db.query(Application)
@@ -1086,20 +1100,16 @@ async def upload_cv_file(
             # the candidate's monthly allowance.
 
             try:
-                db.query(CandidateProfile).filter(
-                    CandidateProfile.user_id == current_user.id
-                ).update(
-                    {
-                        CandidateProfile.candidate_cv_uploads_this_month: func.greatest(
-                            func.coalesce(
-                                CandidateProfile.candidate_cv_uploads_this_month, 0
-                            )
-                            - 1,
-                            0,
-                        )
-                    },
-                    synchronize_session="fetch",
+                cv_profile = (
+                    db.query(CandidateProfile)
+                    .filter(CandidateProfile.user_id == current_user.id)
+                    .with_for_update()
+                    .first()
                 )
+                if cv_profile is not None:
+                    cv_profile.candidate_cv_uploads_this_month = max(
+                        0, (cv_profile.candidate_cv_uploads_this_month or 0) - 1
+                    )
             except Exception as rollback_err:
                 logger.error(
                     f"Failed to roll back CV quota for user {current_user.id}: {rollback_err}"
