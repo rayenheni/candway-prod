@@ -49,7 +49,20 @@ export function InterviewRoomRoute({ children }: { children: React.ReactNode }) 
 export function RoleGuard({ roles, children }: { roles: UserRole[]; children: React.ReactNode }) {
   const { user, isLoading } = useAuth();
   if (isLoading) return <AuthLoadingScreen />;
-  if (!user || !roles.includes(user.role)) return <Navigate to="/dashboard" replace />;
+  if (!user || !roles.includes(user.role)) {
+    if (typeof window !== 'undefined') {
+      const hostname = window.location.hostname;
+      if (hostname === 'app.candway.com' && user?.role === 'candidate') {
+        window.location.href = 'https://candway.com/dashboard';
+        return <AuthLoadingScreen />;
+      }
+      if ((hostname === 'candway.com' || hostname === 'www.candway.com') && (user?.role === 'recruiter' || user?.role === 'admin')) {
+        window.location.href = 'https://app.candway.com/dashboard';
+        return <AuthLoadingScreen />;
+      }
+    }
+    return <Navigate to="/dashboard" replace />;
+  }
   return children;
 }
 

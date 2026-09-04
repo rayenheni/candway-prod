@@ -60,15 +60,21 @@ export default function MarketingLayout({ children }: { children: React.ReactNod
           </nav>
 
           <div className="hidden md:flex items-center gap-3">
-            <a href={appAuthUrl("/auth/login")} className="text-sm font-semibold text-gray-700 dark:text-slate-200 hover:text-purple-600 transition-colors px-3 py-2">
-              Sign in
-            </a>
             <a
-              href={appAuthUrl("/auth/register")}
+              href={appAuthUrl("/auth/login")}
+              className="text-xs font-semibold text-purple-600 dark:text-purple-400 hover:text-purple-700 hover:underline px-2 py-1"
+            >
+              For Employers
+            </a>
+            <Link to="/auth/login" className="text-sm font-semibold text-gray-700 dark:text-slate-200 hover:text-purple-600 transition-colors px-3 py-2">
+              Sign in
+            </Link>
+            <Link
+              to="/auth/register"
               className="rounded-full bg-gradient-to-r from-purple-600 to-indigo-600 px-5 py-2.5 text-sm font-semibold text-white shadow-lg shadow-purple-500/30 hover:shadow-purple-500/50 transition-all flex items-center gap-1.5"
             >
               Sign up
-            </a>
+            </Link>
           </div>
 
           <button
@@ -93,13 +99,20 @@ export default function MarketingLayout({ children }: { children: React.ReactNod
                   {link.label}
                 </Link>
               ))}
+              <a
+                href={appAuthUrl("/auth/login")}
+                onClick={() => setMobileOpen(false)}
+                className="text-xs font-semibold text-purple-600 dark:text-purple-400 hover:underline py-1"
+              >
+                For Employers →
+              </a>
               <div className="flex gap-3 pt-2 border-t border-purple-200/40 dark:border-white/10">
-                <a href={appAuthUrl("/auth/login")} className="flex-1 rounded-full border border-purple-300/60 dark:border-white/15 px-4 py-2.5 text-center font-semibold text-purple-700 dark:text-purple-300">
+                <Link to="/auth/login" onClick={() => setMobileOpen(false)} className="flex-1 rounded-full border border-purple-300/60 dark:border-white/15 px-4 py-2.5 text-center font-semibold text-purple-700 dark:text-purple-300">
                   Sign in
-                </a>
-                <a href={appAuthUrl("/auth/register")} className="flex-1 rounded-full bg-gradient-to-r from-purple-600 to-indigo-600 px-4 py-2.5 text-center font-semibold text-white">
+                </Link>
+                <Link to="/auth/register" onClick={() => setMobileOpen(false)} className="flex-1 rounded-full bg-gradient-to-r from-purple-600 to-indigo-600 px-4 py-2.5 text-center font-semibold text-white">
                   Sign up
-                </a>
+                </Link>
               </div>
             </nav>
           </div>

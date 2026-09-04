@@ -944,6 +944,12 @@ function Nav() {
               <div className="ml-1 flex items-center gap-1.5">
                 <a
                   href={appAuthUrl("/auth/login")}
+                  className="rounded-full px-3 py-1.5 text-xs font-semibold text-purple-400 hover:text-purple-300 hover:underline"
+                >
+                  For Employers
+                </a>
+                <Link
+                  to="/auth/login"
                   className={cn(
                     "rounded-full px-3.5 py-1.5 text-sm font-medium transition-all duration-300",
                     scrolled
@@ -952,13 +958,13 @@ function Nav() {
                   )}
                 >
                   Sign in
-                </a>
-                <a
-                  href={appAuthUrl("/auth/register")}
+                </Link>
+                <Link
+                  to="/auth/register"
                   className="cw-shine inline-flex items-center rounded-full bg-gradient-to-br from-primary-500 to-primary-700 px-4 py-2 text-sm font-semibold text-white shadow-md shadow-primary-600/30 transition-transform duration-300 hover:-translate-y-0.5"
                 >
                   Sign up
-                </a>
+                </Link>
               </div>
             </div>
           </div>
@@ -3041,13 +3047,13 @@ function Footer() {
               {t("landing.footer.ctaTitle")}
             </h2>
           </div>
-          <a
-            href={appAuthUrl("/auth/register")}
+          <Link
+            to="/auth/register"
             className="cw-shine mt-6 inline-flex w-fit items-center gap-2 rounded-xl bg-gradient-to-br from-primary-400 to-primary-700 px-5 py-3 text-sm font-semibold text-white shadow-lg shadow-primary-900/30 transition-all duration-300 hover:-translate-y-0.5 md:mt-0"
           >
             Sign up
             <IconArrowRight className="h-4 w-4" />
-          </a>
+          </Link>
         </div>
 
         <div className="flex flex-col justify-between gap-10 md:flex-row">
@@ -3086,13 +3092,13 @@ function Footer() {
               <p className="text-xs font-semibold uppercase tracking-wider text-white/35">
                 {t("landing.footer.getStarted")}
               </p>
-              <a
-                href={appAuthUrl("/auth/register")}
+              <Link
+                to="/auth/register"
                 className="inline-flex w-fit items-center gap-2 rounded-xl bg-gradient-to-br from-primary-500 to-primary-700 px-5 py-3 text-sm font-semibold text-white"
               >
                 Sign up
                 <IconArrowRight className="h-4 w-4" />
-              </a>
+              </Link>
               <a href={`mailto:${DEMO_EMAIL}`} className="text-sm hover:text-white">
                 {DEMO_EMAIL}
               </a>

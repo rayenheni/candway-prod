@@ -880,3 +880,122 @@ def test_candidate_onboarding_completion_flow(client, db_session):
     prof_after = client.get("/api/v1/candidate/profile-data", headers=headers)
     assert prof_after.status_code == 200
     assert prof_after.json()["data"]["onboarding_completed"] is True
+
+
+def test_authenticated_candidate_cv_upload_flow(client, db_session, monkeypatch):
+    """Verify authenticated candidate can upload CV (200), while recruiter receives 403."""
+    from backend.candidate_subscription_service import CandidateSubscriptionService
+
+    monkeypatch.setattr(
+        CandidateSubscriptionService,
+        "reset_usage_if_needed",
+        staticmethod(lambda user, db: None),
+    )
+    import backend.ai as backend_ai
+    import backend.file_security as file_security
+    import backend.cv_service as cv_service
+
+    async def fake_analyze_cv(text, role):
+        return {
+            "detected_role": "Backend Engineer",
+            "score": 90,
+            "verdict": "qualified",
+            "summary": "Mock CV analysis",
+            "skill_metrics": {"Python": 90},
+        }
+
+    monkeypatch.setattr(backend_ai, "analyze_cv", fake_analyze_cv)
+    monkeypatch.setattr(
+        file_security,
+        "scan_for_malware",
+        lambda content, filename: (True, "clean"),
+    )
+    monkeypatch.setattr(
+        cv_service,
+        "extract_text_from_file",
+        lambda content, filename: (
+            "Experienced Python developer with FastAPI, SQLAlchemy, and testing background. "
+            "Built APIs and production services for multiple teams."
+        ),
+    )
+    monkeypatch.setattr(
+        cv_service,
+        "extract_text_from_file",
+        lambda content, filename: (
+            "Experienced Python developer with FastAPI, SQLAlchemy, and testing background. "
+            "Built APIs and production services for multiple teams."
+        ),
+    )
+
+    # 1. Create plan and candidate user
+    plan = SubscriptionPlan(
+        name="Candidate Pro Test",
+        slug="candidate-pro-test",
+        target_audience="candidate",
+        price_monthly=10.0,
+        candidate_cv_uploads_limit=-1,
+        candidate_ai_analyses_limit=-1,
+        is_active=True,
+    )
+    db_session.add(plan)
+    db_session.commit()
+
+    cand_user = User(
+        email="cv_upload_cand@candway.dev",
+        hashed_password=pwd_context.hash("Secret123!"),
+        role="candidate",
+        name="CV Candidate Tester",
+        email_verified=True,
+        current_plan_id=plan.id,
+    )
+    db_session.add(cand_user)
+    db_session.commit()
+
+    # Login candidate
+    cand_login = client.post(
+        "/api/v1/auth/login",
+        json={"email": "cv_upload_cand@candway.dev", "password": "Secret123!"},
+    )
+    assert cand_login.status_code == 200, cand_login.text
+    cand_token = cand_login.json()["access_token"]
+    csrf = _fetch_csrf_token(client)
+    cand_headers = {"Authorization": f"Bearer {cand_token}", "X-CSRF-Token": csrf}
+
+    # Upload CV as candidate -> SUCCESS (200, not 403)
+    upload_res = client.post(
+        "/api/v1/candidate/upload-cv",
+        headers=cand_headers,
+        files={"file": ("resume.txt", b"Python Developer CV content", "text/plain")},
+        data={"declared_role": "Backend Engineer"},
+    )
+    assert upload_res.status_code == 200, f"Upload failed with {upload_res.status_code}: {upload_res.text}"
+    assert upload_res.json()["success"] is True
+
+    # 2. Create recruiter user
+    rec_user = User(
+        email="cv_upload_rec@candway.dev",
+        hashed_password=pwd_context.hash("Secret123!"),
+        role="recruiter",
+        name="CV Recruiter Tester",
+        email_verified=True,
+    )
+    db_session.add(rec_user)
+    db_session.commit()
+
+    # Login recruiter
+    rec_login = client.post(
+        "/api/v1/auth/login",
+        json={"email": "cv_upload_rec@candway.dev", "password": "Secret123!"},
+    )
+    assert rec_login.status_code == 200, rec_login.text
+    rec_token = rec_login.json()["access_token"]
+    rec_headers = {"Authorization": f"Bearer {rec_token}", "X-CSRF-Token": csrf}
+
+    # Upload CV as recruiter -> FORBIDDEN (403: feature only for candidates)
+    rec_upload = client.post(
+        "/api/v1/candidate/upload-cv",
+        headers=rec_headers,
+        files={"file": ("resume.txt", b"Recruiter file", "text/plain")},
+        data={"declared_role": "Recruiter"},
+    )
+    assert rec_upload.status_code == status.HTTP_403_FORBIDDEN

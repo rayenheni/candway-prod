@@ -193,6 +193,12 @@ def create_app() -> FastAPI:
         # Vite dev server
         "http://localhost:5173",
         "http://127.0.0.1:5173",
+        "http://localhost:8003",
+        "http://127.0.0.1:8003",
+        # Domain architecture explicit origins
+        "https://candway.com",
+        "https://www.candway.com",
+        "https://app.candway.com",
     ]
 
     configured_origins = settings.allowed_origins_list

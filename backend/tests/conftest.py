@@ -28,6 +28,7 @@ from fastapi.testclient import TestClient  # noqa: E402
 
 import backend.database  # noqa: E402
 import backend.dependencies  # noqa: E402
+import backend.models  # noqa: E402
 
 # Import all models to ensure they are registered with Base.metadata
 from backend.database import (  # noqa: E402
