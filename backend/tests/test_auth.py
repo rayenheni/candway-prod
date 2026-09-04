@@ -302,3 +302,57 @@ class TestEmailVerification:
             "/api/v1/auth/resend-verification", json={"email": "nobody@test.tn"}
         )
         assert resp.status_code == 404
+
+
+class TestCorsAndDomainArchitecture:
+    """Test CORS, headers, and domain architecture requirements."""
+
+    def test_cors_preflight_candidate_origin(self, client):
+        """Verify candway.com origin is allowed with credentials.
+
+        Access-Control-Expose-Headers is only present on actual (non-preflight)
+        responses per the CORS spec, so we check it on a real GET request.
+        The preflight check still validates that candway.com is an allowed origin.
+        """
+        # 1. Check preflight allows the origin with credentials
+        preflight_headers = {
+            "Origin": "https://candway.com",
+            "Access-Control-Request-Method": "PUT",
+            "Access-Control-Request-Headers": "Content-Type, X-CSRF-Token",
+        }
+        preflight = client.options("/api/v1/candidate/profile", headers=preflight_headers)
+        assert preflight.status_code == 200
+        assert preflight.headers.get("access-control-allow-origin") == "https://candway.com"
+        assert preflight.headers.get("access-control-allow-credentials") == "true"
+
+        # 2. Expose-headers only appears on actual responses (not preflight)
+        actual = client.get(
+            "/api/v1/auth/me",
+            headers={"Origin": "https://candway.com"},
+        )
+        exposed = actual.headers.get("access-control-expose-headers", "")
+        assert "x-csrf-token" in exposed.lower()
+
+    def test_cors_preflight_app_origin(self, client):
+        """Verify app.candway.com CORS preflight succeeds."""
+        headers = {
+            "Origin": "https://app.candway.com",
+            "Access-Control-Request-Method": "POST",
+            "Access-Control-Request-Headers": "Content-Type",
+        }
+        resp = client.options("/api/v1/auth/login", headers=headers)
+        assert resp.status_code == 200
+        assert resp.headers.get("access-control-allow-origin") == "https://app.candway.com"
+        assert resp.headers.get("access-control-allow-credentials") == "true"
+
+    def test_host_only_auth_cookies(self, client, test_user):
+        """Verify auth cookies are set without a shared parent domain attribute."""
+        # Password matches pwd_context.hash("testpassword123") in conftest test_user fixture
+        resp = client.post(
+            "/api/v1/auth/login",
+            json={"email": "test@example.com", "password": "testpassword123"},
+        )
+        assert resp.status_code == 200
+        cookie_header = resp.headers.get("set-cookie", "")
+        # Must not set a parent domain cookie like domain=.candway.com
+        assert "domain=.candway.com" not in cookie_header.lower()

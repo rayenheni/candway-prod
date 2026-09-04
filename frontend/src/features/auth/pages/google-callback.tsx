@@ -5,6 +5,8 @@ import { authService } from '@/services/auth.service';
 import { useLanguage } from '@/contexts/language-context';
 import { Loader2, XCircle } from 'lucide-react';
 
+import { getCrossDomainDashboardRedirect } from '@/utils/domain-routing';
+
 const ROLE_HOME: Record<string, string> = {
   candidate: '/dashboard',
   recruiter: '/dashboard',
@@ -44,9 +46,13 @@ export default function GoogleCallbackPage() {
       .then((data) => {
         if (!active) return;
         const role = ((data as Record<string, unknown>)?.user as Record<string, unknown> | undefined)?.role as string | undefined;
-        const home = (role && ROLE_HOME[role]) || '/dashboard';
-        navigate(home, { replace: true });
-        window.location.reload();
+        const crossDomainUrl = getCrossDomainDashboardRedirect(role);
+        if (crossDomainUrl) {
+          window.location.href = crossDomainUrl;
+        } else {
+          const home = (role && ROLE_HOME[role]) || '/dashboard';
+          navigate(home, { replace: true });
+        }
       })
       .catch((err: any) => {
         finish(err?.message || t('auth.google.signInFailed'));

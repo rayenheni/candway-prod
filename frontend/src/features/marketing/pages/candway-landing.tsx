@@ -13,6 +13,7 @@ import samiPhoto from "../../../assets/avatars/sami.jpg";
 import rayenPhoto from "../../../assets/avatars/rayen.jpg";
 import leaPhoto from "../../../assets/avatars/lea.jpg";
 import { appAuthUrl } from "../utils/auth-url";
+import { getApiBaseUrl } from "../../../utils/domain-routing";
 
 /* ------------------------------------------------------------------ */
 /*  Data                                                               */
@@ -2715,7 +2716,7 @@ function buildMailtoHref(p: DemoPayload): string {
 }
 
 async function submitDemoRequest(payload: DemoPayload): Promise<string> {
-  const apiBase = "/api/v1";
+  const apiBase = getApiBaseUrl();
 
   // GET requests are safe and cause the CSRF middleware to issue
   // a fresh token in both the response header and csrf_token cookie.

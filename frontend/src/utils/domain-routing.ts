@@ -55,3 +55,22 @@ export function getCrossDomainDashboardRedirect(role: string | undefined): strin
   if (currentFamily === roleFamily) return null;
   return getDashboardUrlForFamily(roleFamily);
 }
+
+/**
+ * Returns the base API URL. On candway.com in production, all API traffic is
+ * sent to https://app.candway.com/api/v1 (centralized Auth + API origin).
+ * On app.candway.com and in local development, relative /api/v1 (or VITE_API_URL) is used.
+ */
+export function getApiBaseUrl(): string {
+  const envApiUrl = import.meta.env.VITE_API_URL;
+  if (envApiUrl) return envApiUrl;
+
+  if (typeof window !== 'undefined') {
+    const hostname = window.location.hostname;
+    if (hostname === 'candway.com' || hostname === 'www.candway.com') {
+      return 'https://app.candway.com/api/v1';
+    }
+  }
+
+  return '/api/v1';
+}

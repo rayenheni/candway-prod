@@ -1,7 +1,9 @@
+import { getApiBaseUrl } from '@/utils/domain-routing';
+
 // Runtime configuration is centralized so production-sensitive switches are
 // not reimplemented throughout the component tree.
 export const runtimeConfig = {
-  apiBaseUrl: import.meta.env.VITE_API_URL || '/api/v1',
+  apiBaseUrl: getApiBaseUrl(),
   wsBaseUrl: import.meta.env.VITE_WS_URL || '',
   appName: import.meta.env.VITE_APP_NAME || 'Candway',
   demoMode: import.meta.env.VITE_DEMO_MODE === 'true',

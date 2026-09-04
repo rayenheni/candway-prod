@@ -228,7 +228,7 @@ def create_app() -> FastAPI:
             "X-Forwarded-For",
             "X-Real-IP",
         ],
-        expose_headers=["Content-Disposition"],
+        expose_headers=["Content-Disposition", "X-CSRF-Token"],
     )
 
     if settings.is_prod:

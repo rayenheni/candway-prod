@@ -3,6 +3,8 @@ import { useAuth } from '@/contexts/auth-context';
 import { getCrossDomainDashboardRedirect } from '@/utils/domain-routing';
 import type { UserRole } from '@/types';
 
+import { appAuthUrl } from '@/features/marketing/utils/auth-url';
+
 function AuthLoadingScreen() {
   return (
     <div className="flex min-h-screen items-center justify-center bg-[#FAF7FF] dark:bg-[#0D0A1A]" role="status" aria-live="polite">
@@ -20,6 +22,12 @@ export function ProtectedRoute({ children }: { children: React.ReactNode }) {
 
   if (isLoading) return <AuthLoadingScreen />;
   if (!isAuthenticated) {
+    const isCandidateHost = typeof window !== 'undefined' &&
+      (window.location.hostname === 'candway.com' || window.location.hostname === 'www.candway.com');
+    if (isCandidateHost) {
+      window.location.href = appAuthUrl('/auth/login');
+      return <AuthLoadingScreen />;
+    }
     return <Navigate to="/auth/login" replace state={{ from: location.pathname + location.search }} />;
   }
   if (user && user.isEmailVerified === false) {

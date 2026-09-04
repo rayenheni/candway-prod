@@ -16,6 +16,8 @@ import { Input } from '@/shared/components/ui/input';
 import { customToast } from '@/shared/components/ui/toast';
 import { Mail, Lock, Eye, EyeOff, ArrowRight } from 'lucide-react';
 
+import { getCrossDomainDashboardRedirect } from '@/utils/domain-routing';
+
 const loginSchema = z.object({
   email: z.string().email('Please enter a valid email'),
   password: z.string().min(8, 'Password must be at least 8 characters'),
@@ -44,9 +46,6 @@ export default function LoginPage() {
     setIsLoading(true);
     try {
       await login(data);
-      // ?redirect= is only honored for safe in-app paths (e.g. a public
-      // careers page the user was invited to apply from). Fall back to the
-      // role dashboard for anything else.
       const redirect = searchParams.get('redirect') || '';
       if (
         redirect.startsWith('/') &&
@@ -56,7 +55,13 @@ export default function LoginPage() {
       ) {
         navigate(redirect);
       } else {
-        navigate('/dashboard');
+        const profile = await authService.getProfile().catch(() => null);
+        const crossDomainUrl = getCrossDomainDashboardRedirect(profile?.role);
+        if (crossDomainUrl) {
+          window.location.href = crossDomainUrl;
+        } else {
+          navigate('/dashboard');
+        }
       }
     } catch {
       // Error handled by auth context
