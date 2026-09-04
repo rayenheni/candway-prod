@@ -477,6 +477,9 @@ async def _interview_chat_core(
                 evaluation_state="pending",
             )
             db.commit()
+            background_tasks.add_task(
+                run_background_final_evaluation, app.id, app.company_id
+            )
 
             # Preserve the last known score. Never turn an expired interview
             # into an artificial zero.
@@ -1013,6 +1016,7 @@ async def _interview_chat_core(
                 app.id, InterviewState.EVALUATING, reason="Max questions reached"
             )
             sync_evaluation_state(db, app, evaluation_state="pending")
+            db.commit()
             background_tasks.add_task(
                 run_background_final_evaluation, app.id, app.company_id
             )
