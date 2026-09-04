@@ -309,18 +309,18 @@ export function CareersShell({
         <div className="mx-auto flex max-w-6xl items-center justify-between rounded-full border border-white/80 bg-white/75 px-3.5 py-2 shadow-[0_16px_44px_-22px_rgba(108,57,232,0.4)] backdrop-blur-xl sm:px-4">
           <div className="flex items-center gap-2.5">
             <LogoMark className="h-8 w-8" />
-            <span className="text-[16px] font-semibold tracking-tight">Candway</span>
-            <span className="rounded-full bg-primary-500/12 px-2 py-0.5 text-[10px] font-bold tracking-wide text-primary-700">
+            <span className="hidden text-[16px] font-semibold tracking-tight sm:inline">Candway</span>
+            <span className="hidden rounded-full bg-primary-500/12 px-2 py-0.5 text-[10px] font-bold tracking-wide text-primary-700 sm:inline-flex">
               {badge ?? t("careers.careersBadge")}
             </span>
           </div>
-          <div className="flex items-center gap-3">
+          <div className="flex items-center gap-1.5 sm:gap-3">
             <div className="flex items-center gap-1 rounded-full border border-ink/10 bg-white/80 p-0.5 text-xs font-semibold">
               <button
                 type="button"
                 onClick={() => setLanguage("en")}
                 className={cn(
-                  "rounded-full px-2.5 py-0.5 transition-colors",
+                  "rounded-full px-1.5 py-0.5 transition-colors sm:px-2.5",
                   language === "en" ? "bg-primary-600 text-white shadow-sm" : "text-ink-soft hover:text-ink"
                 )}
               >
@@ -330,7 +330,7 @@ export function CareersShell({
                 type="button"
                 onClick={() => setLanguage("fr")}
                 className={cn(
-                  "rounded-full px-2.5 py-0.5 transition-colors",
+                  "rounded-full px-1.5 py-0.5 transition-colors sm:px-2.5",
                   language === "fr" ? "bg-primary-600 text-white shadow-sm" : "text-ink-soft hover:text-ink"
                 )}
               >
@@ -340,11 +340,23 @@ export function CareersShell({
             <button
               type="button"
               onClick={onBack}
-              className="flex items-center gap-1.5 rounded-full px-3 py-1.5 text-[13px] font-semibold text-ink-soft transition-colors hover:bg-ink/5 hover:text-ink"
+              className="flex items-center gap-1.5 rounded-full px-1.5 py-1.5 text-[13px] font-semibold text-ink-soft transition-colors hover:bg-ink/5 hover:text-ink sm:px-3"
             >
               <IconArrowLeft className="h-3.5 w-3.5" />
-              {title}
+              <span className="hidden min-[400px]:inline">{title}</span>
             </button>
+            <Link
+              to="/auth/login"
+              className="rounded-full px-2 py-1.5 text-[13px] font-semibold text-ink-soft transition-colors hover:bg-ink/5 hover:text-ink sm:px-2.5"
+            >
+              Sign in
+            </Link>
+            <Link
+              to="/auth/register"
+              className="inline-flex items-center rounded-full bg-primary-600 px-2.5 py-1.5 text-[13px] font-semibold text-white shadow-sm shadow-primary-600/20 transition-colors hover:bg-primary-700 sm:px-3"
+            >
+              Sign up
+            </Link>
           </div>
         </div>
       </header>

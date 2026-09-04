@@ -774,7 +774,30 @@ function MobileMenu({ open, onClose }: { open: boolean; onClose: () => void }) {
         </nav>
 
         <div className="cw-fade-in mt-auto pt-12" style={{ animationDelay: "450ms" }}>
-          <p className="text-center text-xs font-medium text-white/50">
+          <div className="flex items-center justify-between gap-3">
+            <Link
+              to="/auth/login"
+              onClick={onClose}
+              className="flex-1 rounded-full border border-white/25 bg-white/10 px-4 py-2.5 text-center text-sm font-semibold text-white transition-colors hover:bg-white/20"
+            >
+              Sign in
+            </Link>
+            <Link
+              to="/auth/register"
+              onClick={onClose}
+              className="flex-1 rounded-full bg-gradient-to-br from-primary-500 to-primary-700 px-4 py-2.5 text-center text-sm font-semibold text-white shadow-md shadow-primary-600/30"
+            >
+              Sign up
+            </Link>
+          </div>
+          <a
+            href={appAuthUrl("/auth/login")}
+            onClick={onClose}
+            className="mt-3 block text-center text-xs font-semibold text-primary-200 hover:text-white hover:underline"
+          >
+            For Employers &rarr;
+          </a>
+          <p className="mt-4 text-center text-xs font-medium text-white/50">
             {t("landing.mobile.trust")}
           </p>
         </div>

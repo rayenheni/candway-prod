@@ -1,5 +1,6 @@
 import { Navigate, useLocation } from 'react-router';
 import { useAuth } from '@/contexts/auth-context';
+import { getCrossDomainDashboardRedirect } from '@/utils/domain-routing';
 import type { UserRole } from '@/types';
 
 function AuthLoadingScreen() {
@@ -50,16 +51,13 @@ export function RoleGuard({ roles, children }: { roles: UserRole[]; children: Re
   const { user, isLoading } = useAuth();
   if (isLoading) return <AuthLoadingScreen />;
   if (!user || !roles.includes(user.role)) {
-    if (typeof window !== 'undefined') {
-      const hostname = window.location.hostname;
-      if (hostname === 'app.candway.com' && user?.role === 'candidate') {
-        window.location.href = 'https://candway.com/dashboard';
-        return <AuthLoadingScreen />;
-      }
-      if ((hostname === 'candway.com' || hostname === 'www.candway.com') && (user?.role === 'recruiter' || user?.role === 'admin')) {
-        window.location.href = 'https://app.candway.com/dashboard';
-        return <AuthLoadingScreen />;
-      }
+    // Route to the domain matching the user's role (candidates -> candway.com,
+    // recruiters/admins/company/mentors -> app.candway.com). No-op on unknown
+    // (dev) hosts.
+    const crossDomainUrl = getCrossDomainDashboardRedirect(user?.role);
+    if (typeof window !== 'undefined' && crossDomainUrl) {
+      window.location.href = crossDomainUrl;
+      return <AuthLoadingScreen />;
     }
     return <Navigate to="/dashboard" replace />;
   }

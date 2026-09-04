@@ -16,7 +16,11 @@ interface SidebarContextValue {
 const SidebarContext = createContext<SidebarContextValue | null>(null);
 
 export function SidebarProvider({ children }: { children: ReactNode }) {
-  const [isOpen, setIsOpen] = useState(true);
+  // isOpen controls the MOBILE drawer only (the desktop sidebar is always
+  // visible and is toggled via isCollapsed). Default it to closed so the
+  // drawer is not open on initial mobile page load. On desktop this value is
+  // ignored by the always-visible sidebar, so it has no effect there.
+  const [isOpen, setIsOpen] = useState(false);
   const [isCollapsed, setIsCollapsed] = useState(false);
 
   const toggle = useCallback(() => setIsOpen(prev => !prev), []);
