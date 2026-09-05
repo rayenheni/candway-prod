@@ -469,6 +469,45 @@ async def call_groq_cascade(
     return result
 
 
+# Central trailing-role normalization for the Groq cascade.
+#
+# Groq's compound-family models ("groq/compound", "groq/compound-mini")
+# reject payloads whose FINAL message role is "system" (or that contain no
+# user role at all). Many callers build single-system prompt lists
+# (extraction / analysis / generation prompts), so this module enforces the
+# invariant centrally: every message list that reaches the Groq transport
+# ends with a "user" turn. Existing messages are never reordered or mutated
+# (system content passes through byte-for-byte) — a minimal constant user
+# instruction is appended only when the list does not already end in user.
+#
+# NOTE: Bare-string entries are NOT part of the supported message contract
+# (see call_groq_cascade's handling of non-dict entries). They are left
+# untouched here — no coercion is invented for them.
+_TRAILING_USER_INSTRUCTION = (
+    "Please respond based on the context provided above."
+)
+
+
+def _normalize_trailing_user(messages):
+    """Return ``messages`` guaranteed to end with a ``role == "user"`` dict.
+
+    - Lists already ending in a ``user`` dict are returned as the SAME
+      list object (and same message dicts) — byte-for-byte unchanged.
+    - All other dict-based lists get a new list with a constant minimal
+      user instruction appended; no existing entry is modified.
+    - Empty / non-list inputs and lists whose last entry is not a dict
+      are returned untouched.
+    """
+    if not isinstance(messages, list) or not messages:
+        return messages
+    last = messages[-1]
+    if isinstance(last, dict) and last.get("role") == "user":
+        return messages
+    if not isinstance(last, dict):
+        return messages
+    return messages + [{"role": "user", "content": _TRAILING_USER_INSTRUCTION}]
+
+
 async def _call_groq_cascade_impl(
     messages, temperature=0.1, max_tokens=1024, json_mode=True, application_id=None
 ):
@@ -477,6 +516,12 @@ async def _call_groq_cascade_impl(
     """
     # BUG-FIX: Deep copy messages to prevent mutating caller's list
     messages = [dict(m) if isinstance(m, dict) else m for m in messages]
+
+    # CENTRAL FIX (Groq trailing-role invariant): normalize BEFORE any
+    # payload is built, so every Groq model, the retry-without-json path,
+    # and the self-heal path all receive a list whose last message role is
+    # "user". Existing messages are preserved untouched.
+    messages = _normalize_trailing_user(messages)
 
     # Scan user messages for injection. System messages are app-generated and trusted.
     for i, msg in enumerate(messages):
@@ -837,6 +882,10 @@ async def _call_groq_cascade_impl(
         heal_model = "groq/compound-mini"
         # FIX: Ensure we don't violate Groq's single-system-message rule
         heal_messages = list(messages)
+        # Defensive: the self-heal POST must never be system-last, even if a
+        # future path feeds it a non-normalized list. Idempotent when the
+        # invoker already normalized (message lists arrive user-last here).
+        heal_messages = _normalize_trailing_user(heal_messages)
         if heal_messages and heal_messages[0].get("role") == "system":
             # Append instruction to existing system message
             heal_messages[0] = heal_messages[0].copy()
