@@ -66,6 +66,10 @@ export default function InterviewRoomPage() {
   const [showStats, setShowStats] = useState(false);
   const scrollRef = useRef<HTMLDivElement>(null);
   const didAutoStart = useRef(false);
+  const resumeResultRef = useRef<{
+    can_resume: boolean;
+    reason?: string | null;
+  } | null>(null);
 
   useEffect(() => {
     scrollRef.current?.scrollTo({ top: scrollRef.current.scrollHeight, behavior: 'smooth' });
@@ -133,6 +137,8 @@ export default function InterviewRoomPage() {
         goPostInterview();
       } else if (err?.status === 409) {
         customToast({ type: 'info', title: 'Already Completed', message: 'This interview is already finished.' });
+        localStorage.removeItem('active_app_id');
+        localStorage.removeItem('active_session_id');
         navigate(`/interviews/${appId}/analysis`);
       } else {
         customToast({ type: 'error', title: 'Error', message: detail });
@@ -150,6 +156,7 @@ export default function InterviewRoomPage() {
     }
     apiClient.post<{
       can_resume: boolean;
+      reason?: string | null;
       history?: Array<{role: string; content: string}>;
       current_score?: number | null;
       progress?: number;
@@ -157,6 +164,7 @@ export default function InterviewRoomPage() {
       time_left?: number;
     }>('/ai/interview/resume', { application_id: parseInt(appId) })
       .then(data => {
+        resumeResultRef.current = data;
         if (data.time_left != null) setTimeLeft(data.time_left);
         if (data.can_resume && data.history?.length) {
           const restored: Message[] = data.history.map((h, i) => ({
@@ -182,6 +190,17 @@ export default function InterviewRoomPage() {
         setIsLoading(false);
         if (!didAutoStart.current) {
           didAutoStart.current = true;
+          const resume = resumeResultRef.current;
+          if (
+            resume &&
+            resume.can_resume === false &&
+            resume.reason !== 'Interview is not_started'
+          ) {
+            localStorage.removeItem('active_app_id');
+            localStorage.removeItem('active_session_id');
+            navigate(`/interviews/${appId}/analysis`);
+            return;
+          }
           sendMessage('ready');
         }
       });
