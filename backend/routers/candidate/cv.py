@@ -1005,10 +1005,10 @@ async def upload_cv_file(
         # and the application record has been created.
         ai_analysis_reserved = False
 
-        CandidateSubscriptionService.check_ai_analysis_limit(current_user, db)
-        ai_analysis_reserved = True
-
         try:
+            CandidateSubscriptionService.check_ai_analysis_limit(current_user, db)
+            ai_analysis_reserved = True
+
             result = await analyze_cv(text, declared_role)
             if not result or (isinstance(result, dict) and result.get("error")):
                 failure_detail = (
@@ -1085,6 +1085,21 @@ async def upload_cv_file(
                 "detected_role": getattr(cv_doc, "detected_role", None),
                 "analysis": result,
                 "message": "CV uploaded and analyzed successfully",
+            }
+        except HTTPException as quota_block:
+            if quota_block.status_code != 403:
+                raise
+            cv_doc = app_record.cv_document
+            return {
+                "success": True,
+                "application_id": app_record.id,
+                "cv_document_id": cv_doc.id if cv_doc else None,
+                "status": app_record.status,
+                "analysis_status": "quota_blocked",
+                "message": (
+                    "CV uploaded successfully. AI analysis skipped (monthly "
+                    "analysis limit reached)."
+                ),
             }
         except Exception as e:
             error_msg = str(e).lower()

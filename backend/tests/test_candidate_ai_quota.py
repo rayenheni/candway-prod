@@ -359,3 +359,140 @@ def test_cv_upload_missing_profile_is_seeded(
         .one()
     )
     assert fresh.candidate_cv_uploads_this_month == 1
+
+
+@pytest.fixture
+def free_plan_setup(client, auth_headers, db_session, monkeypatch, cv_upload_setup):
+    """Free-plan shape: 2 CV uploads and 1 AI analysis per month."""
+    user, profile, plan = cv_upload_setup
+    plan.candidate_cv_uploads_limit = 2
+    plan.candidate_ai_analyses_limit = 1
+    db_session.commit()
+    return user, profile, plan
+
+
+def test_second_upload_succeeds_when_ai_limit_exhausted(
+    client, auth_headers, db_session, monkeypatch, free_plan_setup
+):
+    """CV #2 must NOT fail merely because the AI-analysis allowance is used up."""
+    user, profile, plan = free_plan_setup
+
+    async def fake_analyze_cv(text, role):
+        return {
+            "score": 70,
+            "detected_role": "Python Developer",
+            "verdict": "qualified",
+        }
+
+    import backend.ai as backend_ai
+
+    monkeypatch.setattr(backend_ai, "analyze_cv", fake_analyze_cv)
+
+    first = _do_upload(client, auth_headers)
+    assert first.status_code == 200
+    first_payload = first.json()
+    assert first_payload["success"] is True
+    assert first_payload["status"] == "analyzed"
+
+    db_session.refresh(profile)
+    assert profile.candidate_cv_uploads_this_month == 1
+    assert profile.candidate_ai_analyses_this_month == 1
+
+    second = _do_upload(client, auth_headers)
+    assert second.status_code == 200
+    second_payload = second.json()
+    assert second_payload["success"] is True
+    assert second_payload["analysis_status"] == "quota_blocked"
+    assert second_payload["status"] == "analyzing"
+    assert second_payload["application_id"] == first_payload["application_id"] + 1
+    assert second_payload["cv_document_id"] is not None
+
+    db_session.refresh(profile)
+    assert profile.candidate_cv_uploads_this_month == 2
+    assert profile.candidate_ai_analyses_this_month == 1
+
+    from backend.database import Application
+
+    apps = (
+        db_session.query(Application)
+        .filter(Application.user_id == user.id)
+        .order_by(Application.id)
+        .all()
+    )
+    assert len(apps) == 2
+    assert apps[0].status == "analyzed"
+    assert apps[0].cv_document.analysis_json is not None
+    assert apps[1].status == "analyzing"
+    assert apps[1].cv_document.analysis_json is None
+
+
+def test_third_upload_blocked_by_cv_quota(
+    client, auth_headers, db_session, monkeypatch, free_plan_setup
+):
+    """With cv=2/ai=1, the third upload is blocked by the CV quota, not the AI one."""
+    user, profile, plan = free_plan_setup
+
+    async def fake_analyze_cv(text, role):
+        return {
+            "score": 70,
+            "detected_role": "Python Developer",
+            "verdict": "qualified",
+        }
+
+    import backend.ai as backend_ai
+
+    monkeypatch.setattr(backend_ai, "analyze_cv", fake_analyze_cv)
+
+    first = _do_upload(client, auth_headers)
+    assert first.status_code == 200
+
+    second = _do_upload(client, auth_headers)
+    assert second.status_code == 200
+    assert second.json()["analysis_status"] == "quota_blocked"
+
+    third = _do_upload(client, auth_headers)
+    assert third.status_code == 403
+    assert "CV upload limit" in third.json()["detail"]
+
+    db_session.refresh(profile)
+    assert profile.candidate_cv_uploads_this_month == 2
+    assert profile.candidate_ai_analyses_this_month == 1
+
+
+def test_cv_upload_never_blocked_by_ai_with_unlimited_ai_plan(
+    client, auth_headers, db_session, monkeypatch, cv_upload_setup
+):
+    """candidate_ai_analyses_limit=-1 never blocks and never increments the AI counter."""
+    user, profile, plan = cv_upload_setup
+    plan.candidate_cv_uploads_limit = -1
+    plan.candidate_ai_analyses_limit = -1
+    db_session.commit()
+
+    async def fake_analyze_cv(text, role):
+        return {"score": 70, "detected_role": "Python Developer"}
+
+    import backend.ai as backend_ai
+
+    monkeypatch.setattr(backend_ai, "analyze_cv", fake_analyze_cv)
+
+    for _ in range(3):
+        resp = _do_upload(client, auth_headers)
+        assert resp.status_code == 200
+        assert resp.json()["success"] is True
+        assert resp.json().get("analysis_status") is None
+
+    db_session.refresh(profile)
+    assert profile.candidate_cv_uploads_this_month == 3
+    assert profile.candidate_ai_analyses_this_month == 0
+
+
+def test_upload_cv_without_auth_returns_401(
+    client, db_session, monkeypatch, cv_upload_setup
+):
+    """Auth/CSRF untouched: an unauthenticated upload still returns 401."""
+    resp = client.post(
+        "/api/v1/candidate/upload-cv",
+        files={"file": ("resume.txt", b"fake CV content", "text/plain")},
+        data={"declared_role": "Python Developer"},
+    )
+    assert resp.status_code == 401
