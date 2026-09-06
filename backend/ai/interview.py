@@ -22,6 +22,197 @@ from backend.logger import logger
 from backend.rubric.evidence_analyzer import classify_evidence_quality
 
 
+# --- Deterministic generated-question validation (P0.1) ----------------------
+# These guardrails reject empty / answer-shaped / context-dump / obvious
+# non-question generations WITHOUT relying solely on the presence of '?'.
+# They are intentionally conservative so valid FR/EN/AR questions pass.
+_QUESTION_RETRY_ATTEMPTS = 2  # one bounded regeneration before retry-state
+_ANSWER_ECHO_MARKERS = (
+    "correct answer",
+    "reference answer",
+    "suggested answer",
+    "sample answer",
+    "model answer",
+    "expected answer",
+    "answer:",
+    "answers:",
+    "reponse :",
+    "reponse correcte",
+    "réponse :",
+    "réponse correcte",
+    "الإجابة",
+    "الجواب",
+    "الإجابة الصحيحة",
+)
+
+_CONTEXT_DUMP_MARKERS = (
+    "<job_description>",
+    "</job_description>",
+    "<rubric_context>",
+    "</rubric_context>",
+    "<custom_generation_prompt>",
+    "<recruiter_instructions>",
+    "<candidate_summary>",
+    "system:",
+    "assistant:",
+    "[sys]",
+    "[system]",
+)
+
+# Interrogative / imperative cues in EN/FR/AR. A short reply with NO question
+# mark and NONE of these is treated as obvious non-question prose.
+_QUESTION_CUE_WORDS = (
+    "what",
+    "why",
+    "how",
+    "who",
+    "when",
+    "where",
+    "which",
+    "describe",
+    "explain",
+    "tell me",
+    "walk me",
+    "if you",
+    "suppose",
+    "assume",
+    "imagine",
+    "your approach",
+    "how about",
+    "what about",
+    "would you",
+    "could you",
+    "can you",
+    "share",
+    "outline",
+    "elaborate",
+    "discuss",
+    "scenario",
+    "talk about",
+    "let’s",
+    "let's",
+    # French
+    "comment",
+    "pourquoi",
+    "quand",
+    "quoi",
+    "quel",
+    "quelle",
+    "quels",
+    "quelles",
+    "qui",
+    "où",
+    "explique",
+    "décrivez",
+    "parlez",
+    "racontez",
+    "imaginez",
+    "supposez",
+    "si vous",
+    "dites-moi",
+    "votre approche",
+    "scénario",
+    "que feriez",
+    # Arabic / Tunisian arabizi
+    "كيف",
+    "لماذا",
+    "ماذا",
+    "ما هو",
+    "ما هي",
+    "هل",
+    "متى",
+    "أين",
+    "اشرح",
+    "صف",
+    "حدثني",
+    "أخبرني",
+    "وضح",
+    "تخيل",
+    "افترض",
+    "ما رأيك",
+    "ماذا عن",
+    "كيف تتعامل",
+    "كيف تواجه",
+    "win",
+    "esh",
+    "a3tini",
+)
+
+
+def validate_generated_question(reply) -> tuple:
+    """Validate a generated interview question (deterministic, P0.1).
+
+    Returns ``(ok: bool, reason: str)``. Rejects:
+      - missing / non-string / empty / out-of-range-length replies
+      - answer-shaped / reference-answer output (e.g. "Correct Answer should be")
+      - context/prompt dumps leaked by the generator
+      - obvious non-question prose (short declarative with no question cue)
+
+    Deliberately does NOT require a ``?``: valid questions (EN/FR/AR) are
+    frequently imperative ("Walk me through...", "Décrivez...", "صف لي...").
+    """
+    if not isinstance(reply, str) or not reply.strip():
+        return False, "missing_or_empty"
+    text = reply.strip()
+    if len(text) < 10:
+        return False, "too_short"
+    if len(text) > 1500:
+        return False, "too_long"
+
+    lower = text.lower()
+
+    if any(marker in lower for marker in _ANSWER_ECHO_MARKERS):
+        return False, "answer_shaped"
+    if any(marker in lower for marker in _CONTEXT_DUMP_MARKERS):
+        return False, "context_dump"
+
+    # Obvious non-question: a short declarative without any interrogative or
+    # imperative engagement cue. Real questions virtually always carry one.
+    if "?" not in text and "\u061f" not in text:
+        has_cue = any(cue in lower for cue in _QUESTION_CUE_WORDS)
+        if not has_cue and len(text) < 160:
+            return False, "statement_not_question"
+
+    return True, "ok"
+
+
+def _is_trivial_answer(answer) -> bool:
+    """True for trivial/lazy answers that must not produce rubric evidence rows.
+
+    Matches the chat-layer lazy-answer semantics ("ok", "yes", "no", short
+    replies, ...) so that ``RubricScoringDetail`` is never polluted by them
+    (P1.3). The per-turn score behavior is intentionally unchanged.
+    """
+    if not isinstance(answer, str):
+        return True
+    m = answer.strip()
+    if not m:
+        return True
+    if len(m) < 4:
+        return True
+    trivial_words = frozenset(
+        {
+            "ok",
+            "okay",
+            "go",
+            "go on",
+            "yes",
+            "no",
+            "oui",
+            "non",
+            "yep",
+            "yeah",
+            "tell me",
+            "d'accord",
+            "نعم",
+            "لا",
+        }
+    )
+    if len(m) <= 40 and m.lower() in trivial_words:
+        return True
+    return False
+
+
 def calculate_weighted_score(scores: list) -> float:
     """
     Weighted average where recency matters (v3.1 Hardened).
@@ -394,33 +585,45 @@ async def evaluate_answer(
 
                         # One detail row per rubric skill scored in this turn.
                         # Do not create rows when score_answer() produced no
-                        # rubric result.
-                        for skill_name, scoring_result in skill_results.items():
-                            db.add(
-                                RubricScoringDetail(
-                                    evaluation_result_id=eval_result.id,
-                                    company_id=getattr(eval_result, "company_id", None),
-                                    criterion_name=skill_name,
-                                    criterion_key=getattr(
-                                        scoring_result, "skill_id", None
-                                    ),
-                                    question=question,
-                                    answer=answer,
-                                    score=float(scoring_result.final_score),
-                                    weight=float(
-                                        getattr(
-                                            scoring_result,
-                                            "quality_multiplier",
-                                            1.0,
-                                        )
-                                        or 1.0
-                                    ),
-                                    feedback=getattr(
-                                        scoring_result, "explanation", None
-                                    ),
-                                    source="interview",
-                                )
+                        # rubric result, and never create substantive rubric
+                        # evidence for trivial/lazy answers (P1.3) — "ok",
+                        # "yes", "go", ... must not inflate rubric aggregation.
+                        if _is_trivial_answer(answer):
+                            logger.info(
+                                "[SCORING] Trivial answer — skipping RubricScoringDetail "
+                                "rows (app_id=%s, answer=%r)",
+                                getattr(app, "id", "?"),
+                                str(answer)[:40],
                             )
+                        else:
+                            for skill_name, scoring_result in skill_results.items():
+                                db.add(
+                                    RubricScoringDetail(
+                                        evaluation_result_id=eval_result.id,
+                                        company_id=getattr(
+                                            eval_result, "company_id", None
+                                        ),
+                                        criterion_name=skill_name,
+                                        criterion_key=getattr(
+                                            scoring_result, "skill_id", None
+                                        ),
+                                        question=question,
+                                        answer=answer,
+                                        score=float(scoring_result.final_score),
+                                        weight=float(
+                                            getattr(
+                                                scoring_result,
+                                                "quality_multiplier",
+                                                1.0,
+                                            )
+                                            or 1.0
+                                        ),
+                                        feedback=getattr(
+                                            scoring_result, "explanation", None
+                                        ),
+                                        source="interview",
+                                    )
+                                )
 
                         db.flush()
                 elif not avg_score:
@@ -704,9 +907,14 @@ async def generate_skill_driven_turn(
         rubric_context=rubric_context,
     )
 
-    try:
+    # 6. Bounded generation with deterministic validation (P0.1/P0.2).
+    #    A failed or invalid generation is retried ONCE; if the retry also
+    #    fails we return a structured retry state instead of a hardcoded or
+    #    stale question. Nothing is persisted here.
+    async def _generate_once(attempt: int):
         logger.info(
-            f"[ENGINE v3.1] Turn {turn} | Focus: {focus} | Depth: {depth_level} | Type: {q_type}"
+            f"[ENGINE v3.1] Turn {turn} | Focus: {focus} | Depth: {depth_level} "
+            f"| Type: {q_type} | attempt {attempt}/{_QUESTION_RETRY_ATTEMPTS}"
         )
         # Sanitize recruiter instructions before injection
         safe_prompt = AISecurity.sanitize_input(prompt)
@@ -718,32 +926,52 @@ async def generate_skill_driven_turn(
             ),
             timeout=30.0,
         )
-
         if result is None:
             raise ValueError("call_groq_cascade returned None")
+        if not isinstance(result, dict):
+            raise ValueError(f"call_groq_cascade returned {type(result).__name__}")
+        reply = result.get("reply")
+        ok, reason = validate_generated_question(reply)
+        if not ok:
+            raise ValueError(f"generated question failed validation: {reason}")
+        return result, reply
 
-        return {
-            "reply": result.get(
-                "reply", "Could you tell me more about your experience?"
-            ),
-            "hint_text": result.get("hint_text", ""),
-            "focus": focus,
-            "type": q_type,
-            "difficulty": depth_info["band"],
-            "depth": depth_level,
-            "state": state,
-        }
-    except Exception as e:
-        logger.error(f"[ENGINE v3.1] Question generation failed: {e}")
-        return {
-            "reply": f"Technical difficulty. Could you please elaborate on your experience with {focus}?",
-            "hint_text": "",
-            "focus": focus,
-            "type": q_type,
-            "difficulty": depth_info["band"],
-            "depth": depth_level,
-            "state": state,
-        }
+    last_reason = "unknown"
+    for attempt in range(1, _QUESTION_RETRY_ATTEMPTS + 1):
+        try:
+            result, reply = await _generate_once(attempt)
+            return {
+                "reply": reply,
+                "hint_text": result.get("hint_text", ""),
+                "focus": focus,
+                "type": q_type,
+                "difficulty": depth_info["band"],
+                "depth": depth_level,
+                "state": state,
+            }
+        except Exception as e:
+            last_reason = f"{type(e).__name__}: {str(e)[:200]}"
+            logger.error(
+                f"[ENGINE v3.1] Turn {turn} question generation attempt "
+                f"{attempt}/{_QUESTION_RETRY_ATTEMPTS} failed: {last_reason}"
+            )
+
+    logger.error(
+        f"[ENGINE v3.1] Question generation failed after {_QUESTION_RETRY_ATTEMPTS} "
+        f"attempts (turn={turn}, focus={focus}, reason={last_reason}). "
+        f"Returning structured retry state — no question will be persisted."
+    )
+    return {
+        "retry_required": True,
+        "reply": "",
+        "hint_text": "",
+        "focus": focus,
+        "type": q_type,
+        "difficulty": depth_info["band"],
+        "depth": depth_level,
+        "state": state,
+        "reason": last_reason,
+    }
 
 
 async def compute_final_decision(
@@ -2023,11 +2251,14 @@ async def generate_dynamic_interview_turn(
 
 
 async def evaluate_complete_interview(
-    cv_text: str, declared_role: str, qa_pairs: list, violations: list = None
+    cv_text: str, declared_role: str, qa_pairs: list, violations: list = None,
+    rubric_context: str = None,
 ):
     """
     REQUEST 3 of 3: Final batch evaluation of all interview answers.
     Evaluates all Q&A pairs in a single AI request.
+    ``rubric_context`` (optional) is a rendered rubric skill list used to
+    calibrate the evaluator; internal weights/formulas are never exposed.
     """
     logger.info(
         f"🎯 [AI] REQUEST 3/3: Evaluating complete interview for {declared_role}..."
@@ -2068,7 +2299,8 @@ async def evaluate_complete_interview(
         )
 
     prompt = get_complete_interview_evaluation_prompt(
-        declared_role, cv_text, qa_formatted, proctoring_context
+        declared_role, cv_text, qa_formatted, proctoring_context,
+        rubric_context=rubric_context,
     )
 
     # FIX: ONE system message only (Groq limitation)

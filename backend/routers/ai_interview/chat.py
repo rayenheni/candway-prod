@@ -43,7 +43,6 @@ from backend.routers.ai_interview.utils import (
 from backend.scoring_engine import (
     calculate_overall_score,
 )
-from backend.scoring_service import ScoringService
 from backend.scoring_transparent import get_recommendation, get_score_label
 from backend.simple_rate_limiter import interview_rate_limiter
 
@@ -1055,6 +1054,12 @@ async def _interview_chat_core(
 
             if not initial_metrics and _cv_score_chat:
                 s = float(_cv_score_chat)
+                # CV-derived baseline for the live talent-graph only. This must
+                # NOT seed the canonical EvaluationResult.final_score: a
+                # transcript starting before any interview answer would then
+                # appear to have a rubric final score computed purely from the
+                # CV (P1.1). The canonical score stays neutral (PENDING) until
+                # actual interview evidence is aggregated by the final eval.
                 initial_metrics = {
                     "Technical": int(s),
                     "Communication": int(s),
@@ -1064,13 +1069,6 @@ async def _interview_chat_core(
                     "Consistency": 100,
                     "Soft Skills": int(s),
                 }
-                if not ScoringService.get_canonical_score(app.id, db):
-                    ScoringService.compute_final_score(
-                        app,
-                        db,
-                        computed_by="chat_init",
-                        override_cv_score=s,
-                    )
 
             strategy = get_interview_strategy(skills_list, 0.5)
             engine_state = initialize_engine_state(
@@ -1478,6 +1476,60 @@ async def _interview_chat_core(
             rubric_categories=rubric_categories,
             rubric_seniority=job_rubric.seniority if job_rubric else "mid",
         )
+
+        # P0.2: Generation failed (after the bounded retry inside
+        # generate_skill_driven_turn). Return a structured retry state to the
+        # frontend WITHOUT persisting a fake/stale question: no history append,
+        # no covered-skill tracking, no QA turn, no turn advance. The current
+        # interview state is preserved so the candidate can retry.
+        if turn_resp.get("retry_required"):
+            record_ai_call(success=False)
+            logger.warning(
+                f"[ENGINE v3.1] Question generation unavailable for app {app.id} "
+                f"(reason={turn_resp.get('reason')!r}) — returning retry state "
+                f"without persisting a question."
+            )
+            sync_ai_interview_session(db, app, interview_log=history)
+            db.commit()
+            _time_left_resp = _compute_remaining_seconds(_expires_at)
+            _live_breakdown = engine_state.get("score_breakdown") or {}
+            _live_score_resp = (
+                _live_breakdown.get("final_score")
+                if isinstance(_live_breakdown, dict)
+                and _live_breakdown.get("final_score")
+                else (_final_score_chat or last_eval.get("score"))
+            )
+            return {
+                "reply": _msg("generation_retry", language_context),
+                "hint_text": None,
+                "type": "retry",
+                "retry_required": True,
+                "current_score": _live_score_resp,
+                "time_left": _time_left_resp,
+                "score_label": engine_state.get("score_label", ""),
+                "score_breakdown": engine_state.get("score_breakdown"),
+                "scoring_weights": DIMENSION_WEIGHTS,
+                "skills": engine_state.get("live_skill_metrics", {}),
+                "skill_confidence": engine_state.get("live_skill_confidence", {}),
+                "confidence_score": engine_state.get("confidence_score", 50.0),
+                "hire_probability": engine_state.get("hire_probability", 0.0),
+                "momentum": engine_state.get("momentum", 0.0),
+                "hiring_decision": engine_state.get("hiring_decision", "N/A"),
+                "feedback": last_eval.get("feedback", ""),
+                "score_reasoning": last_eval.get("reasoning", ""),
+                "focus": turn_resp.get("focus", ""),
+                "is_vague": last_eval.get("quality") == "vague",
+                "current_question": engine_state["turn"],
+                "progress": {
+                    "current": engine_state["turn"],
+                    "total": engine_state["max_turns"],
+                    "percentage": int(
+                        (engine_state["turn"] / engine_state["max_turns"]) * 100
+                    ),
+                },
+                "language": language_context,
+                "is_complete": engine_state["turn"] >= engine_state["max_turns"],
+            }
 
         # Track the selected focus as a covered rubric skill
         if rubric_categories and "covered_skills" in engine_state:

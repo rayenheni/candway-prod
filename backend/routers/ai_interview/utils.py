@@ -137,6 +137,7 @@ def _msg(key: str, language: str = "English", **kwargs) -> str:
             "answer_recorded": "Answer recorded.",
             "answer_evaluated": "Answer evaluated",
             "practice_lazy_feedback": "Please provide more detailed answers to practice effectively.",
+            "generation_retry": "A technical issue occurred while preparing the next question. Please try again.",
         },
         "French": {
             "continuing_assessment": "Entretien technique en cours.",
@@ -151,6 +152,7 @@ def _msg(key: str, language: str = "English", **kwargs) -> str:
             "answer_recorded": "Reponse enregistree.",
             "answer_evaluated": "Reponse evaluee",
             "practice_lazy_feedback": "Merci de donner des reponses plus detaillees pour pratiquer efficacement.",
+            "generation_retry": "Un probleme technique est survenu lors de la preparation de la question suivante. Veuillez reessayer.",
         },
         "Arabic": {
             "continuing_assessment": "Nkammlou l'entretien technique.",
@@ -162,6 +164,7 @@ def _msg(key: str, language: str = "English", **kwargs) -> str:
             "lazy_feedback": "Aatina ijebet akther tafsil bech n9aymou khebretk b d9a.",
             "security_block": "Ma najemch n3amel m3a hedha et-talab. Kammel fel mawthou3 mta3 l'entretien technique.",
             "welcome_feedback": "Marhbe bik! Yalla nabdaou l'evaluation.",
+            "generation_retry": "Sare mochkil ta9ni. 3awed ejreb bech yetsena l question.",
             "answer_recorded": "Ijebtek tetsajlet.",
             "answer_evaluated": "Ijeba mtaqayyma",
             "practice_lazy_feedback": "Aatina ijebet akther tafsil bech tetdarrab bchkl afdal.",

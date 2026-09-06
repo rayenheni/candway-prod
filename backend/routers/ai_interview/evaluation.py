@@ -53,6 +53,41 @@ def _extract_qa_pairs_from_history(history: list) -> list:
     return qa_pairs
 
 
+def _build_rubric_context_for_app(app) -> Optional[str]:
+    """Render a rubric skill list for the LLM final-evaluation fallback (P1.2).
+
+    Purely descriptive (skills + required levels + descriptions); internal
+    weights and scoring formulas are never exposed. Returns None when no rubric
+    snapshot is available so the legacy prompt path is unchanged.
+    """
+    try:
+        _es_list = app.evaluation_sessions or []
+        _es = _es_list[0] if _es_list else None
+        if not _es or not getattr(_es, "config_snapshot", None):
+            return None
+        from backend.rubric.config_reader import EvaluationConfigReader
+        from backend.rubric.rubric_schema import JobRubric
+
+        parsed = EvaluationConfigReader(_es).get_rubric()
+        if not parsed or not getattr(parsed, "raw_json", None):
+            return None
+        rubric = JobRubric(**parsed.raw_json)
+
+        lines = []
+        for cat in getattr(rubric, "categories", []):
+            for sub in getattr(cat, "subcategories", []):
+                for sk in getattr(sub, "skills", []):
+                    desc = getattr(sk, "description", "") or ""
+                    entry = f"- {sk.name} ({getattr(sk, 'level', 'mid')})"
+                    if desc:
+                        entry += f": {desc}"
+                    lines.append(entry)
+        return "\n".join(lines) or None
+    except Exception as e:
+        logger.warning(f"[RUBRIC-CTX] Failed to build rubric context: {e}")
+        return None
+
+
 async def run_background_final_evaluation(application_id: int, company_id: int):
     from backend.database import SessionLocal
 
@@ -282,6 +317,7 @@ async def run_background_final_evaluation(application_id: int, company_id: int):
                             declared_role=_declared_role_bg or "Professional",
                             qa_pairs=qa_pairs,
                             violations=violations,
+                            rubric_context=_build_rubric_context_for_app(app),
                         ),
                         timeout=300,
                     )
@@ -742,6 +778,7 @@ async def evaluate_final_interview(
                 declared_role=app.declared_role,
                 qa_pairs=qa_pairs,
                 violations=violations,
+                rubric_context=_build_rubric_context_for_app(app),
             ),
             timeout=300,
         )

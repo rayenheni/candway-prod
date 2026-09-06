@@ -905,12 +905,26 @@ RETURN JSON ONLY:
 
 
 def get_complete_interview_evaluation_prompt(
-    declared_role, cv_text, qa_formatted, proctoring_context="No violations detected."
+    declared_role,
+    cv_text,
+    qa_formatted,
+    proctoring_context="No violations detected.",
+    rubric_context="",
 ):
     _role = _escape_prompt_text(declared_role)
     cv_summary = _escape_prompt_text(cv_text[:2000] if cv_text else "No CV provided")
     _qa = _escape_prompt_text(qa_formatted)
     _proctoring = _escape_prompt_text(proctoring_context)
+    _rubric = _escape_prompt_text(rubric_context or "")
+    rubric_block = ""
+    if _rubric.strip():
+        rubric_block = f"""
+    RUBRIC CONTEXT (EVALUATION CRITERIA):
+    The interview probed the following skills and the proficiency levels expected for the role. Grade the candidate's evidence against these definitions:
+    {_rubric}
+
+    NOTE: Internal rubric weights and scoring formulas are confidential. Use the rubric only to calibrate per-skill judgments and the gap analysis.
+    """
     return f"""
     CANDIDATE'S TARGET ROLE: {_role}
 
@@ -919,7 +933,7 @@ def get_complete_interview_evaluation_prompt(
     - Startups: React, Node.js, Python, Serverless
     - AI/ML: Python, TensorFlow/PyTorch, MLOps
     - Key traits valued: multilingual readiness, offshore collaboration, cross-border integration
-
+    {rubric_block}
     CANDIDATE'S CV SUMMARY:
     {cv_summary}
 
