@@ -992,7 +992,7 @@ async def _interview_chat_core(
                 .first()
             )
             if _es_loaded and _es_loaded.evaluation_sessions:
-                _es = _es_loaded.evaluation_sessions[-1]
+                _es = _es_loaded.evaluation_sessions[0]
                 reader = EvaluationConfigReader(_es)
                 total_questions = reader.get_total_questions()
 

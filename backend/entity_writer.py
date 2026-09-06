@@ -222,7 +222,7 @@ def sync_evaluation_state(
                 eval_session = s
                 break
         if eval_session is None:
-            eval_session = app.evaluation_sessions[-1]
+            eval_session = app._latest_eval_session()
     if eval_session is None:
         return
     if evaluation_state is not None:

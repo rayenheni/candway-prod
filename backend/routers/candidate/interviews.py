@@ -123,32 +123,14 @@ async def reset_interview(
     if not app:
         raise HTTPException(status_code=404, detail="No application found")
 
-    # Reset must operate on the latest EvaluationSession even when the
-    # previous session is already marked completed. sync_ai_interview_session()
-    # intentionally targets active sessions, which is correct for the interview
-    # engine but wrong for an explicit reset.
-    eval_session = app._latest_eval_session()
-    if eval_session is None:
-        eval_session = EvaluationSession(
-            application_id=app.id,
-            company_id=app.company_id,
-            rubric_id=app.rubric_id,
-            interview_state="not_started",
-            interview_progress=0,
-            interview_log=[],
-            interview_questions=[],
-        )
-        db.add(eval_session)
-        db.flush()
+    # Explicit reset MUST create a brand-new EvaluationSession so historical
+    # completed sessions remain preserved for audit and analytics.
+    old_session = app._latest_eval_session()
 
-    # Rate-limit interview resets. The counter and last-reset timestamp
-    # live on EvaluationSession (Phase 2 migration). Backfill from
-    # legacy `_reset_count` / `_last_reset` keys on first read so existing
-    # applications keep their existing quota consumption.
     now = datetime.now(UTC).replace(tzinfo=None)
 
-    _reset_count_val = app.interview_reset_count or 0
-    _last_reset_val = app.interview_last_reset_at
+    _reset_count_val = (old_session.interview_reset_count if old_session else app.interview_reset_count) or 0
+    _last_reset_val = old_session.interview_last_reset_at if old_session else app.interview_last_reset_at
 
     if _reset_count_val == 0:
         # Legacy migration: read the once-only counter from analysis_json
@@ -183,13 +165,12 @@ async def reset_interview(
 
     _reset_count_val = (_reset_count_val or 0) + 1
     _last_reset_val = now
-    eval_session.interview_reset_count = _reset_count_val
-    eval_session.interview_last_reset_at = _last_reset_val
 
-    # Strip the legacy keys from analysis_json so the JSON bag doesn't
-    # drift back into the source of truth. Existing keys are preserved
-    # for the backfill above; on the next reset we have already
-    # migrated the counter into the column.
+    _reset_cv_score = 0
+    if old_session and old_session.evaluation_result:
+        _reset_cv_score = old_session.evaluation_result.cv_score or 0
+
+    # Strip legacy keys from analysis_json if present
     if app.analysis_json:
         try:
             existing_meta = safe_load_json(app.analysis_json, {})
@@ -200,107 +181,40 @@ async def reset_interview(
         except Exception:
             pass
 
-    eval_session.interview_log = []
     app.status = "analyzed"
     app.recruiter_notes = None
-    # Preserve the CV-only score from the SAME latest EvaluationSession.
-    # Never use evaluation_sessions[0] here: the explicit reset targets
-    # _latest_eval_session(), so scoring must use that same source of truth.
-    _reset_cv_score = 0
-    if eval_session.evaluation_result is not None:
-        _reset_cv_score = eval_session.evaluation_result.cv_score or 0
+    app.opened_at = None
+
+    # Create a fresh EvaluationSession for the new attempt
+    eval_session = EvaluationSession(
+        application_id=app.id,
+        company_id=app.company_id,
+        rubric_id=app.rubric_id,
+        status="created",
+        interview_state="not_started",
+        interview_progress=0,
+        interview_time_left=1800,
+        interview_log=[],
+        interview_questions=[],
+        generated_questions=[],
+        proctoring_violations=[],
+        interview_reset_count=_reset_count_val,
+        interview_last_reset_at=_last_reset_val,
+    )
+    db.add(eval_session)
+    db.flush()
 
     ScoringService.set_cv_only(
         app, db, cv_score=_reset_cv_score, computed_by="interview_reset"
     )
     ScoringService.set_verdict(app, db, verdict=None, computed_by="interview_reset")
 
-    # Reset the legacy Application-level interview clock as well.
-    app.opened_at = None
-
-    # Reset the COMPLETE interview lifecycle on the SAME latest
-    # EvaluationSession.
-    #
-    # A new interview must never inherit state from the previous lifecycle:
-    # - progress/history
-    # - generated questions
-    # - proctoring flags
-    # - turn sequence
-    # - deadline
-    # - video/transcript/analysis
-    # - calibration state
-    eval_session.interview_state = "not_started"
-    eval_session.status = "created"
-    eval_session.interview_progress = 0
-    eval_session.interview_time_left = 1800
-    eval_session.interview_last_saved = None
-    eval_session.expires_at = None
-    eval_session.interview_turn_seq = 0
-
-    eval_session.interview_log = []
-    eval_session.interview_questions = []
-    eval_session.generated_questions = []
-    eval_session.proctoring_violations = []
-
-    eval_session.video_file_path = None
-    eval_session.video_transcript = None
-    eval_session.video_analysis_json = None
-
-    eval_session.calibration_json = None
-    eval_session.calibration_score = None
-    eval_session.calibration_verified_skills = []
-
-    # Keep the legacy Application compatibility field synchronized too.
-    # Application.interview_log is still exposed by the model for older
-    # candidate-facing code/tests, so leaving the legacy value populated
-    # makes a reset appear unsuccessful after refresh().
     try:
         app.interview_log = "[]"
     except Exception:
-        # Some model versions expose this as a read-only compatibility
-        # property. In that case EvaluationSession remains authoritative.
         pass
 
-    # A reset starts a new interview lifecycle on the same canonical
-    # EvaluationSession. Clear lifecycle timestamps/results that must never
-    # leak from the previous attempt.
-    eval_session.started_at = None
-    eval_session.completed_at = None
-
-    # The previous interview evaluation belongs to the previous lifecycle.
-    # Preserve the CV-only score, but invalidate all interview-derived
-    # scoring. EvaluationResult has a strict state-machine constraint:
-    #
-    #   SCORED     -> final_score MUST be non-NULL
-    #   PENDING    -> final_score MUST be NULL
-    #
-    # Therefore a reset MUST move the result back to PENDING.
-    if eval_session.evaluation_result is not None:
-        result = eval_session.evaluation_result
-
-        result.rubric_score = None
-        result.human_integrity_score = 100.0
-        result.rubric_coverage_pct = None
-
-        result.final_score = None
-        result.composite_score = None
-
-        result.confidence_lower = None
-        result.confidence_upper = None
-
-        result.verdict = None
-        result.fraud_score = None
-
-        result.score_breakdown = None
-        result.needs_review = False
-
-        result.scoring_status = "PENDING"
-
     db.commit()
-
-    # Read the values from the SAME EvaluationSession that was reset.
-    # Do not rely on Application compatibility properties or relationship
-    # indexing after commit.
     db.refresh(eval_session)
 
     return {

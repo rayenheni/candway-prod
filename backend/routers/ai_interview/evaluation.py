@@ -87,7 +87,7 @@ async def run_background_final_evaluation(application_id: int, company_id: int):
             _sc = _er
             _ev = app.evaluation_state
             _es_list = app.evaluation_sessions or []
-            _es = _es_list[-1] if _es_list else None
+            _es = _es_list[0] if _es_list else None
 
             if not app.evaluation_sessions:
                 logger.error(
@@ -290,8 +290,9 @@ async def run_background_final_evaluation(application_id: int, company_id: int):
                         f"[BG EVAL] Evaluation timeout for app {application_id}: {timeout_err}"
                     )
                     sync_evaluation_state(db, app, evaluation_state="failed")
-                    if app.evaluation_sessions:
-                        app.evaluation_sessions[-1].status = "failed"
+                    _latest = app._latest_eval_session()
+                    if _latest:
+                        _latest.status = "failed"
                     db.commit()
                     return
                 except Exception as eval_err:
@@ -300,8 +301,9 @@ async def run_background_final_evaluation(application_id: int, company_id: int):
                         exc_info=True,
                     )
                     sync_evaluation_state(db, app, evaluation_state="failed")
-                    if app.evaluation_sessions:
-                        app.evaluation_sessions[-1].status = "failed"
+                    _latest = app._latest_eval_session()
+                    if _latest:
+                        _latest.status = "failed"
                     db.commit()
                     return
 
@@ -328,8 +330,9 @@ async def run_background_final_evaluation(application_id: int, company_id: int):
                         f"marking evaluation_state='failed'."
                     )
                     sync_evaluation_state(db, app, evaluation_state="failed")
-                    if app.evaluation_sessions:
-                        app.evaluation_sessions[-1].status = "failed"
+                    _latest = app._latest_eval_session()
+                    if _latest:
+                        _latest.status = "failed"
                     db.commit()
                     return
             else:
@@ -338,8 +341,9 @@ async def run_background_final_evaluation(application_id: int, company_id: int):
                     f"marking evaluation_state='failed', preserving existing scores."
                 )
                 sync_evaluation_state(db, app, evaluation_state="failed")
-                if app.evaluation_sessions:
-                    app.evaluation_sessions[-1].status = "failed"
+                _latest = app._latest_eval_session()
+                if _latest:
+                    _latest.status = "failed"
                 db.commit()
                 return
 
@@ -350,8 +354,9 @@ async def run_background_final_evaluation(application_id: int, company_id: int):
                     f"{_schema_error_bg}"
                 )
                 sync_evaluation_state(db, app, evaluation_state="failed")
-                if app.evaluation_sessions:
-                    app.evaluation_sessions[-1].status = "failed"
+                _latest = app._latest_eval_session()
+                if _latest:
+                    _latest.status = "failed"
                 db.commit()
                 return
 
@@ -601,10 +606,11 @@ async def run_background_final_evaluation(application_id: int, company_id: int):
             app.evaluation_source = "auto"
             if app.status in ["interviewing", "invited", "pending", "applied"]:
                 app.status = "screening"
-            if app.evaluation_sessions:
-                app.evaluation_sessions[-1].status = "completed"
-                app.evaluation_sessions[-1].interview_state = "completed"
-                app.evaluation_sessions[-1].completed_at = datetime.now(UTC)
+            _es_completed = app._latest_eval_session()
+            if _es_completed:
+                _es_completed.status = "completed"
+                _es_completed.interview_state = "completed"
+                _es_completed.completed_at = datetime.now(UTC)
             db.commit()
             logger.info(
                 f"[BG EVAL] Evaluation completed for app {application_id}: score={_final_score_bg}"
@@ -635,8 +641,9 @@ async def run_background_final_evaluation(application_id: int, company_id: int):
                     or session_started_naive <= now_claim_naive
                 ):
                     sync_evaluation_state(db, app, evaluation_state="failed")
-                    if app.evaluation_sessions:
-                        app.evaluation_sessions[-1].status = "failed"
+                    _latest_fail = app._latest_eval_session()
+                    if _latest_fail:
+                        _latest_fail.status = "failed"
                     db.commit()
             except Exception as fail_err:
                 logger.error(f"[BG EVAL] Error marking session failed: {fail_err}")
@@ -742,8 +749,9 @@ async def evaluate_final_interview(
         logger.error(f"[EVAL-FINAL] Evaluation timeout for app {application_id}")
         app.evaluation_state = "failed"
         sync_evaluation_state(db, app, evaluation_state="failed")
-        if app.evaluation_sessions:
-            app.evaluation_sessions[-1].status = "failed"
+        _latest_ev = app._latest_eval_session()
+        if _latest_ev:
+            _latest_ev.status = "failed"
         db.commit()
         raise HTTPException(
             status_code=504,
@@ -756,8 +764,9 @@ async def evaluate_final_interview(
         )
         app.evaluation_state = "failed"
         sync_evaluation_state(db, app, evaluation_state="failed")
-        if app.evaluation_sessions:
-            app.evaluation_sessions[-1].status = "failed"
+        _latest_ev = app._latest_eval_session()
+        if _latest_ev:
+            _latest_ev.status = "failed"
         db.commit()
         raise HTTPException(
             status_code=500,

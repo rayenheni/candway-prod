@@ -184,7 +184,20 @@ async def resume_interview(
                 status_code=403, detail="Not authorized to access this application"
             )
 
-    _ALLOWED_INTERVIEW_START_STATUSES = {"invited", "interviewing", "shortlisted"}
+    _es_for_resume = app._latest_eval_session() if app.evaluation_sessions else None
+    _es_status = getattr(_es_for_resume, "status", None)
+    _es_state = getattr(_es_for_resume, "interview_state", None)
+
+    if (
+        _es_status == "completed"
+        or _es_state == "completed"
+        or app.interview_state == "completed"
+    ):
+        return {
+            "can_resume": False,
+            "reason": "Interview is completed",
+            "progress": 0,
+        }
 
     if app.interview_state not in ["in_progress", "paused", "flagged"]:
         # Allow resume of expired/failed interviews only if they were reset
@@ -211,7 +224,6 @@ async def resume_interview(
         }
 
     # --- Backfill expires_at for pre-migration sessions ---
-    _es_for_resume = app.evaluation_sessions[0] if app.evaluation_sessions else None
     _expires = getattr(_es_for_resume, "expires_at", None) if _es_for_resume else None
 
     # Snapshot is authoritative for interview configuration.
@@ -412,11 +424,7 @@ async def pause_interview(
     # Use the frozen snapshot configuration for progress reporting.
     _pause_total_questions = 15
     try:
-        _pause_es = (
-            app.evaluation_sessions[-1]
-            if app.evaluation_sessions
-            else None
-        )
+        _pause_es = app._latest_eval_session() if app.evaluation_sessions else None
         if _pause_es and getattr(_pause_es, "config_snapshot", None):
             from backend.rubric.config_reader import EvaluationConfigReader
             _pause_total_questions = EvaluationConfigReader(
