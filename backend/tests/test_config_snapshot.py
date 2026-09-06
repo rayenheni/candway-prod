@@ -69,7 +69,7 @@ class TestResolutionHierarchy:
             max_score=100.0,
             criteria_json=json.dumps({"skills": ["python"]}),
         )
-        snap = ConfigurationResolver.resolve(db_session, ep, rubric_record=rubric)
+        snap = ConfigurationResolver.resolve(db_session, ep, company_id=1, rubric_record=rubric)
         assert snap.rubric_id == 5
         assert snap.rubric_version == 2
         assert snap.passing_score == 70.0
@@ -82,7 +82,7 @@ class TestResolutionHierarchy:
         rubric = FakeRubric(id=1, version=1, passing_score=50.0, max_score=100.0)
         job = FakeJob(interview_instructions="Follow the rules", language="fr")
         snap = ConfigurationResolver.resolve(
-            db_session, ep, rubric_record=rubric, job=job
+            db_session, ep, company_id=1, rubric_record=rubric, job=job
         )
         assert snap.rubric_id == 1  # from rubric
         assert snap.interview_instructions == "Follow the rules"  # from job
@@ -100,6 +100,7 @@ class TestResolutionHierarchy:
         snap = ConfigurationResolver.resolve(
             db_session,
             ep,
+            company_id=1,
             rubric_record=rubric,
             job=job,
             campaign_config=campaign,
@@ -119,6 +120,7 @@ class TestResolutionHierarchy:
         snap = ConfigurationResolver.resolve(
             db_session,
             ep,
+            company_id=1,
             rubric_record=rubric,
             job=job,
             campaign_config=campaign,
@@ -135,6 +137,7 @@ class TestResolutionHierarchy:
         snap = ConfigurationResolver.resolve(
             db_session,
             ep,
+            company_id=1,
             rubric_record=rubric,
             job=job,
             explicit_overrides=overrides,
@@ -152,16 +155,16 @@ class TestDeduplication:
     def test_same_config_reuses_snapshot(self, db_session):
         ep = EntryPoint(source_type="job_apply", source_id=1)
         rubric = FakeRubric(id=10, version=1, passing_score=0.0, max_score=100.0)
-        snap1 = ConfigurationResolver.resolve(db_session, ep, rubric_record=rubric)
-        snap2 = ConfigurationResolver.resolve(db_session, ep, rubric_record=rubric)
+        snap1 = ConfigurationResolver.resolve(db_session, ep, company_id=1, rubric_record=rubric)
+        snap2 = ConfigurationResolver.resolve(db_session, ep, company_id=1, rubric_record=rubric)
         assert snap2.id == snap1.id
 
     def test_diff_config_diff_snapshot(self, db_session):
         ep1 = EntryPoint(source_type="job_apply", source_id=1)
         ep2 = EntryPoint(source_type="campaign", source_id=2)
         rubric = FakeRubric(id=10, version=1, passing_score=0.0, max_score=100.0)
-        snap1 = ConfigurationResolver.resolve(db_session, ep1, rubric_record=rubric)
-        snap2 = ConfigurationResolver.resolve(db_session, ep2, rubric_record=rubric)
+        snap1 = ConfigurationResolver.resolve(db_session, ep1, company_id=1, rubric_record=rubric)
+        snap2 = ConfigurationResolver.resolve(db_session, ep2, company_id=1, rubric_record=rubric)
         assert snap2.id != snap1.id
 
 
@@ -179,13 +182,13 @@ class TestEntryPointAgnostic:
             "certification",
         ):
             ep = EntryPoint(source_type=source_type, source_id=hash(source_type) % 1000)
-            snap = ConfigurationResolver.resolve(db_session, ep, rubric_record=rubric)
+            snap = ConfigurationResolver.resolve(db_session, ep, company_id=1, rubric_record=rubric)
             assert snap.source_type == source_type
             assert snap.id is not None
 
     def test_minimal_entry_point(self, db_session):
         ep = EntryPoint(source_type="individual_audit")
-        snap = ConfigurationResolver.resolve(db_session, ep)
+        snap = ConfigurationResolver.resolve(db_session, ep, company_id=1)
         assert snap.source_type == "individual_audit"
         assert snap.source_id is None
         assert snap.total_questions == 15
@@ -202,7 +205,7 @@ class TestSnapshotImmutability:
         rubric = FakeRubric(id=1, version=2, passing_score=75.0, max_score=100.0)
         job = FakeJob(interview_instructions="Do your best", language="en")
         snap = ConfigurationResolver.resolve(
-            db_session, ep, rubric_record=rubric, job=job
+            db_session, ep, company_id=1, rubric_record=rubric, job=job
         )
         stored = (
             db_session.query(EvaluationConfigSnapshot).filter_by(id=snap.id).first()
@@ -217,7 +220,7 @@ class TestSnapshotImmutability:
     def test_config_json_matches_denormalized(self, db_session):
         ep = EntryPoint(source_type="job_apply", source_id=42)
         rubric = FakeRubric(id=1, version=2, passing_score=75.0, max_score=100.0)
-        snap = ConfigurationResolver.resolve(db_session, ep, rubric_record=rubric)
+        snap = ConfigurationResolver.resolve(db_session, ep, company_id=1, rubric_record=rubric)
         stored = (
             db_session.query(EvaluationConfigSnapshot).filter_by(id=snap.id).first()
         )
