@@ -389,7 +389,15 @@ def apply_to_job(
     current_user: User = Depends(get_current_user),
     db: Session = Depends(get_db),
 ):
-    job = db.query(Job).filter(Job.id == job_id).first()
+    job = (
+        db.query(Job)
+        .filter(
+            Job.id == job_id,
+            Job.is_active.is_(True),
+            Job.deleted_at.is_(None),
+        )
+        .first()
+    )
     if not job:
         raise HTTPException(status_code=404, detail="Job not found")
     existing = (
@@ -405,6 +413,11 @@ def apply_to_job(
     # created application's CV text (existing behavior).
     latest_app = None
     cv_text = ""
+    # True when the request selected a CV document the candidate owns and
+    # that document carries real content. Such a document satisfies the
+    # "CV analyzed" prerequisite because run_cv_analysis always executes for
+    # accepted JOB applications (funded by the hiring company at apply time).
+    has_valid_cv_document = False
     if body and body.cv_document_id:
         selected_doc = (
             db.query(CvDocument)
@@ -425,6 +438,8 @@ def apply_to_job(
         cv_text = (selected_doc.cv_text_anonymized or "") or (
             latest_app.cv_text_anonymized if latest_app else ""
         )
+        if cv_text and len(cv_text.strip()) >= 50:
+            has_valid_cv_document = True
     else:
         latest_app = (
             db.query(Application)
@@ -479,9 +494,12 @@ def apply_to_job(
     if not (get_user_name(current_user) or "").strip():
         missing.append("add your full name")
     if (
-        latest_app is None
-        or ((_latest_er.final_score if _latest_er else None) is None)
-        or latest_app.status in ("failed", "analysis_failed")
+        has_valid_cv_document is not True
+        and (
+            latest_app is None
+            or ((_latest_er.final_score if _latest_er else None) is None)
+            or latest_app.status in ("failed", "analysis_failed")
+        )
     ):
         # CV-builder candidates persist their analysis result (score/grade) in
         # CandidateProfile.builder_data, not in an Application row. Accept that
@@ -525,6 +543,45 @@ def apply_to_job(
         raise HTTPException(
             status_code=403, detail="Candidate company membership is required"
         )
+
+    # Public-job CV analysis is funded by the hiring company, not the
+    # candidate. Verify the company can fund the recruiter-side analysis
+    # BEFORE a JOB application row is committed: a job whose company cannot
+    # fund new CV analysis stops accepting new applications (409) without
+    # ever mutating Job.is_active. The candidate's own AI analysis quota is
+    # never touched by this flow.
+    from backend.credit_service import (
+        consume_credits_in_transaction,
+        effective_credit_cost,
+        record_usage_event_in_transaction,
+        resolve_company_billing_user,
+    )
+
+    billing_user = None
+    try:
+        billing_user = resolve_company_billing_user(db, company_id)
+    except Exception as resolve_err:
+        logger.warning(
+            f"apply_to_job: failed to resolve billing user for company "
+            f"{company_id}: {resolve_err}"
+        )
+    if billing_user is None and getattr(job, "recruiter_id", None):
+        billing_user = (
+            db.query(User).filter(User.id == job.recruiter_id).first()
+        )
+    if billing_user is None:
+        db.rollback()
+        raise HTTPException(
+            status_code=409,
+            detail=(
+                "This position is not accepting new applications right now. "
+                "Please try again later."
+            ),
+        )
+    # Authoritative credit cost (SystemConfig may override the default of 3).
+    # The exact same effective cost funds the charge and is restorable by the
+    # equivalent refund lookup key, so funding/charge/refund never diverge.
+    analysis_cost = effective_credit_cost(db, "cv_analysis", 3)
 
     new_app = ApplicationService.create_application(
         db,
@@ -570,6 +627,57 @@ def apply_to_job(
         logger.info(
             f"Linked application {new_app.id} to rubric {job_rubric.id} for job {job_id}"
         )
+
+    if analysis_cost and analysis_cost > 0:
+        # Atomically debit the company's funding for the recruiter-side CV
+        # analysis. Everything — the flushed JOB application, the wallet
+        # balance, the consume ledger row and the usage metering row — is
+        # staged in ONE transaction and persisted by the SINGLE db.commit()
+        # at the end of this request (consume_credits_in_transaction /
+        # record_usage_event_in_transaction never commit on their own). On
+        # insufficient credits the optimistic-lock UPDATE matches 0 rows and
+        # raises ValueError BEFORE any commit; the db.rollback() below then
+        # discards the application, the wallet change and the charge
+        # together, so an unfundable job never leaves a JOB application
+        # behind. Exactly one company charge per accepted application
+        # (idempotency key consume:cv_analysis:{app_id}).
+        try:
+            funding_tx = consume_credits_in_transaction(
+                db,
+                billing_user,
+                analysis_cost,
+                "cv_analysis",
+                reference_type="application",
+                reference_id=new_app.id,
+            )
+        except ValueError as funding_fail:
+            db.rollback()
+            logger.warning(
+                f"apply_to_job: company {company_id} cannot fund CV analysis "
+                f"for application {new_app.id}: {funding_fail}"
+            )
+            raise HTTPException(
+                status_code=409,
+                detail=(
+                    "This position is not accepting new applications right now. "
+                    "Please try again later."
+                ),
+            )
+        try:
+            record_usage_event_in_transaction(
+                db,
+                user_id=billing_user.id,
+                company_id=company_id,
+                resource="cv_analysis",
+                credits=int(abs(getattr(funding_tx, "amount", 0) or 0)),
+                reference_type="application",
+                reference_id=new_app.id,
+            )
+        except Exception as usage_err:
+            logger.warning(
+                f"apply_to_job: usage metering skipped for application "
+                f"{new_app.id}: {usage_err}"
+            )
 
     db.commit()
 

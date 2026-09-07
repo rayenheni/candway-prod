@@ -85,7 +85,7 @@ def seeded_application(db_session, test_user, test_company):
 
 
 @pytest.fixture
-def active_job(db_session, test_recruiter, test_company):
+def active_job(db_session, test_recruiter, test_company, company_billing_owner):
     job = Job(
         recruiter_id=test_recruiter.id,
         company_id=test_company.id,

@@ -811,6 +811,7 @@ async def analyze_application_endpoint(
 async def upload_cv_file(
     file: UploadFile = File(...),
     declared_role: str = Form("General"),
+    flow: str = Form("review"),
     current_user: User = Depends(get_current_user),
     db: Session = Depends(get_db),
 ):
@@ -988,6 +989,25 @@ async def upload_cv_file(
 
             db.commit()
             db.refresh(app_record)
+
+            if flow == "apply":
+                # Public-job application upload: attach the CV to its MANUAL
+                # application container and return WITHOUT consuming candidate
+                # AI-analysis quota and WITHOUT running the generic upload-time
+                # analyze_cv(). The recruiter-side analysis (run_cv_analysis)
+                # is funded by the hiring company at apply time.
+                apply_doc = app_record.cv_document
+                return {
+                    "success": True,
+                    "application_id": app_record.id,
+                    "cv_document_id": apply_doc.id if apply_doc else None,
+                    "status": app_record.status,
+                    "analysis_status": "pending_apply",
+                    "message": (
+                        "CV uploaded successfully. Analysis will run after "
+                        "you submit your application."
+                    ),
+                }
 
         except Exception:
             if os.path.exists(stored_path):

@@ -128,6 +128,28 @@ def get_or_create_wallet(db: Session, user: User) -> CreditWallet:
     return wallet
 
 
+def get_or_create_wallet_in_transaction(db: Session, user: User) -> CreditWallet:
+    """Fetch the user's wallet, staging a 0-balance wallet WITHOUT committing.
+
+    The wallet INSERT joins the caller's enclosing transaction; the caller
+    performs the single final commit. Used by flows that must persist a
+    credit charge atomically with a parent record (e.g. public-job apply).
+    """
+    wallet = db.query(CreditWallet).filter(CreditWallet.user_id == user.id).first()
+    if wallet:
+        return wallet
+
+    wallet = CreditWallet(
+        user_id=user.id,
+        company_id=_resolve_wallet_company_id(db, user),
+        balance=0,
+        version=0,
+        currency="CRED",
+    )
+    db.add(wallet)
+    db.flush()
+    return wallet
+
 
 def consume_credits(
     db: Session,
@@ -240,6 +262,113 @@ def consume_credits(
     return tx
 
 
+def consume_credits_in_transaction(
+    db: Session,
+    user: User,
+    credits: int,
+    resource: str,
+    reference_type: Optional[str] = None,
+    reference_id: Optional[int] = None,
+) -> CreditTransaction:
+    """Like consume_credits but NEVER commits or rolls back.
+
+    Identical guard semantics (optimistic-lock UPDATE that matches zero rows
+    -> ValueError, idempotency key per resource+ref, admin/free no-op paths)
+    but the charge is staged in the caller's enclosing transaction instead of
+    being committed here. The caller owns the single final ``db.commit()`` and
+    must ``db.rollback()`` when ValueError is raised — that rollback discards
+    the wallet change, the charge row AND any parent record staged alongside
+    them (e.g. a flushed JOB Application), so a failed charge can never leave
+    a committed application behind.
+    """
+    credits = effective_credit_cost(db, resource, credits)
+    if credits <= 0:
+        return CreditTransaction(
+            id=0,
+            wallet_id=0,
+            user_id=user.id,
+            amount=0,
+            type="consume",
+            resource=resource,
+            reference_type=reference_type,
+            reference_id=reference_id,
+            actor_type="system",
+            provider="free",
+            idempotency_key=f"free:{resource}:{reference_id or user.id}",
+            status="succeeded",
+        )
+
+    if getattr(user, "role", "") == "admin":
+        return CreditTransaction(
+            id=0,
+            wallet_id=0,
+            user_id=user.id,
+            amount=-credits,
+            type="consume",
+            resource=resource,
+            reference_type=reference_type,
+            reference_id=reference_id,
+            actor_type="admin",
+            actor_id=user.id,
+            provider="admin",
+            idempotency_key=f"consume:{resource}:{reference_id or user.id}",
+            status="succeeded",
+        )
+
+    wallet = get_or_create_wallet_in_transaction(db, user)
+
+    idem = f"consume:{resource}"
+    if reference_id is not None:
+        idem += f":{reference_id}"
+    else:
+        import uuid
+
+        idem += f":{uuid.uuid4()}"
+
+    existing = (
+        db.query(CreditTransaction)
+        .filter(CreditTransaction.idempotency_key == idem)
+        .first()
+    )
+    if existing:
+        return existing
+
+    result = db.execute(
+        update(CreditWallet)
+        .where(
+            CreditWallet.user_id == user.id,
+            CreditWallet.balance >= credits,
+            CreditWallet.version == wallet.version,
+        )
+        .values(
+            balance=CreditWallet.balance - credits,
+            version=CreditWallet.version + 1,
+        )
+    )
+    if result.rowcount == 0:
+        raise ValueError(
+            f"Insufficient credits: need {credits}, have {float(wallet.balance or 0)}"
+        )
+
+    tx = CreditTransaction(
+        wallet_id=wallet.id,
+        user_id=user.id,
+        company_id=wallet.company_id,
+        amount=-credits,
+        type="consume",
+        resource=resource,
+        reference_type=reference_type,
+        reference_id=reference_id,
+        actor_type="user",
+        actor_id=user.id,
+        provider="system",
+        idempotency_key=idem,
+        status="succeeded",
+    )
+    db.add(tx)
+    return tx
+
+
 def rollback_credits(db: Session, tx: CreditTransaction) -> None:
     """Restore credits consumed by a failed operation (compensating rollback)."""
     if not tx or tx.status == "reversed" or getattr(tx, "id", 0) == 0:
@@ -267,6 +396,41 @@ def rollback_credits(db: Session, tx: CreditTransaction) -> None:
         )
     )
     db.commit()
+
+
+def rollback_credits_in_transaction(db: Session, tx: CreditTransaction) -> None:
+    """Like rollback_credits but stages the compensating reversal WITHOUT
+    committing.
+
+    The reversal joins the caller's enclosing transaction so the refund and
+    the parent state change (e.g. ``status="analysis_failed"``) persist
+    together in the caller's single final commit. Idempotent: a no-op on an
+    already-reversed transaction.
+    """
+    if not tx or tx.status == "reversed" or getattr(tx, "id", 0) == 0:
+        return
+    tx.status = "reversed"
+    db.execute(
+        update(CreditWallet)
+        .where(CreditWallet.user_id == tx.user_id)
+        .values(balance=CreditWallet.balance + abs(tx.amount))
+    )
+    db.add(
+        CreditTransaction(
+            wallet_id=tx.wallet_id,
+            user_id=tx.user_id,
+            company_id=tx.company_id,
+            amount=abs(tx.amount),
+            type="rollback",
+            resource=tx.resource,
+            reference_type=tx.reference_type,
+            reference_id=tx.reference_id,
+            actor_type="system",
+            provider="system",
+            idempotency_key=f"rollback:{tx.idempotency_key}",
+            status="succeeded",
+        )
+    )
 
 
 def consume_credits_or_402(
@@ -423,6 +587,38 @@ def record_usage_event(
     db.add(event)
     db.commit()
     db.refresh(event)
+    return event
+
+
+def record_usage_event_in_transaction(
+    db: Session,
+    user_id: Optional[int],
+    company_id: Optional[int],
+    resource: str,
+    credits: int = 0,
+    cost_usd: Optional[float] = None,
+    model: Optional[str] = None,
+    reference_type: Optional[str] = None,
+    reference_id: Optional[int] = None,
+    metadata_json: Optional[str] = None,
+) -> UsageEvent:
+    """Like record_usage_event but stages the metering row WITHOUT committing.
+
+    Joins the caller's enclosing transaction so metering persists in the
+    same single commit as the charge it describes.
+    """
+    event = UsageEvent(
+        user_id=user_id,
+        company_id=company_id,
+        resource=resource,
+        credits=credits,
+        cost_usd=cost_usd,
+        model=model,
+        reference_type=reference_type,
+        reference_id=reference_id,
+        metadata_json=metadata_json,
+    )
+    db.add(event)
     return event
 
 

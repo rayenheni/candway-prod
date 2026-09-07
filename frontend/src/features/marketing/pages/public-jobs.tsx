@@ -893,6 +893,7 @@ export function PublicJobDetailPage({
         const formData = new FormData();
         formData.append("file", file);
         formData.append("declared_role", job.title);
+        formData.append("flow", "apply");
         const uploaded = await candidateService.uploadCv(formData);
         docId = uploaded.cv_document_id ?? null;
         if (!docId) {

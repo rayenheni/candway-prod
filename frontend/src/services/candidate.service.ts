@@ -19,6 +19,7 @@ export interface UploadCvResponse {
   score?: number | null;
   verdict?: string | null;
   detected_role?: string | null;
+  analysis_status?: 'quota_blocked' | 'pending_apply' | null;
   message?: string;
 }
 
@@ -220,8 +221,10 @@ export const candidateService = {
     apiClient.delete<any>(`/candidate/saved-jobs/${savedJobId}`),
 
   // CV Endpoints
-  uploadCv: (formData: FormData) =>
-    apiClient.postFormData<UploadCvResponse>('/candidate/upload-cv', formData),
+  uploadCv: (formData: FormData, flow?: 'review' | 'apply') => {
+    if (flow) formData.append('flow', flow);
+    return apiClient.postFormData<UploadCvResponse>('/candidate/upload-cv', formData);
+  },
 
   getCvDocuments: () =>
     apiClient.get<{ documents: CvDocumentSummary[] }>('/candidate/cv-documents'),

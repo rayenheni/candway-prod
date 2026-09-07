@@ -214,6 +214,44 @@ def test_user(db_session, test_company):
 
 
 @pytest.fixture
+def company_billing_owner(db_session, test_company):
+    """Deterministic company billing owner + funded wallet for apply-flow tests.
+
+    resolve_company_billing_user prefers an active owner member, so adding a
+    dedicated owner makes the apply-time company credit charge deterministic
+    regardless of which other membership fixtures a test has requested.
+    """
+    from backend.credit_service import grant_credits
+
+    owner = User(
+        email="billing-owner@test.local",
+        name="Billing Owner",
+        hashed_password=pwd_context.hash("ownerpass123"),
+        role="company",
+        email_verified=True,
+    )
+    db_session.add(owner)
+    db_session.flush()
+    membership = CompanyMember(
+        company_id=test_company.id,
+        user_id=owner.id,
+        role="owner",
+        is_active=True,
+    )
+    db_session.add(membership)
+    db_session.commit()
+    db_session.refresh(owner)
+    grant_credits(
+        db_session,
+        owner,
+        1000,
+        provider="test",
+        provider_ref="company-billing-owner",
+    )
+    return owner
+
+
+@pytest.fixture
 def test_company_b(db_session):
     """Create a second test company for cross-company tests"""
     company = Company(name="Evil Corp", slug="evil-corp")

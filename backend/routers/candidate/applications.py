@@ -109,6 +109,34 @@ def _recruiter_has_application_access(
     return False
 
 
+def _refund_application_cv_analysis(db: Session, app_id: int) -> bool:
+    """Refund the apply-time company funding for a failed recruiter-side CV
+    analysis.
+
+    Uses the exact idempotency key that funded the analysis
+    (``consume:cv_analysis:{app_id}``) so a refund is never issued more than
+    once per charge and never issued when no charge exists (manual /
+    CV-builder uploads have no company funding). rollback_credits_in_transaction()
+    is itself idempotent (no-op on an already-reversed transaction) and never
+    commits on its own — the refund persists together with the app's failure
+    state in the caller's single commit.
+    """
+    from backend.credit_service import rollback_credits_in_transaction
+    from backend.database import CreditTransaction
+
+    key = f"consume:cv_analysis:{app_id}"
+    tx = (
+        db.query(CreditTransaction)
+        .filter(CreditTransaction.idempotency_key == key)
+        .order_by(CreditTransaction.id.asc())
+        .first()
+    )
+    if tx is None:
+        return False
+    rollback_credits_in_transaction(db, tx)
+    return True
+
+
 async def run_cv_analysis(
     app_id: int,
     text: str,
@@ -292,53 +320,58 @@ async def run_cv_analysis(
             if result.get("error"):
                 app.status = "analysis_failed"
                 app.analysis_error = str(result.get("error"))[:500]
+                # The apply-time company charge funds the recruiter-side
+                # analysis; a genuinely failed analysis gets its funding
+                # refunded so the company is never billed for work that
+                # did not happen.
+                try:
+                    _refund_application_cv_analysis(db, app_id)
+                except Exception as refund_err:
+                    logger.error(
+                        f"run_cv_analysis: failed to refund company funding for "
+                        f"failed analysis on app {app_id}: {refund_err}"
+                    )
             else:
                 app.status = "screening" if is_job_apply else "analyzed"
-            # Apply-time CV analysis is charged to the owning company's wallet
-            # (recruiter pays; applying stays free for the candidate). Best-effort
-            # in a background task: a company with no resolvable wallet/member is
-            # simply not charged rather than blocking the candidate's application.
-            if is_job_apply and not result.get("error"):
-                try:
-                    from backend.credit_service import consume_company_credits
-
-                    fallback = None
-                    if getattr(job, "recruiter_id", None):
-                        fallback = (
-                            db.query(User)
-                            .filter(User.id == job.recruiter_id)
-                            .first()
-                        )
-                    consume_company_credits(
-                        db,
-                        getattr(app, "company_id", None),
-                        3,
-                        "cv_analysis",
-                        reference_type="application",
-                        reference_id=app_id,
-                        fallback_user=fallback,
-                    )
-                except Exception as charge_err:
-                    logger.warning(
-                        f"run_cv_analysis: company credit charge skipped for app "
-                        f"{app_id}: {charge_err}"
-                    )
+            # The company charge for the recruiter-side analysis happens
+            # synchronously inside apply_to_job, before the JOB application is
+            # committed. Manual / CV-builder analyses have no company charge —
+            # the candidate's own plan governs their quota.
             db.commit()
-            await notify_user(
-                str(app.user_id),
-                "Your CV analysis is complete. You can now view your assessment.",
-                title="Analysis Complete",
-                level="success",
-            )
-            # Candidate AI-analysis usage is reserved by the candidate
-            # CV-analysis route before the AI call. Do not increment the
-            # monthly counter here, otherwise successful analyses can be
-            # counted twice.
-            db.commit()
+            try:
+                await notify_user(
+                    str(app.user_id),
+                    "Your CV analysis is complete. You can now view your assessment.",
+                    title="Analysis Complete",
+                    level="success",
+                )
+                # Candidate AI-analysis usage is reserved by the candidate
+                # CV-analysis route before the AI call. Do not increment the
+                # monthly counter here, otherwise successful analyses can be
+                # counted twice.
+                db.commit()
+            except Exception as notify_err:
+                logger.error(
+                    f"run_cv_analysis: completion notification failed for app "
+                    f"{app_id}: {notify_err}"
+                )
     except Exception as e:
         logger.error(f"Background Analysis Failed: {e}")
         app = db.query(Application).filter(Application.id == app_id).first()
         if app:
+            # Refund the apply-time company funding only when the analysis
+            # genuinely failed (no successful recruiter-visible result was
+            # produced). A successful analysis followed by an unrelated
+            # later exception is NOT refunded.
+            analysis_reached_success = app.status in ("screening", "analyzed")
+            if not analysis_reached_success:
+                try:
+                    _refund_application_cv_analysis(db, app_id)
+                except Exception as refund_err:
+                    logger.error(
+                        f"run_cv_analysis: failed to refund company funding for "
+                        f"failed analysis on app {app_id}: {refund_err}"
+                    )
             try:
                 app.status = "analysis_failed"
                 app.analysis_error = str(e)

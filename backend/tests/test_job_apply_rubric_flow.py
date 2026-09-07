@@ -83,7 +83,9 @@ def rubric(db_session, test_company):
 
 
 @pytest.fixture
-def job_with_rubric(db_session, test_recruiter, test_company, rubric):
+def job_with_rubric(
+    db_session, test_recruiter, test_company, rubric, company_billing_owner
+):
     job = Job(
         recruiter_id=test_recruiter.id,
         company_id=test_company.id,
