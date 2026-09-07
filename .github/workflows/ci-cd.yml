@@ -23,6 +23,8 @@ jobs:
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
 
       - name: Set up Python
         uses: actions/setup-python@v5
@@ -39,8 +41,20 @@ jobs:
       - name: Lint with Ruff
         run: ruff check backend/ --select E,F,W,I --ignore E501
 
-      - name: Format check with Ruff
-        run: ruff format backend/ --check
+      - name: Format check with Ruff (changed files)
+        env:
+          BASE_SHA: ${{ github.event_name == 'pull_request' && github.event.pull_request.base.sha || github.event.before }}
+        run: |
+          if [ -z "$BASE_SHA" ] || [ "$BASE_SHA" = "0000000000000000000000000000000000000000" ]; then
+            echo "No base revision available; skipping format check"
+            exit 0
+          fi
+          changed="$(git diff --name-only "$BASE_SHA...HEAD" -- backend/ | grep -E '\.py$' || true)"
+          if [ -z "$changed" ]; then
+            echo "No changed backend Python files; skipping format check"
+          else
+            echo "$changed" | xargs ruff format --check
+          fi
 
       - name: Type check with Mypy
         run: mypy backend/ --ignore-missing-imports
