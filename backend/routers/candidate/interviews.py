@@ -17,12 +17,11 @@ from backend.database import (
     Application,
     EvaluationResult,
     EvaluationSession,
-    Rubric,
     User,
 )
 from backend.dependencies import get_current_user, get_db, get_interview_access
 from backend.entity_writer import sync_ai_interview_session, sync_cv_document
-from backend.profile_helpers import get_user_company_name, get_user_headline
+from backend.profile_helpers import get_user_company_name
 from backend.recommendations import get_ai_recommendations
 from backend.scoring_service import ScoringService
 from backend.tenant import get_current_company_id

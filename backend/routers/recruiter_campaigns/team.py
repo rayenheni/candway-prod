@@ -1,12 +1,12 @@
-from typing import List, Optional
-from fastapi import Depends, HTTPException, Query
-from pydantic import BaseModel, EmailStr
+from typing import Optional
+
+from fastapi import Depends, HTTPException
+from pydantic import BaseModel
 from sqlalchemy.orm import Session
 
 from backend.authz import get_batch_for_recruiter
 from backend.database import CompanyMember, User
 from backend.dependencies import get_db, require_recruiter
-from backend.logger import logger
 from backend.profile_helpers import get_user_name
 
 from . import router

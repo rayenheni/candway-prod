@@ -303,7 +303,6 @@ async def run_score_recalibration(company_id: int | None = None):
         from sqlalchemy.orm import selectinload
 
         from backend.database import Application, EvaluationSession, SessionLocal
-        from backend.scoring_service import ScoringService
         from backend.scoring_transparent import calculate_overall_score
 
         with SessionLocal() as db:

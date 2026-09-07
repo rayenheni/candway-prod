@@ -3,7 +3,7 @@ import sys
 
 sys.path.insert(0, ".")
 
-from backend.database import SessionLocal, BlogPost  # noqa: E402
+from backend.database import BlogPost, SessionLocal  # noqa: E402
 from backend.models.foundation.cms import utcnow  # noqa: E402
 
 COMPANY_ID = 4  # Candway Demo

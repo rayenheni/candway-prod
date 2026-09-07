@@ -15,9 +15,10 @@ P0/P1 AI interview safety tests:
 """
 
 import asyncio
+import datetime
+from unittest.mock import AsyncMock, patch
 
 import pytest
-from unittest.mock import AsyncMock, patch
 
 from backend.ai.interview import (
     _QUESTION_RETRY_ATTEMPTS,
@@ -32,10 +33,8 @@ from backend.database import (
     EvaluationResult,
     EvaluationSession,
 )
-
-import datetime
-from backend.rubric.rubric_schema import JobRubric
 from backend.routers.ai_interview import evaluation as evaluation_router
+from backend.rubric.rubric_schema import JobRubric
 
 # Reuse the rubric shape from test_ai_interview_quality_fixes.py so skill
 # matching semantics are identical.

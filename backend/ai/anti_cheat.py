@@ -128,7 +128,10 @@ class AntiCheatDetector:
                 return 0
 
             # Allow concise evidence-backed answers (action verb/implementation + metric signal)
-            from backend.rubric.evidence_analyzer import IMPLEMENTATION_SIGNALS, METRIC_PATTERN
+            from backend.rubric.evidence_analyzer import (
+                IMPLEMENTATION_SIGNALS,
+                METRIC_PATTERN,
+            )
             answer_lower = answer.lower()
             has_action = any(sig in answer_lower for sig in IMPLEMENTATION_SIGNALS) or any(
                 act in answer_lower for act in ["reduced", "increased", "improved", "saved", "achieved", "solved", "fixed", "led"]

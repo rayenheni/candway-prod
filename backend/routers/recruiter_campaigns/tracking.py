@@ -7,7 +7,7 @@ from pydantic import BaseModel
 from sqlalchemy.orm import Session
 
 from backend.authz import get_batch_for_recruiter
-from backend.database import Application, BatchJob, CompanyMember, Job, Rubric, User
+from backend.database import Application, Rubric, User
 from backend.dependencies import get_db, require_recruiter
 from backend.logger import logger
 from backend.models.core.batch_job import batch_counters

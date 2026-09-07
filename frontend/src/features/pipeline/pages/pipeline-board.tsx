@@ -22,16 +22,6 @@ const VALID_STATUSES = [
   'offer_declined', 'withdrawn', 'imported', 'reviewed', 'shortlisted',
 ];
 
-const DEFAULT_STAGES = [
-  { id: 'applied', name: 'Applied', slug: 'applied', color: '#64748b' },
-  { id: 'screening', name: 'Screening', slug: 'screening', color: '#0ea5e9' },
-  { id: 'interviewing', name: 'Interview', slug: 'interviewing', color: '#8b5cf6' },
-  { id: 'shortlisted', name: 'Shortlisted', slug: 'shortlisted', color: '#f59e0b' },
-  { id: 'offer', name: 'Offer', slug: 'offer', color: '#f97316' },
-  { id: 'hired', name: 'Hired', slug: 'hired', color: '#10b981' },
-  { id: 'rejected', name: 'Rejected', slug: 'rejected', color: '#ef4444' },
-];
-
 function normalizeStatus(status: string | null): string {
   switch (status) {
     case 'new':

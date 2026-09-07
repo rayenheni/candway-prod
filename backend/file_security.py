@@ -473,6 +473,7 @@ def scan_for_malware(content: bytes, filename: str) -> Tuple[bool, str]:
     if content[:5] == b"%PDF-":
         try:
             from io import BytesIO
+
             from pypdf import PdfReader
 
             reader = PdfReader(BytesIO(content), strict=False)

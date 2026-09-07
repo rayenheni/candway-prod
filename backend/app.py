@@ -13,7 +13,6 @@ from fastapi import (
 )
 from fastapi.middleware.cors import CORSMiddleware
 from fastapi.responses import (
-    FileResponse,
     HTMLResponse,
     JSONResponse,
     RedirectResponse,
@@ -31,7 +30,6 @@ from backend.body_size_middleware import BodySizeLimitMiddleware  # noqa: E402
 from backend.config import get_settings  # noqa: E402
 from backend.database import User, get_db  # noqa: E402
 from backend.dependencies import (  # noqa: E402
-    get_current_user,
     get_optional_user,
 )
 
@@ -681,8 +679,8 @@ def create_app() -> FastAPI:
     ):
         # Protect admin SPA routes
         if full_path.startswith("admin/"):
-            from backend.dependencies import get_current_admin, get_current_user
             from backend.database import get_db
+            from backend.dependencies import get_current_admin, get_current_user
 
             db_gen = get_db()
             db = next(db_gen)

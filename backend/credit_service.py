@@ -16,9 +16,7 @@ from backend.database import (
     CreditWallet,
     UsageEvent,
     User,
-    CompanyMember   
 )
-
 from backend.models import SystemConfig
 
 

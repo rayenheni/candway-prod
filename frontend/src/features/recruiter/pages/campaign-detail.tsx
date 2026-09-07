@@ -12,7 +12,7 @@ import { customToast } from '@/shared/components/ui/toast';
 import { useLanguage } from '@/contexts/language-context';
 import { CVEvaluation } from '@/shared/components/cv-evaluation';
 import { campaignsService } from '@/services/campaigns.service';
-import { Send, Eye, Loader2, TrendingUp, BarChart3, UserPlus, Pencil, ChevronDown, ChevronRight, ClipboardList, Upload, Star, Download, FileText, Bell, Users, Layers, AlertTriangle, CheckCircle, Shield } from 'lucide-react';
+import { Send, Eye, Loader2, TrendingUp, BarChart3, UserPlus, Pencil, ChevronDown, ChevronRight, ClipboardList, Upload, Star, Download, FileText, Bell, Users, Layers, AlertTriangle, Shield } from 'lucide-react';
 
 interface RubricSkill {
   name: string;
@@ -433,7 +433,6 @@ export default function CampaignDetailPage() {
   const sent = an.emails_sent ?? detailStats.total_candidates ?? campaign.candidate_count ?? 0;
   const opened = an.emails_opened ?? detailStats.opened ?? campaign.opened ?? 0;
   const clicked = an.emails_clicked ?? campaign.clicked_count ?? 0;
-  const replied = an.responses_received ?? campaign.replied_count ?? 0;
   const openRate = an.open_rate ?? (sent ? Math.round((opened / sent) * 100) : 0);
   const clickRate = an.click_rate ?? (opened ? Math.round((clicked / opened) * 100) : 0);
   const avgCvScore = an.avg_cv_score ?? detailStats.avg_cv_score ?? null;
@@ -498,7 +497,7 @@ export default function CampaignDetailPage() {
           <Button
             variant="outline"
             leftIcon={<Download className="h-4 w-4" />}
-            onClick={() => window.open(campaignsService.exportCSV(id, 'all'), '_blank')}
+            onClick={() => window.open(campaignsService.exportCSV(id!, 'all'), '_blank')}
           >
             CSV
           </Button>
@@ -506,7 +505,7 @@ export default function CampaignDetailPage() {
           <Button
             variant="outline"
             leftIcon={<FileText className="h-4 w-4 text-purple-600 dark:text-purple-400" />}
-            onClick={() => window.open(campaignsService.exportPDF(id, 'shortlisted'), '_blank')}
+            onClick={() => window.open(campaignsService.exportPDF(id!, 'shortlisted'), '_blank')}
           >
             PDF Shortlist
           </Button>
@@ -514,7 +513,7 @@ export default function CampaignDetailPage() {
           <Button
             variant="outline"
             leftIcon={<FileText className="h-4 w-4 text-emerald-600 dark:text-emerald-400" />}
-            onClick={() => window.open(campaignsService.exportPDF(id, 'all', true), '_blank')}
+            onClick={() => window.open(campaignsService.exportPDF(id!, 'all', true), '_blank')}
           >
             Tiered PDF
           </Button>

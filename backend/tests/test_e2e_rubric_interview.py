@@ -22,7 +22,6 @@ from backend.database import (
     Company,
     CompanyMember,
     EvaluationResult,
-    EvaluationSession,
     Job,
     Rubric,
     RubricScoringDetail,
@@ -32,7 +31,6 @@ from backend.models.evaluation.config_snapshot import EvaluationConfigSnapshot
 from backend.rubric.config_reader import EvaluationConfigReader
 from backend.rubric.interview_starter import InterviewStarter
 from backend.scoring_service import ScoringService
-
 
 SENIOR_PM_RUBRIC_JSON = json.dumps(
     {
@@ -413,7 +411,7 @@ async def test_e2e_rubric_interview(db_session, setup_e2e_entities):
             new_callable=AsyncMock,
             return_value=mock_eval_response,
         ):
-            eval_result_dict = await evaluate_answer(
+            await evaluate_answer(
                 question=question_trace[idx]["question_text"],
                 answer=t_data["ans"],
                 focus=f_name,

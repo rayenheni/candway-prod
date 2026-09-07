@@ -21,7 +21,6 @@ uses the transport-level peer.
 import os
 
 
-
 def get_client_ip(
     forwarded_for: str | None,
     client_host: str | None,

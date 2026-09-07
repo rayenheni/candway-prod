@@ -1,15 +1,14 @@
 import json
 
 from sqlalchemy import update
-from sqlalchemy.exc import OperationalError
 from sqlalchemy.orm import Session
 
 from backend.config import get_settings
 from backend.database import SubscriptionPlan, User
-from backend.models.foundation.company import CompanyMember
-from backend.models.finance.subscription import Subscription
 from backend.logger import logger
 from backend.models.evaluation.profile import RecruiterProfile
+from backend.models.finance.subscription import Subscription
+from backend.models.foundation.company import CompanyMember
 
 settings = get_settings()
 
@@ -67,7 +66,7 @@ class SubscriptionService:
                     db.query(SubscriptionPlan)
                     .filter(
                         SubscriptionPlan.id == company_subscription.plan_id,
-                        SubscriptionPlan.is_active == True,
+                        SubscriptionPlan.is_active,
                     )
                     .first()
                 )
@@ -100,7 +99,7 @@ class SubscriptionService:
                 db.query(SubscriptionPlan)
                 .filter(
                     SubscriptionPlan.id == plan_id,
-                    SubscriptionPlan.is_active == True,
+                    SubscriptionPlan.is_active,
                 )
                 .first()
             )
@@ -115,7 +114,7 @@ class SubscriptionService:
             db.query(SubscriptionPlan)
             .filter(
                 SubscriptionPlan.slug == "free_recruiter",
-                SubscriptionPlan.is_active == True,
+                SubscriptionPlan.is_active,
             )
             .first()
         )

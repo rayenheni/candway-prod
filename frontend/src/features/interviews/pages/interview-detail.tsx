@@ -443,7 +443,7 @@ export default function InterviewDetailPage() {
                   </div>
                 </div>
                 {interview.meeting_link && (
-                  <Button variant="primary" size="sm" className="w-full" onClick={() => window.open(interview.meeting_link, '_blank')}>
+                  <Button variant="primary" size="sm" className="w-full" onClick={() => window.open(interview.meeting_link ?? undefined, '_blank')}>
                     <Video className="h-4 w-4" />
                     {t('iv.joinInterview')}
                   </Button>

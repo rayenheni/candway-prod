@@ -28,10 +28,10 @@ from backend.logger import logger
 from backend.models.ats.types import ApplicationType
 from backend.pdf_parser import extract_text_from_pdf
 from backend.scoring_service import ScoringService
-from backend.services.rubric_match_service import compute_rubric_weighted_cv_score
 from backend.security import sanitize_content, validate_file
 from backend.services.application_service import ApplicationService
 from backend.services.candidate_service import CandidateService
+from backend.services.rubric_match_service import compute_rubric_weighted_cv_score
 from backend.tenant import get_current_company_id
 
 from . import router

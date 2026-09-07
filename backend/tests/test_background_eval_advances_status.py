@@ -93,7 +93,7 @@ class TestBackgroundEvalAdvancesStatus:
                     ) as set_er:
                         holder["set_er"] = set_er
                         set_er.return_value = eval_result
-                        with patch.object(eval_mod, "sync_cv_document") as sync_cv:
+                        with patch.object(eval_mod, "sync_cv_document"):
                             with patch(
                                 "backend.email_service.email_service.send_interview_complete_email"
                             ):

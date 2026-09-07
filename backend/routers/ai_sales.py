@@ -7,14 +7,14 @@ from pydantic import BaseModel
 from sqlalchemy.orm import Session
 
 from backend.ai_engine import AIEngine
-from backend.database import SessionLocal, Job, SalesCampaign, SalesLead, User, get_db
+from backend.database import Job, SalesCampaign, SalesLead, SessionLocal, User, get_db
 from backend.dependencies import get_current_user
-from backend.routers.admin.common import check_permission
 from backend.profile_helpers import (
     get_user_subscription_status,
     get_user_usage_ai_interviews,
     get_user_usage_cvs,
 )
+from backend.routers.admin.common import check_permission
 from backend.sales_autobot import SalesAutopilot
 
 router = APIRouter(prefix="/admin/ai/sales", tags=["admin_sales"])

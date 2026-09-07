@@ -11,7 +11,6 @@ import {
   Shield,
   CheckCircle2,
   Star,
-  ArrowRight,
   MessageSquare,
   Sparkles,
   Award,
@@ -91,6 +90,7 @@ interface CVEvalEvidenceItem {
 
 interface AIScoresResponse {
   overall_score?: number;
+  final_score?: number | null;
   cv_score?: number | null;
   rubric_score?: number | null;
   rubric_coverage_pct?: number | null;
@@ -483,7 +483,6 @@ function TalentRadarGraph({ skills }: { skills: DrawerSkill[] }) {
             Skill Performance Summary
           </div>
           {visibleSkills.map((s) => {
-            const wt = weightAsDecimal(s.normalized_weight ?? s.weight);
             const weightLabel = fmtWeight(s.normalized_weight ?? s.weight);
             return (
               <div key={s.name} className="flex items-center gap-2 text-xs">

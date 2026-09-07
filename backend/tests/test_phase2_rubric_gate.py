@@ -89,7 +89,7 @@ class TestPhase2RubricGate:
         db_session.add(recruiter)
         db_session.flush()
 
-        job = Job(recruiter_id=recruiter.id, company_id=test_company.id, title="Backend Engineer")
+        job = Job(recruiter_id=recruiter.id, company_id=test_company.id, title="Backend Engineer")  # noqa: F821
         db_session.add(job)
         db_session.flush()
 
@@ -186,7 +186,7 @@ class TestPhase2RubricGate:
         db_session.add(user)
         db_session.flush()
 
-        job = Job(recruiter_id=user.id, company_id=test_company.id, title="Backend Engineer")
+        job = Job(recruiter_id=user.id, company_id=test_company.id, title="Backend Engineer")  # noqa: F821
         db_session.add(job)
         db_session.flush()
 
@@ -257,7 +257,7 @@ class TestPhase2RubricGate:
         db_session.add(recruiter)
         db_session.flush()
 
-        job = Job(recruiter_id=recruiter.id, company_id=test_company.id, title="Backend Engineer")
+        job = Job(recruiter_id=recruiter.id, company_id=test_company.id, title="Backend Engineer")  # noqa: F821
         db_session.add(job)
         db_session.flush()
 
@@ -337,7 +337,7 @@ class TestPhase2RubricGate:
         db_session.add(user)
         db_session.flush()
 
-        job = Job(recruiter_id=user.id, company_id=test_company.id, title="Backend Engineer")
+        job = Job(recruiter_id=user.id, company_id=test_company.id, title="Backend Engineer")  # noqa: F821
         db_session.add(job)
         db_session.flush()
 

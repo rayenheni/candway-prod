@@ -16,8 +16,8 @@ from sqlalchemy.orm import Session
 from backend.database import Application, EvaluationSession
 from backend.entity_writer import sync_ai_interview_session
 from backend.models.evaluation.config_snapshot import EntryPoint
-from backend.rubric.config_resolver import ConfigurationResolver
 from backend.routers.ai_interview.utils import normalize_interview_language
+from backend.rubric.config_resolver import ConfigurationResolver
 
 logger = logging.getLogger(__name__)
 

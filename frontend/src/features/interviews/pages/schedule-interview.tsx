@@ -9,6 +9,7 @@ import { Select, SelectTrigger, SelectValue, SelectContent, SelectItem } from '@
 import { customToast } from '@/shared/components/ui/toast';
 import { interviewsService } from '@/services/interviews.service';
 import apiClient from '@/lib/api-client';
+import type { InterviewType } from '@/types';
 import { cn } from '@/utils/cn';
 import { useLanguage } from '@/contexts/language-context';
 import {
@@ -101,10 +102,10 @@ export default function ScheduleInterviewPage() {
 
     try {
       await interviewsService.scheduleInterview({
-        applicationId: Number(formData.applicationId),
+        applicationId: formData.applicationId,
         scheduledAt: formData.scheduledTime,
         duration: formData.duration,
-        type: formData.type,
+        type: formData.type as InterviewType,
         meetingUrl: formData.meetingLink || undefined,
         location: formData.location || undefined,
         notes: formData.agenda || undefined,

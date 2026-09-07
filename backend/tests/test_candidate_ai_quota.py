@@ -149,7 +149,6 @@ def cv_upload_setup(db_session, test_user, monkeypatch):
         staticmethod(lambda user, db: None),
     )
 
-    import backend.ai as backend_ai
     import backend.cv_service as cv_service
     import backend.file_security as file_security
 

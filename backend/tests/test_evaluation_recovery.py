@@ -20,7 +20,12 @@ from unittest.mock import AsyncMock, patch
 
 import pytest
 
-from backend.database import Application, CreditWallet, EvaluationResult, EvaluationSession
+from backend.database import (
+    Application,
+    CreditWallet,
+    EvaluationResult,
+    EvaluationSession,
+)
 from backend.routers.ai_interview.evaluation import (
     STALE_PENDING_THRESHOLD_SECONDS,
     STALE_RUNNING_THRESHOLD_SECONDS,
@@ -353,7 +358,7 @@ async def test_recovery_cas_race_prevention(db_session, recovery_setup):
 
 def test_credit_consumption_idempotency(db_session, recovery_setup):
     """Calling consume_company_credits twice with same reference_id returns existing transaction without double charging."""
-    from backend.credit_service import consume_company_credits, CreditWallet
+    from backend.credit_service import CreditWallet, consume_company_credits
 
     app, es = recovery_setup
 

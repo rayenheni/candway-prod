@@ -5,7 +5,7 @@ from typing import Optional
 
 from fastapi import APIRouter, Depends, HTTPException
 from pydantic import BaseModel
-from sqlalchemy import or_
+from sqlalchemy import func, or_
 from sqlalchemy.orm import Session, joinedload
 
 from backend.database import (
@@ -23,7 +23,6 @@ from backend.database import (
 )
 from backend.dependencies import get_db
 from backend.security import sanitize_rich_text
-from sqlalchemy import func
 
 router = APIRouter(tags=["public"])
 

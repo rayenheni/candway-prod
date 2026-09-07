@@ -12,7 +12,6 @@ from backend.dependencies import get_db, get_interview_access
 from backend.entity_writer import sync_ai_interview_session
 from backend.logger import logger
 from backend.routers.ai_interview.utils import (
-    INTERVIEW_TOTAL_QUESTIONS,
     _utcnow,
     normalize_interview_language,
     safe_user_id,
@@ -216,7 +215,7 @@ async def resume_interview(
     if (
         app.job_id is not None
         or app.batch_id is not None
-    ) and app.status not in _ALLOWED_INTERVIEW_START_STATUSES:
+    ) and app.status not in _ALLOWED_INTERVIEW_START_STATUSES:  # noqa: F821
         return {
             "can_resume": False,
             "reason": "Interview has not been scheduled yet. Please wait for the recruiter to invite you.",

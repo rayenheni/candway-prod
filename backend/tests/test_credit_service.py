@@ -293,7 +293,6 @@ def _make_owner(db, company, email="owner@example.com"):
 def test_resolve_company_billing_user_prefers_owner(
     db_session, test_company, test_user
 ):
-    from backend.database import CompanyMember
 
     owner = _make_owner(db_session, test_company, "owner-a@example.com")
     # test_user is a 'member'; owner must win regardless of insertion order

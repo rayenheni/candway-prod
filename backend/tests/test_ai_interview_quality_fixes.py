@@ -8,15 +8,17 @@
 7. Strong concise answer without exact rubric keywords
 """
 
-import pytest
-import asyncio
-from unittest.mock import patch, AsyncMock
+from unittest.mock import AsyncMock, patch
 
-from backend.rubric.rubric_engine import _keyword_matches_in_text, _find_best_level, score_answer
-from backend.rubric.rubric_schema import JobRubric
-from backend.rubric.config_reader import ParsedRubric
+import pytest
+
 from backend.ai.anti_cheat import AntiCheatDetector
 from backend.ai.interview import evaluate_answer
+from backend.rubric.config_reader import ParsedRubric
+from backend.rubric.rubric_engine import (
+    _keyword_matches_in_text,
+)
+from backend.rubric.rubric_schema import JobRubric
 
 
 # -------------------------------------------------------------------------
@@ -90,7 +92,7 @@ mock_app = type("MockApp", (), {"id": 1, "company_id": 1, "evaluation_sessions":
 @pytest.mark.asyncio
 async def test_concise_strong_evidence_no_cheat_penalty():
     answer = "Reduced churn 32% by redesigning onboarding."
-    
+
     # 1. AntiCheat check
     cheat_res = AntiCheatDetector.calculate_cheat_score(answer)
     assert cheat_res["cheat_score"] == 0, f"Unjustified cheat penalty: {cheat_res}"

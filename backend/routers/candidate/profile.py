@@ -255,10 +255,6 @@ def get_comprehensive_profile(
             if _er_a.final_score is not None:
                 interview_scores.append(float(_er_a.final_score))
 
-    # Use the best available CV score as the candidate-level profile score.
-    # This is independent from interview/application final scores.
-    profile_score = max(cv_scores) if cv_scores else None
-
     scores = interview_scores
 
     if scores:

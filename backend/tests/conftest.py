@@ -60,6 +60,7 @@ backend.dependencies.SessionLocal = TestingSessionLocal
 # Some service modules imported SessionLocal at import time; re-bind them
 # to the test session so their ad-hoc queries hit the same in-memory DB.
 import backend.email_service as _email_service  # noqa: E402
+
 _email_service.SessionLocal = TestingSessionLocal
 
 

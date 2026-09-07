@@ -126,7 +126,14 @@ class TestCampaignManager:
     def test_interview_progress_tracking(self, db_session):
         """Test interview progress is tracked in Application"""
 
-        from backend.database import Application, BatchJob, Company, CompanyMember, Job, User
+        from backend.database import (
+            Application,
+            BatchJob,
+            Company,
+            CompanyMember,
+            Job,
+            User,
+        )
 
         # Create recruiter and candidate
         recruiter = db_session.query(User).filter(User.role == "recruiter").first()

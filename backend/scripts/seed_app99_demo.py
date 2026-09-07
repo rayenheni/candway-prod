@@ -1,12 +1,13 @@
 import json
-from datetime import datetime, UTC
+
 from backend.database import (
-    SessionLocal,
     Application,
-    EvaluationSession,
     EvaluationResult,
+    EvaluationSession,
     RubricScoringDetail,
+    SessionLocal,
 )
+
 
 def seed_app99():
     db = SessionLocal()
@@ -78,7 +79,7 @@ def seed_app99():
         ]
 
         app.interview_qa_structured = json.dumps(qa_pairs)
-        
+
         # Format interview log
         interview_log = []
         for q in qa_pairs:
@@ -249,7 +250,7 @@ def seed_app99():
 
         # Add RubricScoringDetails rows if empty
         db.query(RubricScoringDetail).filter(RubricScoringDetail.evaluation_result_id == eval_res.id).delete()
-        
+
         details = [
             ("Search Engine Optimization (SEO)", 91.0, "Demonstrated exceptional technical SEO audit and 180% organic growth results."),
             ("Social Media Marketing", 85.0, "Solid paid social advertising return with 3.2x ROAS on LinkedIn."),

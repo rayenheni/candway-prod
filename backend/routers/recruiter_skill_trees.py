@@ -15,7 +15,15 @@ from sqlalchemy import func
 from sqlalchemy.orm import Session
 
 from backend.authz import get_rubric_for_recruiter
-from backend.database import Application, BatchJob, EvaluationResult, EvaluationSession, Job, Rubric, User
+from backend.database import (
+    Application,
+    BatchJob,
+    EvaluationResult,
+    EvaluationSession,
+    Job,
+    Rubric,
+    User,
+)
 from backend.dependencies import get_db, require_recruiter
 from backend.logger import logger
 from backend.tenant import get_current_company_id

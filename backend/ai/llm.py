@@ -274,7 +274,7 @@ async def _check_ai_security_rate_limit(company_id=None) -> tuple[bool, str]:
         # into an unlimited AI request in production.
         logger.exception("[AI SECURITY] Rate-limit check failed: %s", e)
 
-        if settings.is_prod:
+        if settings.is_prod:  # noqa: F821
             return False, "AI security check unavailable. Please try again later."
 
         return True, ""
@@ -974,9 +974,6 @@ async def _call_gemini_cascade_impl(
     import asyncio
 
     from backend.ai.security import AISecurity, PIIMasker
-    from backend.ai.token_tracker import enforce_budget
-
-    start_time = datetime.now()
 
     # Deep copy to avoid mutating caller's list
     messages = [dict(m) if isinstance(m, dict) else m for m in messages]

@@ -3,9 +3,8 @@ Candidate Subscription Service
 Handles usage tracking and limit enforcement for candidate subscriptions
 """
 
-from datetime import UTC, datetime, timedelta
-
 import logging
+from datetime import UTC, datetime, timedelta
 
 from fastapi import HTTPException
 from sqlalchemy import func, update
@@ -13,7 +12,6 @@ from sqlalchemy.orm import Session
 
 from backend.database import SubscriptionPlan, User
 from backend.models.evaluation.profile import CandidateProfile
-
 
 logger = logging.getLogger(__name__)
 

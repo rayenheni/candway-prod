@@ -211,7 +211,6 @@ def test_apply_does_not_create_interview_session(
     assert resume.status_code == 200
     assert resume.json()["can_resume"] is False
 
-    app = db_session.query(Application).filter(Application.id == app_id).first()
     sessions = (
         db_session.query(EvaluationSession)
         .filter(EvaluationSession.application_id == app_id)
@@ -272,7 +271,6 @@ def test_post_invite_candidate_can_start(
         headers=recruiter_headers,
     )
 
-    app = db_session.query(Application).filter(Application.id == app_id).first()
     es = db_session.query(EvaluationSession).filter(
         EvaluationSession.application_id == app_id
     ).order_by(EvaluationSession.id.desc()).first()

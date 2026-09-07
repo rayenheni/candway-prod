@@ -215,6 +215,7 @@ class TestEmailVerification:
 
     def _create_verification(self, db_session, user_id, token="tok123"):
         from datetime import UTC, datetime, timedelta
+
         from backend.database import EmailVerification
 
         ev = EmailVerification(
@@ -247,6 +248,7 @@ class TestEmailVerification:
 
     def test_verify_email_expired(self, client, db_session):
         from datetime import UTC, datetime, timedelta
+
         from backend.database import EmailVerification
 
         user = self._create_unverified_user(db_session)
@@ -260,6 +262,7 @@ class TestEmailVerification:
 
     def test_resend_verification_link(self, client, db_session):
         from datetime import UTC, datetime, timedelta
+
         from backend.database import EmailVerification
 
         user = self._create_unverified_user(db_session)

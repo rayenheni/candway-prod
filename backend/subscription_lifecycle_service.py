@@ -13,13 +13,13 @@ from typing import Optional
 from sqlalchemy.orm import Session
 
 from backend.database import (
+    CompanyMember,
     PlanVersion,
     Subscription,
     SubscriptionHistory,
     SubscriptionPlan,
     Transaction,
     User,
-    CompanyMember
 )
 from backend.logger import logger
 
@@ -90,7 +90,7 @@ def get_or_create_subscription(db: Session, user: User) -> Subscription:
         return sub
     sub = Subscription(
         user_id=user.id,
-        company_id=get_user_company_id(db, user.id), 
+        company_id=get_user_company_id(db, user.id),
         plan_id=1,
         target_audience="recruiter" if user.role == "recruiter" else "candidate",
         status="pending",

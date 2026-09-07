@@ -728,8 +728,8 @@ def test_candidate_upload_cv_normalizes_analysis_json(
     )
 
     import backend.ai as backend_ai
-    import backend.file_security as file_security
     import backend.cv_service as cv_service
+    import backend.file_security as file_security
 
     async def fake_analyze_cv(text, role):
         return {
@@ -804,9 +804,8 @@ def test_candidate_upload_cv_normalizes_analysis_json(
 
 def test_candidate_onboarding_completion_flow(client, db_session):
     """Verify explicit onboarding completion endpoint, security isolation, and status retrieval."""
-    from backend.models.evaluation.profile import CandidateProfile
-
     from backend.database import EmailVerification
+    from backend.models.evaluation.profile import CandidateProfile
 
     user = User(
         email="onboarding_test_user@candway.dev",
@@ -892,8 +891,8 @@ def test_authenticated_candidate_cv_upload_flow(client, db_session, monkeypatch)
         staticmethod(lambda user, db: None),
     )
     import backend.ai as backend_ai
-    import backend.file_security as file_security
     import backend.cv_service as cv_service
+    import backend.file_security as file_security
 
     async def fake_analyze_cv(text, role):
         return {

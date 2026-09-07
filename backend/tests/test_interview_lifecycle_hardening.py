@@ -4,8 +4,8 @@ multi-session ordering, and [-1] fix verification.
 """
 
 import os
+
 import pytest
-from datetime import datetime, UTC
 from sqlalchemy import create_engine
 from sqlalchemy.orm import sessionmaker
 from sqlalchemy.pool import StaticPool
@@ -206,11 +206,12 @@ def test_reset_creates_new_evaluation_session(base_entities):
     assert len(app.evaluation_sessions) == 1
     assert app.evaluation_sessions[0].id == old_es.id
 
-    from backend.routers.candidate.interviews import reset_interview
     import asyncio
 
+    from backend.routers.candidate.interviews import reset_interview
+
     # Call reset_interview
-    result = asyncio.run(
+    asyncio.run(
         reset_interview(
             payload={"application_id": app.id},
             current_user=base_entities["user"],
@@ -274,8 +275,9 @@ def test_repeated_resets_create_new_sessions_without_corrupting_history(base_ent
     db.add(initial_es)
     db.commit()
 
-    from backend.routers.candidate.interviews import reset_interview
     import asyncio
+
+    from backend.routers.candidate.interviews import reset_interview
 
     for i in range(3):
         asyncio.run(

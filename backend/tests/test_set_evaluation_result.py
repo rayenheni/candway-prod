@@ -124,7 +124,6 @@ class TestSetEvaluationResult:
         assert result.id is not None
         assert result.scoring_status == "SCORED"
         assert result.rubric_score == 64.2
-        breakdown = result.score_breakdown or {}
 
     def test_idempotent_upsert(self, db_session, test_app, eval_session):
         """Calling twice updates the same row (no duplicate)."""

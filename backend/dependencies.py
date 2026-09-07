@@ -11,10 +11,10 @@ from passlib.context import CryptContext
 from sqlalchemy.orm import Session
 
 from backend.authz import get_application_for_recruiter
+from backend.client_ip import get_client_ip
 from backend.config import get_settings
 from backend.database import Application, CompanyMember, SessionLocal, User
 from backend.logger import logger
-from backend.client_ip import get_client_ip
 from backend.profile_helpers import get_user_is_super_admin, get_user_tier
 
 settings = get_settings()

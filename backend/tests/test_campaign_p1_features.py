@@ -7,7 +7,6 @@ Covers:
 - GET   /recruiter/campaigns/{batch_id}/analytics (avg_cv_score, qualified_count, real response_rate)
 """
 
-import io
 import os
 
 import pytest

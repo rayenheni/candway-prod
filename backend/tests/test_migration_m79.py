@@ -8,16 +8,15 @@ Case A: production drift — no company_id, no company_id index.
 Case B: column already exists but the expected index is missing.
 """
 
-import pytest
-import sqlalchemy as sa
-from sqlalchemy import inspect, create_engine
-from sqlalchemy.pool import StaticPool
-
-from alembic.migration import MigrationContext
-from alembic.operations import Operations
-
 import importlib.util
 import os
+
+import pytest
+import sqlalchemy as sa
+from alembic.migration import MigrationContext
+from alembic.operations import Operations
+from sqlalchemy import create_engine, inspect
+from sqlalchemy.pool import StaticPool
 
 _MIGRATION_PATH = os.path.join(
     os.path.dirname(os.path.dirname(os.path.dirname(os.path.abspath(__file__)))),

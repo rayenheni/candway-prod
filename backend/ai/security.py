@@ -7,7 +7,6 @@ import unicodedata
 from collections import OrderedDict
 from typing import Dict, Optional, Tuple
 
-
 logger = logging.getLogger("candway_app")
 
 

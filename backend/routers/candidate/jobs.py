@@ -25,6 +25,7 @@ from backend.services.application_service import (
     ApplicationService,
     normalize_application_source,
 )
+
 router = APIRouter(tags=["candidate"])
 
 logger = logging.getLogger(__name__)

@@ -11,9 +11,9 @@ from datetime import datetime, timedelta, timezone
 
 from backend.database import SessionLocal
 from backend.models.ats.application import Application
-from backend.models.evaluation.evaluation import EvaluationSession, EvaluationResult
-from backend.models.evaluation.scoring import Rubric, RubricScoringDetail
 from backend.models.evaluation.ai import InterviewTurn
+from backend.models.evaluation.evaluation import EvaluationResult, EvaluationSession
+from backend.models.evaluation.scoring import RubricScoringDetail
 
 APP_ID = 99
 COMPANY_ID = 4
@@ -354,7 +354,7 @@ def seed():
         else:
             verdict = "Low Priority"
 
-        print(f"\nComputed scores:")
+        print("\nComputed scores:")
         print(f"  CV Score: {cv_score}")
         print(f"  Rubric Score: {rubric_score}")
         print(f"  Coverage: {coverage_pct}% ({assessed_count}/{total_skills} skills)")

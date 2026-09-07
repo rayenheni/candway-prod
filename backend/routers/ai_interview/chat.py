@@ -18,7 +18,13 @@ from backend.ai.state_machine import (
     initialize_engine_state,
 )
 from backend.authz import get_application_for_recruiter
-from backend.database import Application, CandidateInteraction, EvaluationSession, EvaluationResult, User
+from backend.database import (
+    Application,
+    CandidateInteraction,
+    EvaluationResult,
+    EvaluationSession,
+    User,
+)
 from backend.dependencies import get_current_user, get_db, get_interview_access
 from backend.entity_writer import (
     sync_ai_interview_session,
@@ -1243,7 +1249,9 @@ async def _interview_chat_core(
                 f"post_skill_scores={engine_state.get('skill_scores',{})!r}"
             )
             try:
-                import tempfile, json as _dj, os as _os
+                import json as _dj
+                import os as _os
+                import tempfile
                 with open(_os.path.join(tempfile.gettempdir(), "scoring_debug.json"), "w") as _f:
                     _dj.dump(_debug_info, _f, indent=2, default=str)
             except Exception:

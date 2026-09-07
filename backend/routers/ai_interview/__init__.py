@@ -2,8 +2,10 @@
 from fastapi import APIRouter
 
 from backend.routers.ai_interview.chat import (
-    router as chat_router,
     generate_skill_driven_turn,
+)
+from backend.routers.ai_interview.chat import (
+    router as chat_router,
 )
 from backend.routers.ai_interview.evaluation import router as evaluation_router
 from backend.routers.ai_interview.media import router as media_router

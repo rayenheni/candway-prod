@@ -1859,8 +1859,8 @@ def get_ranked_candidates(
             .filter(EvaluationSession.application_id == app.id)
             .first()
         )
-        _app_sc = scores_map.get(es.id) if es else None
-        
+        _app_sc = scores_map.get(es.id) if es else None  # noqa: F821
+
         canonical = _app_sc
         if not canonical:
             canonical = ScoringService.ensure_score(app, db)
@@ -1880,7 +1880,7 @@ def get_ranked_candidates(
             }
 
         scorecard_count = 0
-        
+
         time_in_stage = 0
         if app.updated_at:
             if app.updated_at.tzinfo is None:

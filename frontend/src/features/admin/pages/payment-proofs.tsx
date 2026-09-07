@@ -4,15 +4,15 @@
 // ============================================================
 
 import { useCallback, useEffect, useState } from 'react';
-import { Card, CardContent, CardHeader, CardTitle, CardDescription } from '@/shared/components/ui/card';
+import { Card, CardContent, CardHeader, CardTitle } from '@/shared/components/ui/card';
 import { Badge } from '@/shared/components/ui/badge';
 import { Button } from '@/shared/components/ui/button';
 import { Input } from '@/shared/components/ui/input';
-import { Tabs, TabsList, TabsTrigger, TabsContent } from '@/shared/components/ui/tabs';
+import { Tabs, TabsList, TabsTrigger } from '@/shared/components/ui/tabs';
 import { PromptDialog } from '@/shared/components/ui/dialog';
 import { customToast } from '@/shared/components/ui/toast';
 import {
-  CheckCircle2, XCircle, FileText, RefreshCw, AlertCircle, Eye, Download,
+  RefreshCw, Eye, Download,
   Search, ShieldCheck, ShieldX,
 } from 'lucide-react';
 import { adminService, type PaymentProof } from '@/services/admin.service';
@@ -37,13 +37,6 @@ function fmtDate(v: string | null): string {
   const d = new Date(v);
   if (Number.isNaN(d.getTime())) return '—';
   return d.toLocaleString();
-}
-
-function fmtBytes(b: number | null): string {
-  if (!b && b !== 0) return '—';
-  if (b < 1024) return `${b} B`;
-  if (b < 1024 * 1024) return `${(b / 1024).toFixed(1)} KB`;
-  return `${(b / (1024 * 1024)).toFixed(1)} MB`;
 }
 
 export default function PaymentProofsPage() {
@@ -150,9 +143,9 @@ export default function PaymentProofsPage() {
 
       <Tabs value={tab} onValueChange={(v) => { setTab(v as ProofTab); setPage(1); }}>
         <TabsList>
-          <TabsTrigger value="uploaded" badge={proofs.filter(p => p.proof_status === 'uploaded').length}>Uploaded</TabsTrigger>
-          <TabsTrigger value="verified" badge={proofs.filter(p => p.proof_status === 'verified').length}>Verified</TabsTrigger>
-          <TabsTrigger value="rejected" badge={proofs.filter(p => p.proof_status === 'rejected').length}>Rejected</TabsTrigger>
+          <TabsTrigger value="uploaded">Uploaded ({proofs.filter(p => p.proof_status === 'uploaded').length})</TabsTrigger>
+          <TabsTrigger value="verified">Verified ({proofs.filter(p => p.proof_status === 'verified').length})</TabsTrigger>
+          <TabsTrigger value="rejected">Rejected ({proofs.filter(p => p.proof_status === 'rejected').length})</TabsTrigger>
         </TabsList>
       </Tabs>
 

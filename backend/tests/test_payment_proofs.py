@@ -1,14 +1,10 @@
 """S10 — Payment proof review workflow (admin view/verify/reject)."""
 
-import io
-import os
 
-import pytest
 from fastapi.testclient import TestClient
 
 from backend.database import (
     AdminProfile,
-    Company,
     CompanyMember,
     SubscriptionPlan,
     Transaction,

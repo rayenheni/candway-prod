@@ -9,7 +9,7 @@ import bleach
 from fastapi import APIRouter, BackgroundTasks, Depends, HTTPException, Query
 from fastapi.responses import StreamingResponse
 from pydantic import BaseModel, field_validator
-from sqlalchemy import func, or_
+from sqlalchemy import or_
 from sqlalchemy.orm import Session, selectinload
 
 from backend.ai.llm import call_groq_cascade
@@ -19,14 +19,12 @@ from backend.bias_detection_jd import JDBiasDetector
 from backend.database import (
     Application,
     CompanyMember,
-    EvaluationResult,
     EvaluationSession,
     Job,
     JobPipelineStage,
     Rubric,
     User,
 )
-from backend.pdf_generator import PDFReport
 from backend.dependencies import (
     get_db,
     get_pagination_meta,
@@ -36,6 +34,7 @@ from backend.dependencies import (
 )
 from backend.logger import logger
 from backend.optimistic_lock import retry_stale
+from backend.pdf_generator import PDFReport
 from backend.profile_helpers import get_user_company_name
 from backend.repository.metrics_repository import MetricsRepository
 from backend.schemas import AutoJobCreateRequest, JobCreate
@@ -435,7 +434,6 @@ def get_job_analytics(
     db: Session = Depends(get_db),
 ):
     job = get_job_for_recruiter(job_id, recruiter, db)
-    company_id = getattr(recruiter, "_company_id", None)
     metrics = MetricsRepository(db)
     app_counts = metrics.get_job_applicant_counts([job.id])
     return {

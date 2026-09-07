@@ -1,4 +1,4 @@
-import React, { useEffect, useState } from 'react';
+import { useEffect, useState } from 'react';
 import { useSearchParams, useNavigate } from 'react-router';
 import {
   ArrowLeft,
@@ -8,11 +8,7 @@ import {
   Award,
   Mail,
   TrendingUp,
-  FileSpreadsheet,
   Plus,
-  X,
-  Building2,
-  Calendar,
 } from 'lucide-react';
 import { campaignsService } from '@/services/campaigns.service';
 import { useLanguage } from '@/contexts/language-context';

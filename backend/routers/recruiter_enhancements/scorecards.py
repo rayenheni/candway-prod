@@ -115,7 +115,7 @@ def submit_scorecard(
 
     # Enforce application tenant isolation before creating the submission.
     # A valid scorecard must never be usable against another company's application.
-    application = get_application_for_recruiter(
+    get_application_for_recruiter(
         data.application_id,
         recruiter,
         db,

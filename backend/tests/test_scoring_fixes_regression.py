@@ -1,10 +1,17 @@
 import pytest
 from sqlalchemy.orm import Session
 
-from backend.database import Application, Company, User, Job, EvaluationSession, EvaluationResult, RubricScoringDetail
-from backend.scoring_service import ScoringService, CANONICAL_WEIGHTS
-from backend.routers.ai_interview.evaluation import run_background_final_evaluation
 from backend.ai.anti_cheat import AntiCheatDetector
+from backend.database import (
+    Application,
+    Company,
+    EvaluationResult,
+    EvaluationSession,
+    RubricScoringDetail,
+)
+from backend.routers.ai_interview.evaluation import run_background_final_evaluation
+from backend.scoring_service import ScoringService
+
 
 @pytest.fixture
 def test_company(db_session: Session):
@@ -107,7 +114,7 @@ def test_regression_bug2_explicit_cv_override(db_session: Session, test_applicat
 @pytest.mark.asyncio
 async def test_regression_bug3_evaluation_failure_no_synthetic_50(db_session: Session, test_application: Application):
     """Test 4: AI evaluation failure marks state failed and preserves scores without synthetic 50."""
-    er1 = ScoringService.set_cv_only(test_application, db_session, cv_score=75.0, computed_by="test_cv")
+    ScoringService.set_cv_only(test_application, db_session, cv_score=75.0, computed_by="test_cv")
     db_session.commit()
 
     es = EvaluationSession(

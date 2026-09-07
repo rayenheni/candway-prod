@@ -21,7 +21,6 @@ from backend.fallback_questions import (
 from backend.logger import logger
 from backend.rubric.evidence_analyzer import classify_evidence_quality
 
-
 # --- Deterministic generated-question validation (P0.1) ----------------------
 # These guardrails reject empty / answer-shaped / context-dump / obvious
 # non-question generations WITHOUT relying solely on the presence of '?'.
@@ -565,11 +564,12 @@ async def evaluate_answer(
                     # only on /rubric/interviews/.../score would leave these
                     # rows missing for real interview turns.
                     if app is not None:
+                        from sqlalchemy import inspect as sa_inspect
+
                         from backend.models.evaluation.scoring import (
                             RubricScoringDetail,
                         )
                         from backend.scoring_service import ScoringService
-                        from sqlalchemy import inspect as sa_inspect
 
                         # evaluate_answer() is also called directly by tests and
                         # by the interview engine, so there is no explicit `db`

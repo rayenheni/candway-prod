@@ -186,7 +186,7 @@ class TestBug1MaxQuestionsPathCommitted(Helpers):
         """If the session is NOT 'pending' (e.g. still 'in_progress'),
         the CAS must skip — evaluation should not run on the wrong session."""
         app = self._make_app(db_session, test_user, test_company)
-        es = self._make_session(db_session, app)
+        self._make_session(db_session, app)
 
         from backend.routers.ai_interview import evaluation as eval_mod
 
@@ -308,7 +308,7 @@ class TestBug2LegacyTimeoutEnqueuesBgEval(Helpers):
         from starlette.background import BackgroundTasks
 
         app = self._make_app(db_session, test_user, test_company)
-        es = self._make_session(db_session, app)
+        self._make_session(db_session, app)
 
         # --- Reproduce the legacy timeout sequence (FIXED) ---
         sync_ai_interview_session(db_session, app, interview_state="expired")

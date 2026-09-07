@@ -71,8 +71,8 @@ async def generate_interview_questions(
     # frozen EvaluationConfigSnapshot. Never read the live rubric here.
     rubric_context_str = ""
     try:
-        from backend.rubric.interview_starter import InterviewStarter
         from backend.rubric.config_reader import EvaluationConfigReader
+        from backend.rubric.interview_starter import InterviewStarter
 
         # The preview endpoint may be called before the interview has been
         # explicitly started. Start it once so the recruiter configuration

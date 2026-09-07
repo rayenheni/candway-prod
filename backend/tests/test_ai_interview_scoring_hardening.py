@@ -12,17 +12,19 @@ Covers:
 10. Candidate ranking adversarial test (A > B > C > D > E)
 """
 
-import pytest
 import math
-import asyncio
-from unittest.mock import patch, AsyncMock
+from unittest.mock import AsyncMock, patch
 
-from backend.rubric.rubric_engine import _keyword_matches_in_text, _find_best_level, score_answer
-from backend.rubric.rubric_schema import JobRubric
-from backend.rubric.skill_mapper import map_extracted_skills
+import pytest
+
 from backend.ai.anti_cheat import AntiCheatDetector
 from backend.ai.interview import evaluate_answer
-
+from backend.rubric.rubric_engine import (
+    _keyword_matches_in_text,
+    score_answer,
+)
+from backend.rubric.rubric_schema import JobRubric
+from backend.rubric.skill_mapper import map_extracted_skills
 
 # =========================================================================
 # Setup Test Fixture Rubric
@@ -115,7 +117,7 @@ mock_app = type("MockApp", (), {"id": 1, "company_id": 1, "evaluation_sessions":
 # =========================================================================
 def test_domain_terminology_mapping():
     rubric_lookup = {"customer retention": job_rubric.categories[1].subcategories[0].skills[0]}
-    
+
     extracted = [{"skill_name": "reduced churn", "evidence_sentences": ["Reduced churn 18%"]}]
     mapped = map_extracted_skills(extracted, rubric_lookup)
     assert len(mapped) == 1
@@ -261,7 +263,7 @@ async def test_llm_failure_safety_scenarios():
 def test_global_score_bounds():
     ext = [{"skill_name": "customer retention", "evidence_sentences": ["Extreme evidence " * 50], "quality": "strong"}]
     res = score_answer("Extreme answer " * 50, ext, job_rubric, "senior")
-    
+
     score = res["customer retention"].final_score
     assert 0 <= score <= 100
     assert not math.isnan(score)

@@ -143,7 +143,7 @@ class TestCandidateAnalysisRubricDriven:
 
     def _setup_rubric_app(self, db_session, client, auth_headers):
         user = db_session.query(User).filter_by(role="candidate").first()
-        job = Job(recruiter_id=user.id, company_id=test_company.id, title="Engineer")
+        job = Job(recruiter_id=user.id, company_id=test_company.id, title="Engineer")  # noqa: F821
         db_session.add(job)
         db_session.flush()
 
@@ -371,7 +371,7 @@ class TestRecruiterAllInterviewsRubricDriven:
 
     def _setup_rubric_app(self, db_session, client, recruiter_headers):
         recruiter = db_session.query(User).filter_by(role="recruiter").first()
-        job = Job(recruiter_id=recruiter.id, company_id=test_company.id, title="Engineer")
+        job = Job(recruiter_id=recruiter.id, company_id=test_company.id, title="Engineer")  # noqa: F821
         db_session.add(job)
         db_session.flush()
 

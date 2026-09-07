@@ -1,13 +1,11 @@
 import asyncio
-import csv
 import html
-import io
 import json
-from datetime import UTC, datetime, timedelta
+from datetime import UTC, datetime
+from math import ceil
 from typing import List, Optional
 
 from fastapi import Depends, HTTPException, Query, Request
-from fastapi.responses import StreamingResponse
 from pydantic import BaseModel, ConfigDict
 from sqlalchemy import asc, desc, func, or_
 from sqlalchemy.orm import Session, selectinload, undefer
@@ -21,12 +19,9 @@ from backend.database import (
 )
 from backend.dependencies import get_db, require_recruiter
 from backend.logger import logger
-from backend.models.core.batch_job import batch_counters
 from backend.profile_helpers import get_user_name
 
 from . import router
-
-from math import ceil
 
 
 class CampaignCandidate(BaseModel):
@@ -534,7 +529,7 @@ async def invite_all_candidates(
     """
     from backend.subscription_service import SubscriptionService
 
-    batch = get_batch_for_recruiter(batch_id, recruiter, db)
+    get_batch_for_recruiter(batch_id, recruiter, db)
 
     # De-duplicate while preserving the frontend's order.
     app_ids = list(dict.fromkeys(req.app_ids))

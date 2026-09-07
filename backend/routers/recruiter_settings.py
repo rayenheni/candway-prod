@@ -644,7 +644,10 @@ def get_subscription_status(
         .first()
     )
     if membership:
-        from backend.credit_service import get_or_create_wallet, resolve_company_billing_user
+        from backend.credit_service import (
+            get_or_create_wallet,
+            resolve_company_billing_user,
+        )
 
         company_ = db.query(Company).filter(Company.id == membership.company_id).first()
         company_name = company_.name if company_ else None

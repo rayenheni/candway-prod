@@ -32,9 +32,9 @@ async def get_system_config() -> dict:
         return _cache
 
     try:
+        from backend.config import get_settings
         from backend.database import SessionLocal, SystemConfig
         from backend.secret_encryption import decrypt_value, is_sensitive_key
-        from backend.config import get_settings
 
         secret_key = get_settings().secret_key
 
