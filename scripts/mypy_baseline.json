@@ -352,7 +352,10 @@
     "Incompatible types in assignment (expression has type \"ColumnElement[str]\", variable has type \"Column[str]\")  [assignment]": 1
   },
   "backend/metrics.py": {
-    "Incompatible default for parameter \"response_time\" (default has type \"None\", parameter has type \"float\")  [assignment]": 2
+    "Incompatible default for parameter \"response_time\" (default has type \"None\", parameter has type \"float\")  [assignment]": 2,
+    "Incompatible types in assignment (expression has type \"None\", variable has type \"Counter\")  [assignment]": 3,
+    "Incompatible types in assignment (expression has type \"None\", variable has type \"Gauge\")  [assignment]": 1,
+    "Incompatible types in assignment (expression has type \"None\", variable has type \"Histogram\")  [assignment]": 1
   },
   "backend/migrations/qualifications_backfill.py": {
     "All conditional function variants must have identical signatures  [misc]": 1
