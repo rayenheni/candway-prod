@@ -494,13 +494,10 @@ def apply_to_job(
         missing.append("add a phone number")
     if not (get_user_name(current_user) or "").strip():
         missing.append("add your full name")
-    if (
-        has_valid_cv_document is not True
-        and (
-            latest_app is None
-            or ((_latest_er.final_score if _latest_er else None) is None)
-            or latest_app.status in ("failed", "analysis_failed")
-        )
+    if has_valid_cv_document is not True and (
+        latest_app is None
+        or ((_latest_er.final_score if _latest_er else None) is None)
+        or latest_app.status in ("failed", "analysis_failed")
     ):
         # CV-builder candidates persist their analysis result (score/grade) in
         # CandidateProfile.builder_data, not in an Application row. Accept that
@@ -567,9 +564,7 @@ def apply_to_job(
             f"{company_id}: {resolve_err}"
         )
     if billing_user is None and getattr(job, "recruiter_id", None):
-        billing_user = (
-            db.query(User).filter(User.id == job.recruiter_id).first()
-        )
+        billing_user = db.query(User).filter(User.id == job.recruiter_id).first()
     if billing_user is None:
         db.rollback()
         raise HTTPException(

@@ -31,6 +31,8 @@ def _resolve_wallet_company_id(db: Session, user: User) -> Optional[int]:
         .filter(CompanyMember.user_id == user.id)
         .scalar()
     )
+
+
 # ---------------------------------------------------------------------------
 # ADMIN-CONTROLLED AI PRICING
 # ---------------------------------------------------------------------------
@@ -43,7 +45,11 @@ def _resolve_wallet_company_id(db: Session, user: User) -> Optional[int]:
 
 def is_credit_gating_enabled(db: Session) -> bool:
     """Master switch for AI credit charging (SystemConfig, default ON)."""
-    cfg = db.query(SystemConfig).filter(SystemConfig.key == "ai_credit_gating_enabled").first()
+    cfg = (
+        db.query(SystemConfig)
+        .filter(SystemConfig.key == "ai_credit_gating_enabled")
+        .first()
+    )
     if cfg is None or cfg.value is None:
         return True
     return str(cfg.value).strip().lower() not in ("false", "0", "off", "no")
@@ -658,9 +664,7 @@ def resolve_company_billing_user(
 
 def get_user_credit_balance(db: Session, user: User) -> float:
     """Current wallet balance for a user (0.0 when no wallet exists)."""
-    wallet = (
-        db.query(CreditWallet).filter(CreditWallet.user_id == user.id).first()
-    )
+    wallet = db.query(CreditWallet).filter(CreditWallet.user_id == user.id).first()
     return float(wallet.balance or 0) if wallet else 0.0
 
 
