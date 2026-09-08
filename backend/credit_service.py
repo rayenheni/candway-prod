@@ -407,7 +407,7 @@ def rollback_credits_in_transaction(db: Session, tx: CreditTransaction) -> None:
     """
     if not tx or tx.status == "reversed" or getattr(tx, "id", 0) == 0:
         return
-    tx.status = "reversed"
+    tx.status = "reversed"  # type: ignore[assignment]
     db.execute(
         update(CreditWallet)
         .where(CreditWallet.user_id == tx.user_id)

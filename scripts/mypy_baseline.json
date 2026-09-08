@@ -1,0 +1,1782 @@
+{
+  "backend/ab_experiment.py": {
+    "Incompatible types in assignment (expression has type \"bool\", variable has type \"Column[bool]\")  [assignment]": 1,
+    "Incompatible types in assignment (expression has type \"datetime\", variable has type \"Column[datetime]\")  [assignment]": 1
+  },
+  "backend/admin_analytics_service.py": {
+    "Incompatible return value type (got \"list[Never]\", expected \"dict[Any, Any]\")  [return-value]": 1,
+    "Incompatible return value type (got \"list[dict[str, object]]\", expected \"dict[Any, Any]\")  [return-value]": 1,
+    "Need type annotation for \"model_usage\" (hint: \"model_usage: dict[<type>, <type>] = ...\")  [var-annotated]": 1
+  },
+  "backend/admin_financial_service.py": {
+    "Argument 2 to \"setdefault\" of \"MutableMapping\" has incompatible type \"dict[str, float]\"; expected \"list[Any]\"  [arg-type]": 1,
+    "Generator has incompatible item type \"object\"; expected \"bool\"  [misc]": 1,
+    "No overload variant of \"__getitem__\" of \"list\" matches argument type \"str\"  [call-overload]": 4,
+    "No overload variant of \"__setitem__\" of \"list\" matches argument types \"str\", \"Any\"  [call-overload]": 2
+  },
+  "backend/adverse_action_service.py": {
+    "Argument 1 to \"send_email\" has incompatible type \"Column[str]\"; expected \"str\"  [arg-type]": 2,
+    "Incompatible default for parameter \"company_id\" (default has type \"None\", parameter has type \"int\")  [assignment]": 3,
+    "Incompatible return value type (got \"ColumnElement[bool]\", expected \"bool\")  [return-value]": 1,
+    "Incompatible types in assignment (expression has type \"datetime\", variable has type \"Column[datetime]\")  [assignment]": 2,
+    "Incompatible types in assignment (expression has type \"str\", variable has type \"Column[str]\")  [assignment]": 2
+  },
+  "backend/ai/ab_testing.py": {
+    "Dict entry 0 has incompatible type \"str\": \"float\"; expected \"str\": \"int\"  [dict-item]": 1,
+    "Dict entry 1 has incompatible type \"str\": \"float\"; expected \"str\": \"int\"  [dict-item]": 2,
+    "Dict entry 2 has incompatible type \"str\": \"float\"; expected \"str\": \"int\"  [dict-item]": 1,
+    "Dict entry 3 has incompatible type \"str\": \"float | int\"; expected \"str\": \"int\"  [dict-item]": 1,
+    "Dict entry 3 has incompatible type \"str\": \"float\"; expected \"str\": \"int\"  [dict-item]": 1,
+    "Dict entry 4 has incompatible type \"str\": \"float\"; expected \"str\": \"int\"  [dict-item]": 1,
+    "Dict entry 5 has incompatible type \"str\": \"float\"; expected \"str\": \"int\"  [dict-item]": 1,
+    "Dict entry 6 has incompatible type \"str\": \"dict[Any, Any]\"; expected \"str\": \"int\"  [dict-item]": 1,
+    "Incompatible types in assignment (expression has type \"float\", variable has type \"int\")  [assignment]": 1
+  },
+  "backend/ai/advanced_scoring_integration.py": {
+    "Incompatible default for parameter \"candidate_region\" (default has type \"None\", parameter has type \"str\")  [assignment]": 1,
+    "Incompatible types in assignment (expression has type \"dict[Any, Any]\", target has type \"list[float]\")  [assignment]": 7,
+    "Incompatible types in assignment (expression has type \"dict[str, float | int]\", target has type \"list[float]\")  [assignment]": 1,
+    "Incompatible types in assignment (expression has type \"dict[str, str]\", target has type \"list[float]\")  [assignment]": 4,
+    "Incompatible types in assignment (expression has type \"float\", target has type \"list[float]\")  [assignment]": 2,
+    "Incompatible types in assignment (expression has type \"int\", target has type \"list[float]\")  [assignment]": 2,
+    "Incompatible types in assignment (expression has type \"str\", target has type \"list[float]\")  [assignment]": 4
+  },
+  "backend/ai/anti_cheat.py": {
+    "Incompatible default for parameter \"cv_claims\" (default has type \"None\", parameter has type \"list[str]\")  [assignment]": 1,
+    "Incompatible default for parameter \"history\" (default has type \"None\", parameter has type \"list[dict[Any, Any]]\")  [assignment]": 1,
+    "Incompatible default for parameter \"previous_answers\" (default has type \"None\", parameter has type \"list[str]\")  [assignment]": 1
+  },
+  "backend/ai/bias_detection.py": {
+    "Incompatible default for parameter \"candidate_region\" (default has type \"None\", parameter has type \"str\")  [assignment]": 2
+  },
+  "backend/ai/calibration.py": {
+    "\"float\" has no attribute \"keys\"  [attr-defined]": 2,
+    "Argument \"human_scores\" to \"CalibrationSample\" has incompatible type \"dict[str, dict[str, float]]\"; expected \"dict[str, float]\"  [arg-type]": 1,
+    "Incompatible default for parameter \"metadata\" (default has type \"None\", parameter has type \"dict[Any, Any]\")  [assignment]": 1,
+    "Need type annotation for \"dimensions\" (hint: \"dimensions: set[<type>] = ...\")  [var-annotated]": 2,
+    "Unsupported right operand type for in (\"float\")  [operator]": 2,
+    "Value of type \"float\" is not indexable  [index]": 2
+  },
+  "backend/ai/cost_controller.py": {
+    "Incompatible default for parameter \"company_id\" (default has type \"None\", parameter has type \"int\")  [assignment]": 1
+  },
+  "backend/ai/cv_analysis.py": {
+    "Argument 1 to \"len\" has incompatible type \"object\"; expected \"Sized\"  [arg-type]": 2,
+    "Value of type \"object\" is not indexable  [index]": 2
+  },
+  "backend/ai/drift_monitor.py": {
+    "Incompatible default for parameter \"timestamp\" (default has type \"None\", parameter has type \"str\")  [assignment]": 1
+  },
+  "backend/ai/engine.py": {
+    "\"int\" has no attribute \"id\"  [attr-defined]": 1
+  },
+  "backend/ai/explainable_scoring.py": {
+    "Argument \"dimension_scores\" to \"compute_confidence_interval\" has incompatible type \"dict[str, list[float]] | None\"; expected \"dict[str, list[float]]\"  [arg-type]": 1,
+    "Incompatible default for parameter \"dimension_scores\" (default has type \"None\", parameter has type \"dict[str, list[float]]\")  [assignment]": 1
+  },
+  "backend/ai/interview.py": {
+    "Argument \"cv_claims\" to \"calculate_cheat_score\" of \"AntiCheatDetector\" has incompatible type \"None\"; expected \"list[str]\"  [arg-type]": 1,
+    "Argument \"cv_claims\" to \"get_intelligent_evaluation_prompt\" has incompatible type \"None\"; expected \"list[Any]\"  [arg-type]": 1,
+    "Argument \"previous_answer_quality\" to \"get_intelligent_evaluation_prompt\" has incompatible type \"Any | None\"; expected \"str\"  [arg-type]": 1,
+    "Argument \"rubric_context\" to \"get_question_generator_prompt\" has incompatible type \"str | None\"; expected \"str\"  [arg-type]": 1,
+    "Incompatible default for parameter \"calibration_data\" (default has type \"None\", parameter has type \"dict[Any, Any]\")  [assignment]": 3,
+    "Incompatible default for parameter \"custom_question_prompt\" (default has type \"None\", parameter has type \"str\")  [assignment]": 1,
+    "Incompatible default for parameter \"cv_skills_list\" (default has type \"None\", parameter has type \"list[Any]\")  [assignment]": 1,
+    "Incompatible default for parameter \"initial_skills\" (default has type \"None\", parameter has type \"dict[Any, Any]\")  [assignment]": 1,
+    "Incompatible default for parameter \"instruction_state\" (default has type \"None\", parameter has type \"dict[Any, Any]\")  [assignment]": 1,
+    "Incompatible default for parameter \"intelligence_layer\" (default has type \"None\", parameter has type \"dict[Any, Any]\")  [assignment]": 2,
+    "Incompatible default for parameter \"interview_instructions\" (default has type \"None\", parameter has type \"dict[Any, Any]\")  [assignment]": 1,
+    "Incompatible default for parameter \"job_description\" (default has type \"None\", parameter has type \"str\")  [assignment]": 2,
+    "Incompatible default for parameter \"job_rubric_db_id\" (default has type \"None\", parameter has type \"int\")  [assignment]": 1,
+    "Incompatible default for parameter \"job_title\" (default has type \"None\", parameter has type \"str\")  [assignment]": 1,
+    "Incompatible default for parameter \"linguistic_analysis\" (default has type \"None\", parameter has type \"dict[Any, Any]\")  [assignment]": 1,
+    "Incompatible default for parameter \"max_chars\" (default has type \"None\", parameter has type \"int\")  [assignment]": 1,
+    "Incompatible default for parameter \"previous_answers\" (default has type \"None\", parameter has type \"list[Any]\")  [assignment]": 1,
+    "Incompatible default for parameter \"rubric_categories\" (default has type \"None\", parameter has type \"list[Any]\")  [assignment]": 2,
+    "Incompatible default for parameter \"rubric_context\" (default has type \"None\", parameter has type \"str\")  [assignment]": 1,
+    "Incompatible default for parameter \"technical_focus\" (default has type \"None\", parameter has type \"str\")  [assignment]": 1,
+    "Incompatible default for parameter \"violations\" (default has type \"None\", parameter has type \"list[Any]\")  [assignment]": 1,
+    "Incompatible types in assignment (expression has type \"float\", variable has type \"int\")  [assignment]": 1,
+    "Need type annotation for \"evaluation_result\" (hint: \"evaluation_result: dict[<type>, <type>] = ...\")  [var-annotated]": 1,
+    "Need type annotation for \"summary\" (hint: \"summary: dict[<type>, <type>] = ...\")  [var-annotated]": 1
+  },
+  "backend/ai/interview_customization.py": {
+    "\"Sequence[str]\" has no attribute \"append\"  [attr-defined]": 3,
+    "Incompatible default for parameter \"category_scores\" (default has type \"None\", parameter has type \"dict[Any, Any]\")  [assignment]": 1,
+    "Incompatible default for parameter \"rubric_categories\" (default has type \"None\", parameter has type \"list[Any]\")  [assignment]": 2
+  },
+  "backend/ai/knowledge_graph.py": {
+    "Incompatible default for parameter \"question_focus\" (default has type \"None\", parameter has type \"str\")  [assignment]": 1,
+    "Need type annotation for \"by_category\" (hint: \"by_category: dict[<type>, <type>] = ...\")  [var-annotated]": 1,
+    "Unsupported target for indexed assignment (\"object\")  [index]": 1
+  },
+  "backend/ai/llm.py": {
+    "Incompatible types in assignment (expression has type \"None\", variable has type \"AsyncClient\")  [assignment]": 1,
+    "Name \"settings\" is not defined  [name-defined]": 1,
+    "No overload variant of \"get\" of \"dict\" matches argument type \"str\"  [call-overload]": 1,
+    "No overload variant of \"get\" of \"dict\" matches argument types \"str\", \"str\"  [call-overload]": 2
+  },
+  "backend/ai/privacy.py": {
+    "Incompatible default for parameter \"error_message\" (default has type \"None\", parameter has type \"str\")  [assignment]": 1
+  },
+  "backend/ai/prompts.py": {
+    "Incompatible default for parameter \"calibration_data\" (default has type \"None\", parameter has type \"dict[Any, Any]\")  [assignment]": 1,
+    "Incompatible default for parameter \"cv_claims\" (default has type \"None\", parameter has type \"list[Any]\")  [assignment]": 1,
+    "Incompatible default for parameter \"intelligence_layer\" (default has type \"None\", parameter has type \"dict[Any, Any]\")  [assignment]": 1,
+    "Incompatible default for parameter \"previous_answer_quality\" (default has type \"None\", parameter has type \"str\")  [assignment]": 1,
+    "Incompatible default for parameter \"rubric_context\" (default has type \"None\", parameter has type \"str\")  [assignment]": 1,
+    "Incompatible return value type (got \"None\", expected \"str\")  [return-value]": 1
+  },
+  "backend/ai/resilience.py": {
+    "Exception type must be derived from BaseException (or be a tuple of exception classes)  [misc]": 1,
+    "Incompatible types in assignment (expression has type \"float\", variable has type \"int\")  [assignment]": 1
+  },
+  "backend/ai/roadmap.py": {
+    "Incompatible default for parameter \"audit_context\" (default has type \"None\", parameter has type \"dict[Any, Any]\")  [assignment]": 1
+  },
+  "backend/ai/scoring_jobs.py": {
+    "Argument \"candidate_region\" to \"run_bias_audit\" has incompatible type \"None\"; expected \"str\"  [arg-type]": 1,
+    "Argument \"human_ratings\" to \"create_calibration_sample\" has incompatible type \"dict[str, float]\"; expected \"dict[str, dict[str, float]]\"  [arg-type]": 1,
+    "Argument \"role\" to \"calculate_overall_score\" has incompatible type \"Any | Column[str] | str\"; expected \"str\"  [arg-type]": 1,
+    "Argument \"role\" to \"create_calibration_sample\" has incompatible type \"Any | Column[str] | str\"; expected \"str\"  [arg-type]": 1,
+    "Argument 1 to \"filter\" of \"Query\" has incompatible type \"bool\"; expected \"ColumnElement[bool] | _HasClauseElement[bool] | SQLCoreOperations[bool] | ExpressionElementRole[bool] | TypedColumnsClauseRole[bool] | Callable[[], ColumnElement[bool]] | LambdaElement\"  [arg-type]": 2,
+    "Incompatible default for parameter \"company_id\" (default has type \"None\", parameter has type \"int\")  [assignment]": 3
+  },
+  "backend/ai/security.py": {
+    "Incompatible default for parameter \"max_length\" (default has type \"None\", parameter has type \"int\")  [assignment]": 1
+  },
+  "backend/ai/state_machine.py": {
+    "Incompatible default for parameter \"initial_metrics\" (default has type \"None\", parameter has type \"dict[Any, Any]\")  [assignment]": 1,
+    "Incompatible default for parameter \"skills\" (default has type \"None\", parameter has type \"list[Any]\")  [assignment]": 1
+  },
+  "backend/ai/timing_analysis.py": {
+    "Function \"builtins.any\" is not valid as a type  [valid-type]": 1
+  },
+  "backend/ai_audit.py": {
+    "Argument 1 to \"_compute_record_hash\" has incompatible type \"Column[str] | None\"; expected \"str | None\"  [arg-type]": 1,
+    "Argument 1 to \"_compute_record_hash\" has incompatible type \"Column[str]\"; expected \"str | None\"  [arg-type]": 2,
+    "Argument 1 to \"loads\" has incompatible type \"Column[str]\"; expected \"str | bytes | bytearray\"  [arg-type]": 3,
+    "Argument 2 to \"_compute_record_hash\" has incompatible type \"Column[str]\"; expected \"str\"  [arg-type]": 2,
+    "Argument 3 to \"_compute_record_hash\" has incompatible type \"Column[str]\"; expected \"str | None\"  [arg-type]": 2,
+    "Incompatible default for parameter \"db\" (default has type \"None\", parameter has type \"Session\")  [assignment]": 2
+  },
+  "backend/ai_engine.py": {
+    "Incompatible default for parameter \"provider\" (default has type \"None\", parameter has type \"str\")  [assignment]": 2,
+    "Incompatible default for parameter \"schema\" (default has type \"None\", parameter has type \"dict[Any, Any]\")  [assignment]": 1,
+    "Need type annotation for \"services\" (hint: \"services: dict[<type>, <type>] = ...\")  [var-annotated]": 1
+  },
+  "backend/ai_quota_service.py": {
+    "Argument 1 to \"check_quota\" of \"AIQuotaService\" has incompatible type \"Column[int]\"; expected \"int\"  [arg-type]": 3,
+    "Incompatible types in assignment (expression has type \"dict[Any, Any] | int\", variable has type \"int\")  [assignment]": 2,
+    "Incompatible types in assignment (expression has type \"int\", target has type \"dict[Any, Any]\")  [assignment]": 2,
+    "Unsupported operand types for + (\"dict[Any, Any]\" and \"int\")  [operator]": 6,
+    "Unsupported target for indexed assignment (\"Collection[str]\")  [index]": 1
+  },
+  "backend/analysis_columns.py": {
+    "Incompatible types in assignment (expression has type \"float\", variable has type \"Column[Any]\")  [assignment]": 1
+  },
+  "backend/analytics_service.py": {
+    "\"object\" has no attribute \"__iter__\"; maybe \"__dir__\" or \"__str__\"? (not iterable)  [attr-defined]": 2,
+    "\"object\" has no attribute \"append\"  [attr-defined]": 2,
+    "\"object\" has no attribute \"count\"  [attr-defined]": 1,
+    "Argument 1 to \"and_\" has incompatible type \"BinaryExpression[bool] | Literal[False]\"; expected \"Literal[True] | ColumnElement[bool] | _HasClauseElement[bool] | SQLCoreOperations[bool] | ExpressionElementRole[bool] | TypedColumnsClauseRole[bool] | Callable[[], ColumnElement[bool]] | LambdaElement\"  [arg-type]": 2,
+    "Argument 1 to \"dict\" has incompatible type \"list[Row[tuple[str, int]]]\"; expected \"Iterable[tuple[Any, Any]]\"  [arg-type]": 2,
+    "Argument 1 to \"len\" has incompatible type \"object\"; expected \"Sized\"  [arg-type]": 10,
+    "Argument 2 to \"or_\" has incompatible type \"BinaryExpression[bool] | bool\"; expected \"ColumnElement[bool] | _HasClauseElement[bool] | SQLCoreOperations[bool] | ExpressionElementRole[bool] | TypedColumnsClauseRole[bool] | Callable[[], ColumnElement[bool]] | LambdaElement\"  [arg-type]": 3,
+    "Generator has incompatible item type \"int\"; expected \"bool\"  [misc]": 1,
+    "Incompatible types in assignment (expression has type \"Any | float | int\", variable has type \"int\")  [assignment]": 1,
+    "Incompatible types in assignment (expression has type \"int\", variable has type \"Column[int]\")  [assignment]": 1,
+    "Invalid index type \"Column[int]\" for \"dict[int, dict[str, object]]\"; expected type \"int\"  [index]": 6,
+    "Invalid index type \"Column[str]\" for \"dict[str, int]\"; expected type \"str\"  [index]": 2,
+    "Need type annotation for \"cat_scores_agg\" (hint: \"cat_scores_agg: dict[<type>, <type>] = ...\")  [var-annotated]": 1,
+    "Need type annotation for \"gap_frequency\" (hint: \"gap_frequency: dict[<type>, <type>] = ...\")  [var-annotated]": 1,
+    "Need type annotation for \"status_counts\" (hint: \"status_counts: dict[<type>, <type>] = ...\")  [var-annotated]": 1,
+    "Need type annotation for \"type_breakdown\" (hint: \"type_breakdown: dict[<type>, <type>] = ...\")  [var-annotated]": 1,
+    "No overload variant of \"max\" matches argument type \"object\"  [call-overload]": 1,
+    "No overload variant of \"min\" matches argument type \"object\"  [call-overload]": 1,
+    "No overload variant of \"set\" matches argument type \"object\"  [call-overload]": 1,
+    "No overload variant of \"sorted\" matches argument type \"object\"  [call-overload]": 1,
+    "No overload variant of \"sum\" matches argument type \"object\"  [call-overload]": 3,
+    "Unsupported left operand type for / (\"object\")  [operator]": 3,
+    "Unsupported operand type for unary - (\"list[dict[str, Any]] | Column[int] | Any | str | float | int\")  [operator]": 1,
+    "Unsupported operand types for * (\"object\" and \"int\")  [operator]": 4,
+    "Unsupported operand types for + (\"object\" and \"int\")  [operator]": 6,
+    "Unsupported operand types for / (\"object\" and \"int\")  [operator]": 1,
+    "Unsupported operand types for > (\"int\" and \"object\")  [operator]": 1
+  },
+  "backend/app.py": {
+    "Argument \"bearer_user_id\" to \"verify_signed_cv_token\" has incompatible type \"Column[int]\"; expected \"int\"  [arg-type]": 1,
+    "Incompatible types in assignment (expression has type \"Column[int]\", variable has type \"int | None\")  [assignment]": 1
+  },
+  "backend/assessment_service.py": {
+    "Incompatible types in assignment (expression has type \"dict[Any, Any]\", target has type \"bool | None\")  [assignment]": 2,
+    "Module \"backend.database\" has no attribute \"Assessment\"  [attr-defined]": 1,
+    "Module \"backend.database\" has no attribute \"AssessmentInvitation\"  [attr-defined]": 1
+  },
+  "backend/authz.py": {
+    "Argument 2 to \"_has_active_company_membership\" has incompatible type \"Column[int]\"; expected \"int\"  [arg-type]": 1,
+    "Argument 2 to \"_user_company_id\" has incompatible type \"Column[int]\"; expected \"int\"  [arg-type]": 1,
+    "Incompatible return value type (got \"BatchJob | None\", expected \"BatchJob\")  [return-value]": 1,
+    "Incompatible return value type (got \"Interview | None\", expected \"Interview\")  [return-value]": 1,
+    "Incompatible return value type (got \"Offer | None\", expected \"Offer\")  [return-value]": 1,
+    "Incompatible return value type (got \"Rubric | None\", expected \"Rubric\")  [return-value]": 1
+  },
+  "backend/automation_worker.py": {
+    "Argument 4 to \"_execute_action\" has incompatible type \"User | Any | None\"; expected \"User\"  [arg-type]": 1,
+    "Incompatible default for parameter \"company_id\" (default has type \"None\", parameter has type \"int\")  [assignment]": 1,
+    "Incompatible types in assignment (expression has type \"ColumnElement[int] | int\", variable has type \"Column[int]\")  [assignment]": 1,
+    "Incompatible types in assignment (expression has type \"Column[int]\", variable has type \"int\")  [assignment]": 1
+  },
+  "backend/background_check_service.py": {
+    "Argument 1 to \"_log_status_change\" of \"BackgroundCheckService\" has incompatible type \"Column[int]\"; expected \"int\"  [arg-type]": 2,
+    "Argument 2 to \"_log_status_change\" of \"BackgroundCheckService\" has incompatible type \"Column[str] | None\"; expected \"str | None\"  [arg-type]": 1,
+    "Argument 2 to \"_log_status_change\" of \"BackgroundCheckService\" has incompatible type \"Column[str]\"; expected \"str | None\"  [arg-type]": 1,
+    "Incompatible default for parameter \"company_id\" (default has type \"None\", parameter has type \"int\")  [assignment]": 3,
+    "Incompatible types in assignment (expression has type \"datetime\", variable has type \"Column[datetime]\")  [assignment]": 2,
+    "Incompatible types in assignment (expression has type \"str\", variable has type \"Column[str]\")  [assignment]": 2
+  },
+  "backend/bias_detection_jd.py": {
+    "\"str\" has no attribute \"get\"  [attr-defined]": 3,
+    "Incompatible default for parameter \"skills\" (default has type \"None\", parameter has type \"list[Any]\")  [assignment]": 1,
+    "Incompatible return value type (got \"dict[Any, Any]\", expected \"str\")  [return-value]": 1,
+    "Incompatible return value type (got \"dict[str, Sequence[str]]\", expected \"str\")  [return-value]": 2,
+    "Incompatible types in assignment (expression has type \"dict[str, Sequence[str]]\", variable has type \"str\")  [assignment]": 1
+  },
+  "backend/bot_notifications.py": {
+    "Argument 1 to \"_get_active_integrations\" of \"BotNotificationService\" has incompatible type \"Column[int]\"; expected \"int\"  [arg-type]": 2
+  },
+  "backend/bot_router.py": {
+    "Argument 1 to \"_check_rate_limit\" of \"BotRouter\" has incompatible type \"Column[int]\"; expected \"int\"  [arg-type]": 1,
+    "Argument 2 to \"filter\" of \"Query\" has incompatible type \"bool\"; expected \"ColumnElement[bool] | _HasClauseElement[bool] | SQLCoreOperations[bool] | ExpressionElementRole[bool] | TypedColumnsClauseRole[bool] | Callable[[], ColumnElement[bool]] | LambdaElement\"  [arg-type]": 1,
+    "Incompatible types in assignment (expression has type \"bool\", variable has type \"Column[bool]\")  [assignment]": 1,
+    "Incompatible types in assignment (expression has type \"int\", variable has type \"Column[int]\")  [assignment]": 1,
+    "Incompatible types in assignment (expression has type \"list[Job]\", variable has type \"Query[Job]\")  [assignment]": 1,
+    "Incompatible types in assignment (expression has type \"str\", variable has type \"Column[str]\")  [assignment]": 2
+  },
+  "backend/calendar_service.py": {
+    "\"None\" has no attribute \"events\"  [attr-defined]": 4,
+    "List comprehension has incompatible type List[dict[str, str]]; expected List[str]  [misc]": 1,
+    "Unsupported target for indexed assignment (\"object\")  [index]": 1
+  },
+  "backend/copilot_engine.py": {
+    "Incompatible return value type (got \"tuple[Any, Any]\", expected \"str\")  [return-value]": 2,
+    "Incompatible return value type (got \"tuple[str, list[str]]\", expected \"str\")  [return-value]": 2,
+    "Need type annotation for \"context\"  [var-annotated]": 1
+  },
+  "backend/credit_service.py": {
+    "Argument \"user_id\" to \"record_usage_event\" has incompatible type \"Column[int]\"; expected \"int | None\"  [arg-type]": 1,
+    "Incompatible types in assignment (expression has type \"ColumnElement[Decimal] | int\", variable has type \"Column[Decimal]\")  [assignment]": 4,
+    "Incompatible types in assignment (expression has type \"float\", variable has type \"Column[Decimal]\")  [assignment]": 1,
+    "Incompatible types in assignment (expression has type \"str\", variable has type \"Column[str]\")  [assignment]": 1
+  },
+  "backend/cv_service.py": {
+    "Incompatible types in assignment (expression has type \"str\", target has type \"None\")  [assignment]": 4
+  },
+  "backend/dependencies.py": {
+    "Argument 1 to \"get_application_for_recruiter\" has incompatible type \"Column[int]\"; expected \"int\"  [arg-type]": 2,
+    "Argument 1 to \"is_user_invalidated\" of \"TokenBlacklist\" has incompatible type \"Column[int]\"; expected \"int\"  [arg-type]": 2,
+    "Incompatible return value type (got \"ColumnElement[bool]\", expected \"bool\")  [return-value]": 1,
+    "Incompatible return value type (got \"tuple[Any, None]\", expected \"tuple[User | None, Application]\")  [return-value]": 1
+  },
+  "backend/drift_monitor.py": {
+    "Incompatible types in assignment (expression has type \"Any | int\", target has type \"dict[str, Any]\")  [assignment]": 1,
+    "Incompatible types in assignment (expression has type \"str\", target has type \"dict[str, Any]\")  [assignment]": 1
+  },
+  "backend/eeo_analytics_service.py": {
+    "\"Collection[Any]\" has no attribute \"append\"  [attr-defined]": 2,
+    "\"Collection[Any]\" has no attribute \"reverse\"  [attr-defined]": 1,
+    "Argument 1 to \"_get_eeo_job_category\" of \"EEOAnalyticsService\" has incompatible type \"Column[str] | str\"; expected \"str\"  [arg-type]": 1,
+    "Argument 1 to \"filter\" of \"Query\" has incompatible type \"BinaryExpression[bool] | bool\"; expected \"ColumnElement[bool] | _HasClauseElement[bool] | SQLCoreOperations[bool] | ExpressionElementRole[bool] | TypedColumnsClauseRole[bool] | Callable[[], ColumnElement[bool]] | LambdaElement\"  [arg-type]": 5,
+    "Argument 2 to \"_compute_4_5ths_rule\" of \"EEOAnalyticsService\" has incompatible type \"set[str]\"; expected \"list[Any]\"  [arg-type]": 1,
+    "Incompatible types in assignment (expression has type \"list[str]\", variable has type \"set[str]\")  [assignment]": 2,
+    "Need type annotation for \"gender_counts\"  [var-annotated]": 1,
+    "Need type annotation for \"group_counts\"  [var-annotated]": 1,
+    "Need type annotation for \"matrix\" (hint: \"matrix: dict[<type>, <type>] = ...\")  [var-annotated]": 1,
+    "Need type annotation for \"monthly\"  [var-annotated]": 1,
+    "Need type annotation for \"monthly_total\"  [var-annotated]": 1,
+    "Need type annotation for \"representation_pct\" (hint: \"representation_pct: dict[<type>, <type>] = ...\")  [var-annotated]": 1,
+    "Need type annotation for \"stage_data\"  [var-annotated]": 1,
+    "Need type annotation for \"trend_data\" (hint: \"trend_data: dict[<type>, <type>] = ...\")  [var-annotated]": 1,
+    "No overload variant of \"get\" of \"dict\" matches argument types \"str\", \"int\"  [call-overload]": 2
+  },
+  "backend/email_sequence_worker.py": {
+    "Argument 1 to \"_make_unsubscribe_token\" has incompatible type \"Column[int]\"; expected \"int\"  [arg-type]": 1,
+    "Argument 1 to \"escape\" has incompatible type \"Column[str] | str\"; expected \"str\"  [arg-type]": 3,
+    "Argument 1 to \"escape\" has incompatible type \"Column[str]\"; expected \"str\"  [arg-type]": 3,
+    "Argument 1 to \"in_\" of \"SQLCoreOperations\" has incompatible type \"Subquery\"; expected \"Iterable[Any] | BindParameter[Any] | InElementRole\"  [arg-type]": 1,
+    "Argument 1 to \"loads\" has incompatible type \"Column[str]\"; expected \"str | bytes | bytearray\"  [arg-type]": 1,
+    "Argument 1 to \"send_email\" has incompatible type \"Column[str]\"; expected \"str\"  [arg-type]": 1
+  },
+  "backend/email_service.py": {
+    "Incompatible default for parameter \"attachment_data\" (default has type \"None\", parameter has type \"bytes\")  [assignment]": 3,
+    "Incompatible default for parameter \"attachment_filename\" (default has type \"None\", parameter has type \"str\")  [assignment]": 3,
+    "Incompatible default for parameter \"company_id\" (default has type \"None\", parameter has type \"int\")  [assignment]": 2
+  },
+  "backend/encryption.py": {
+    "Cannot assign to a type  [misc]": 3
+  },
+  "backend/esign_service.py": {
+    "Argument 2 to \"_generate_jwt_assertion\" has incompatible type \"str | None\"; expected \"str\"  [arg-type]": 2
+  },
+  "backend/file_security.py": {
+    "Argument 1 to \"validate_filename\" has incompatible type \"str | None\"; expected \"str\"  [arg-type]": 2,
+    "If x = b'abc' then f\"{x}\" or \"{}\".format(x) produces \"b'abc'\", not \"abc\". If this is desired behavior, use f\"{x!r}\" or \"{!r}\".format(x). Otherwise, decode the bytes  [str-bytes-safe]": 2,
+    "Unsupported operand types for in (\"str\" and \"bytes\")  [operator]": 1
+  },
+  "backend/gdpr_erasure.py": {
+    "\"Result[Any]\" has no attribute \"rowcount\"  [attr-defined]": 6,
+    "Argument 2 to \"_scrub_sourced_candidates\" has incompatible type \"Column[str] | str\"; expected \"str\"  [arg-type]": 1,
+    "Argument 4 to \"_scrub_table_by_email\" has incompatible type \"Column[str] | str\"; expected \"str\"  [arg-type]": 1,
+    "Argument 4 to \"_verify_erasure\" has incompatible type \"Column[str] | str\"; expected \"str\"  [arg-type]": 1,
+    "Incompatible types in assignment (expression has type \"None\", variable has type \"Column[str]\")  [assignment]": 2,
+    "Incompatible types in assignment (expression has type \"datetime\", variable has type \"Column[datetime]\")  [assignment]": 1,
+    "Incompatible types in assignment (expression has type \"str\", variable has type \"Column[str]\")  [assignment]": 1
+  },
+  "backend/interview_turns.py": {
+    "Incompatible types in assignment (expression has type \"datetime\", variable has type \"Column[datetime]\")  [assignment]": 2,
+    "Incompatible types in assignment (expression has type \"float\", variable has type \"Column[Any]\")  [assignment]": 2,
+    "Incompatible types in assignment (expression has type \"str | Column[Any]\", variable has type \"Column[Any]\")  [assignment]": 4,
+    "Incompatible types in assignment (expression has type \"str\", variable has type \"Column[str]\")  [assignment]": 4
+  },
+  "backend/jobs/scoring.py": {
+    "Argument \"candidate_region\" to \"run_bias_audit\" has incompatible type \"None\"; expected \"str\"  [arg-type]": 1,
+    "Argument \"human_ratings\" to \"create_calibration_sample\" has incompatible type \"dict[str, float]\"; expected \"dict[str, dict[str, float]]\"  [arg-type]": 1,
+    "Argument \"role\" to \"calculate_overall_score\" has incompatible type \"Any | Column[str] | str\"; expected \"str\"  [arg-type]": 1,
+    "Argument \"role\" to \"create_calibration_sample\" has incompatible type \"Any | Column[str] | str\"; expected \"str\"  [arg-type]": 1
+  },
+  "backend/konnect_service.py": {
+    "Incompatible default for parameter \"enrollment_id\" (default has type \"None\", parameter has type \"int\")  [assignment]": 1,
+    "Incompatible default for parameter \"user_email\" (default has type \"None\", parameter has type \"str\")  [assignment]": 1
+  },
+  "backend/llm_consent.py": {
+    "Incompatible types in assignment (expression has type \"ColumnElement[str]\", variable has type \"Column[str]\")  [assignment]": 1
+  },
+  "backend/metrics.py": {
+    "Incompatible default for parameter \"response_time\" (default has type \"None\", parameter has type \"float\")  [assignment]": 2
+  },
+  "backend/migrations/qualifications_backfill.py": {
+    "All conditional function variants must have identical signatures  [misc]": 1
+  },
+  "backend/models/ats/application.py": {
+    "Need type annotation for \"_deprecated_interview_log\"  [var-annotated]": 1,
+    "Need type annotation for \"analysis_json\"  [var-annotated]": 1,
+    "Need type annotation for \"application_type\"  [var-annotated]": 1,
+    "Need type annotation for \"cv_text_anonymized\"  [var-annotated]": 1
+  },
+  "backend/models/base.py": {
+    "Incompatible types in assignment (expression has type \"str\", target has type \"int\")  [assignment]": 1,
+    "Need type annotation for \"_checked_out\" (hint: \"_checked_out: dict[<type>, <type>] = ...\")  [var-annotated]": 1
+  },
+  "backend/models/evaluation/ai.py": {
+    "Need type annotation for \"answer\"  [var-annotated]": 1,
+    "Need type annotation for \"feedback\"  [var-annotated]": 1,
+    "Need type annotation for \"question\"  [var-annotated]": 1,
+    "Need type annotation for \"reasoning\"  [var-annotated]": 1
+  },
+  "backend/models/evaluation/profile.py": {
+    "Need type annotation for \"smtp_password\"  [var-annotated]": 1
+  },
+  "backend/models/foundation/company.py": {
+    "Incompatible return value type (got \"ColumnElement[int] | int\", expected \"int\")  [return-value]": 1
+  },
+  "backend/models/foundation/user.py": {
+    "Need type annotation for \"smtp_password\"  [var-annotated]": 1
+  },
+  "backend/notifications.py": {
+    "Argument \"to_email\" to \"send_email\" has incompatible type \"Column[str] | str\"; expected \"str\"  [arg-type]": 1,
+    "Argument \"to_email\" to \"send_email\" has incompatible type \"Column[str]\"; expected \"str\"  [arg-type]": 1,
+    "Argument 1 to \"in_\" of \"SQLCoreOperations\" has incompatible type \"Subquery\"; expected \"Iterable[Any] | BindParameter[Any] | InElementRole\"  [arg-type]": 2,
+    "Argument 4 to \"filter\" of \"Query\" has incompatible type \"bool\"; expected \"ColumnElement[bool] | _HasClauseElement[bool] | SQLCoreOperations[bool] | ExpressionElementRole[bool] | TypedColumnsClauseRole[bool] | Callable[[], ColumnElement[bool]] | LambdaElement\"  [arg-type]": 2,
+    "Incompatible types in assignment (expression has type \"bool\", variable has type \"Column[bool]\")  [assignment]": 2
+  },
+  "backend/org_analytics_service.py": {
+    "Argument 3 to \"_ai_usage\" has incompatible type \"list[Column[int]]\"; expected \"list[int]\"  [arg-type]": 1,
+    "Argument 3 to \"get_recruiter_kpis\" has incompatible type \"Column[int]\"; expected \"int\"  [arg-type]": 1
+  },
+  "backend/recommendations.py": {
+    "Incompatible default for parameter \"interview_results\" (default has type \"None\", parameter has type \"dict[Any, Any]\")  [assignment]": 1,
+    "Incompatible default for parameter \"interview_results\" (default has type \"None\", parameter has type \"dict[str, Any]\")  [assignment]": 1
+  },
+  "backend/redis_cache.py": {
+    "Incompatible default for parameter \"query_params\" (default has type \"None\", parameter has type \"dict[Any, Any]\")  [assignment]": 1,
+    "Incompatible default for parameter \"user_id\" (default has type \"None\", parameter has type \"int\")  [assignment]": 1
+  },
+  "backend/reengagement_engine.py": {
+    "Argument 1 to \"check_reengagement_limits\" of \"ReEngagementEngine\" has incompatible type \"Column[int] | int\"; expected \"int\"  [arg-type]": 1,
+    "Incompatible return value type (got \"None\", expected \"dict[Any, Any]\")  [return-value]": 1,
+    "Incompatible types in assignment (expression has type \"datetime\", variable has type \"Column[datetime]\")  [assignment]": 1,
+    "Incompatible types in assignment (expression has type \"int\", variable has type \"Column[int]\")  [assignment]": 2,
+    "Incompatible types in assignment (expression has type \"str\", variable has type \"Column[str]\")  [assignment]": 2
+  },
+  "backend/report_builder.py": {
+    "\"int\" has no attribute \"__iter__\"; maybe \"__int__\"? (not iterable)  [attr-defined]": 1,
+    "Argument 1 to \"_compute_time_series\" of \"ReportBuilder\" has incompatible type \"int\"; expected \"list[Any]\"  [arg-type]": 1,
+    "Argument 1 to \"filter\" of \"Query\" has incompatible type \"BinaryExpression[bool] | bool\"; expected \"ColumnElement[bool] | _HasClauseElement[bool] | SQLCoreOperations[bool] | ExpressionElementRole[bool] | TypedColumnsClauseRole[bool] | Callable[[], ColumnElement[bool]] | LambdaElement\"  [arg-type]": 2,
+    "Argument 1 to \"len\" has incompatible type \"int\"; expected \"Sized\"  [arg-type]": 1,
+    "Generator has incompatible item type \"int\"; expected \"bool\"  [misc]": 1,
+    "Incompatible types in assignment (expression has type \"float | int\", target has type \"int\")  [assignment]": 1,
+    "Incompatible types in assignment (expression has type \"int\", target has type \"dict[str, int]\")  [assignment]": 1,
+    "Incompatible types in assignment (expression has type \"list[Any]\", variable has type \"int\")  [assignment]": 2,
+    "Need type annotation for \"buckets\" (hint: \"buckets: dict[<type>, <type>] = ...\")  [var-annotated]": 1,
+    "Need type annotation for \"statuses\" (hint: \"statuses: dict[<type>, <type>] = ...\")  [var-annotated]": 1,
+    "Unsupported operand types for + (\"dict[str, int]\" and \"int\")  [operator]": 1
+  },
+  "backend/report_scheduler.py": {
+    "\"type[ReportBuilder]\" has no attribute \"RECRUITER_METRICS\"  [attr-defined]": 1,
+    "Argument \"company_id\" to \"build_report\" of \"ReportBuilder\" has incompatible type \"Column[int]\"; expected \"int | None\"  [arg-type]": 1,
+    "Argument 1 to \"build_report\" of \"ReportBuilder\" has incompatible type \"Column[str]\"; expected \"dict[Any, Any]\"  [arg-type]": 1,
+    "Argument 1 to \"get_next_run\" of \"ReportScheduler\" has incompatible type \"Column[str]\"; expected \"str\"  [arg-type]": 1,
+    "Argument 1 to \"loads\" has incompatible type \"Column[str]\"; expected \"str | bytes | bytearray\"  [arg-type]": 1,
+    "Argument 2 to \"build_report\" of \"ReportBuilder\" has incompatible type \"Column[int]\"; expected \"int\"  [arg-type]": 1,
+    "Argument 2 to \"get_next_run\" of \"ReportScheduler\" has incompatible type \"Column[datetime]\"; expected \"datetime | None\"  [arg-type]": 1,
+    "Argument 3 to \"send_report_via_email\" of \"ReportScheduler\" has incompatible type \"Column[str]\"; expected \"str\"  [arg-type]": 1,
+    "Incompatible types in assignment (expression has type \"datetime\", variable has type \"Column[datetime]\")  [assignment]": 2
+  },
+  "backend/repository/_query_builders.py": {
+    "Incompatible default for parameter \"recruiter_id\" (default has type \"None\", parameter has type \"int\")  [assignment]": 2
+  },
+  "backend/repository/metrics_repository.py": {
+    "Argument \"key\" to \"max\" has incompatible type overloaded function; expected \"Callable[[Any], SupportsDunderLT[Any] | SupportsDunderGT[Any]]\"  [arg-type]": 1,
+    "Argument 1 to \"dict\" has incompatible type \"list[Row[tuple[str, int]]]\"; expected \"Iterable[tuple[Never, Never]]\"  [arg-type]": 1,
+    "Argument 1 to \"rule_based_scan\" of \"JDBiasDetector\" has incompatible type \"Column[str] | str\"; expected \"str\"  [arg-type]": 1,
+    "Incompatible default for parameter \"batch_id\" (default has type \"None\", parameter has type \"int\")  [assignment]": 1,
+    "Incompatible default for parameter \"has_interview\" (default has type \"None\", parameter has type \"bool\")  [assignment]": 1,
+    "Incompatible default for parameter \"job_id\" (default has type \"None\", parameter has type \"int\")  [assignment]": 2,
+    "Incompatible default for parameter \"location\" (default has type \"None\", parameter has type \"str\")  [assignment]": 1,
+    "Incompatible default for parameter \"max_score\" (default has type \"None\", parameter has type \"float\")  [assignment]": 1,
+    "Incompatible default for parameter \"min_score\" (default has type \"None\", parameter has type \"float\")  [assignment]": 1,
+    "Incompatible default for parameter \"min_score\" (default has type \"None\", parameter has type \"int\")  [assignment]": 2,
+    "Incompatible default for parameter \"q\" (default has type \"None\", parameter has type \"str\")  [assignment]": 1,
+    "Incompatible default for parameter \"recruiter_id\" (default has type \"None\", parameter has type \"int\")  [assignment]": 27,
+    "Incompatible default for parameter \"role\" (default has type \"None\", parameter has type \"str\")  [assignment]": 1,
+    "Incompatible default for parameter \"role_filter\" (default has type \"None\", parameter has type \"str\")  [assignment]": 1,
+    "Incompatible default for parameter \"search\" (default has type \"None\", parameter has type \"str\")  [assignment]": 2,
+    "Incompatible default for parameter \"skills\" (default has type \"None\", parameter has type \"str\")  [assignment]": 1,
+    "Incompatible default for parameter \"source\" (default has type \"None\", parameter has type \"str\")  [assignment]": 1,
+    "Incompatible default for parameter \"status\" (default has type \"None\", parameter has type \"str\")  [assignment]": 3,
+    "Incompatible types in assignment (expression has type \"Any | float | int\", variable has type \"int\")  [assignment]": 1,
+    "Incompatible types in assignment (expression has type \"float | int\", variable has type \"int\")  [assignment]": 1,
+    "Item \"None\" of \"Row[tuple[Any, Any, Any, Any, Any, Any]] | None\" has no attribute \"applied\"  [union-attr]": 1,
+    "Item \"None\" of \"Row[tuple[Any, Any, Any, Any, Any, Any]] | None\" has no attribute \"hired\"  [union-attr]": 1,
+    "Item \"None\" of \"Row[tuple[Any, Any, Any, Any, Any, Any]] | None\" has no attribute \"interview\"  [union-attr]": 1,
+    "Item \"None\" of \"Row[tuple[Any, Any, Any, Any, Any, Any]] | None\" has no attribute \"offer\"  [union-attr]": 1,
+    "Item \"None\" of \"Row[tuple[Any, Any, Any, Any, Any, Any]] | None\" has no attribute \"rejected\"  [union-attr]": 1,
+    "Item \"None\" of \"Row[tuple[Any, Any, Any, Any, Any, Any]] | None\" has no attribute \"screening\"  [union-attr]": 1,
+    "Item \"None\" of \"Row[tuple[int, Any, Any, Any]] | None\" has no attribute \"hired\"  [union-attr]": 1,
+    "Item \"None\" of \"Row[tuple[int, Any, Any, Any]] | None\" has no attribute \"interviewing\"  [union-attr]": 1,
+    "Item \"None\" of \"Row[tuple[int, Any, Any, Any]] | None\" has no attribute \"offered\"  [union-attr]": 1,
+    "Item \"None\" of \"Row[tuple[int, Any, Any, Any]] | None\" has no attribute \"total\"  [union-attr]": 1,
+    "Need type annotation for \"cat_counts\" (hint: \"cat_counts: dict[<type>, <type>] = ...\")  [var-annotated]": 1,
+    "Need type annotation for \"cat_scores_agg\" (hint: \"cat_scores_agg: dict[<type>, <type>] = ...\")  [var-annotated]": 1,
+    "Need type annotation for \"sources\" (hint: \"sources: dict[<type>, <type>] = ...\")  [var-annotated]": 1,
+    "Unsupported operand type for unary - (\"list[dict[str, Any]] | Column[int] | Any | str | float | int\")  [operator]": 1
+  },
+  "backend/routers/admin/analytics.py": {
+    "Argument 1 to \"filter\" of \"Query\" has incompatible type \"bool\"; expected \"ColumnElement[bool] | _HasClauseElement[bool] | SQLCoreOperations[bool] | ExpressionElementRole[bool] | TypedColumnsClauseRole[bool] | Callable[[], ColumnElement[bool]] | LambdaElement\"  [arg-type]": 1,
+    "Argument 1 to \"loads\" has incompatible type \"Awaitable[Any] | Any\"; expected \"str | bytes | bytearray\"  [arg-type]": 1,
+    "Incompatible types in assignment (expression has type \"bool\", variable has type \"Column[int]\")  [assignment]": 1,
+    "Incompatible types in assignment (expression has type \"str | None\", variable has type \"Column[str]\")  [assignment]": 1,
+    "Incompatible types in assignment (expression has type \"str\", variable has type \"Column[str]\")  [assignment]": 1
+  },
+  "backend/routers/admin/cms.py": {
+    "Incompatible types in assignment (expression has type \"datetime\", variable has type \"Column[datetime]\")  [assignment]": 1,
+    "Incompatible types in assignment (expression has type \"str | None\", variable has type \"Column[str]\")  [assignment]": 3,
+    "Incompatible types in assignment (expression has type \"str\", variable has type \"Column[str]\")  [assignment]": 6
+  },
+  "backend/routers/admin/courses.py": {
+    "Incompatible types in assignment (expression has type \"datetime\", variable has type \"Column[datetime]\")  [assignment]": 1,
+    "Incompatible types in assignment (expression has type \"str\", variable has type \"Column[str]\")  [assignment]": 2,
+    "Item \"None\" of \"Address | None\" has no attribute \"host\"  [union-attr]": 1
+  },
+  "backend/routers/admin/credits.py": {
+    "Argument \"actor_id\" to \"grant_credits\" has incompatible type \"Column[int]\"; expected \"int | None\"  [arg-type]": 1,
+    "Argument \"admin_user_id\" to \"adjust_credits\" has incompatible type \"Column[int]\"; expected \"int | None\"  [arg-type]": 1
+  },
+  "backend/routers/admin/interviews.py": {
+    "Argument 3 to \"get_snapshot_for_session\" of \"AdminSnapshotService\" has incompatible type \"Column[int]\"; expected \"int\"  [arg-type]": 1
+  },
+  "backend/routers/admin/invoices.py": {
+    "Incompatible default for parameter \"company_id\" (default has type \"None\", parameter has type \"int\")  [assignment]": 1,
+    "Incompatible default for parameter \"transaction_id\" (default has type \"None\", parameter has type \"int\")  [assignment]": 1,
+    "Incompatible types in assignment (expression has type \"ColumnElement[Any]\", variable has type \"Column[Any]\")  [assignment]": 3,
+    "Incompatible types in assignment (expression has type \"float\", variable has type \"Column[Any]\")  [assignment]": 6
+  },
+  "backend/routers/admin/job_categories.py": {
+    "Incompatible types in assignment (expression has type \"str\", variable has type \"Column[str]\")  [assignment]": 2
+  },
+  "backend/routers/admin/jobs.py": {
+    "Incompatible types in assignment (expression has type \"Job | None\", variable has type \"Query[Job]\")  [assignment]": 1,
+    "Item \"None\" of \"Address | None\" has no attribute \"host\"  [union-attr]": 2
+  },
+  "backend/routers/admin/kyb.py": {
+    "Argument 1 to \"loads\" has incompatible type \"Column[str]\"; expected \"str | bytes | bytearray\"  [arg-type]": 1,
+    "Argument 2 to \"_company_owner\" has incompatible type \"Column[int]\"; expected \"int\"  [arg-type]": 3,
+    "Argument 3 to \"send_email\" of \"EmailService\" has incompatible type \"KybRejectBody\"; expected \"str\"  [arg-type]": 1,
+    "Incompatible types in assignment (expression has type \"str\", variable has type \"Column[str]\")  [assignment]": 2,
+    "Incompatible types in assignment (expression has type \"str\", variable has type \"KybRejectBody\")  [assignment]": 1
+  },
+  "backend/routers/admin/organizations.py": {
+    "Argument 1 to \"filter\" of \"Query\" has incompatible type \"bool\"; expected \"ColumnElement[bool] | _HasClauseElement[bool] | SQLCoreOperations[bool] | ExpressionElementRole[bool] | TypedColumnsClauseRole[bool] | Callable[[], ColumnElement[bool]] | LambdaElement\"  [arg-type]": 1,
+    "Argument 2 to \"_company_storage\" has incompatible type \"Column[int]\"; expected \"int\"  [arg-type]": 1,
+    "Incompatible types in assignment (expression has type \"bool\", variable has type \"Column[bool]\")  [assignment]": 1,
+    "Incompatible types in assignment (expression has type \"datetime\", variable has type \"Column[datetime]\")  [assignment]": 1,
+    "Incompatible types in assignment (expression has type \"int\", variable has type \"Column[int]\")  [assignment]": 3,
+    "Item \"None\" of \"Address | None\" has no attribute \"host\"  [union-attr]": 4,
+    "Missing return statement  [return]": 1
+  },
+  "backend/routers/admin/payments.py": {
+    "Argument \"company_id\" to \"_create_invoice_internal\" has incompatible type \"Column[int]\"; expected \"int\"  [arg-type]": 1,
+    "Argument 2 to \"_create_invoice_internal\" has incompatible type \"Column[int]\"; expected \"int\"  [arg-type]": 1,
+    "Argument 3 to \"_create_invoice_internal\" has incompatible type \"Column[Any]\"; expected \"float\"  [arg-type]": 1,
+    "Incompatible types in assignment (expression has type \"datetime\", variable has type \"Column[datetime]\")  [assignment]": 4,
+    "Incompatible types in assignment (expression has type \"str\", variable has type \"Column[str]\")  [assignment]": 6,
+    "Item \"None\" of \"Address | None\" has no attribute \"host\"  [union-attr]": 3
+  },
+  "backend/routers/admin/plans.py": {
+    "Incompatible types in assignment (expression has type \"bool\", variable has type \"Column[bool]\")  [assignment]": 2
+  },
+  "backend/routers/admin/settings.py": {
+    "Argument 1 to \"decrypt_value\" has incompatible type \"Column[str]\"; expected \"str\"  [arg-type]": 2,
+    "Argument 1 to \"is_sensitive_key\" has incompatible type \"Column[str]\"; expected \"str\"  [arg-type]": 1,
+    "Incompatible types in assignment (expression has type \"Column[str]\", variable has type \"str | None\")  [assignment]": 1,
+    "Incompatible types in assignment (expression has type \"str\", variable has type \"Column[str]\")  [assignment]": 3,
+    "Item \"None\" of \"Address | None\" has no attribute \"host\"  [union-attr]": 1,
+    "No overload variant of \"get\" of \"dict\" matches argument type \"str\"  [call-overload]": 10,
+    "No overload variant of \"get\" of \"dict\" matches argument types \"str\", \"str\"  [call-overload]": 21,
+    "Unsupported target for indexed assignment (\"Iterable[Any]\")  [index]": 1
+  },
+  "backend/routers/admin/subscriptions.py": {
+    "Argument \"actor_id\" to \"grant_credits\" has incompatible type \"Column[int]\"; expected \"int | None\"  [arg-type]": 1,
+    "Argument \"admin_user_id\" to \"activate_subscription\" has incompatible type \"Column[int]\"; expected \"int | None\"  [arg-type]": 1,
+    "Argument \"admin_user_id\" to \"approve_company_subscription\" has incompatible type \"Column[int]\"; expected \"int\"  [arg-type]": 1,
+    "Argument \"admin_user_id\" to \"cancel_subscription\" has incompatible type \"Column[int]\"; expected \"int | None\"  [arg-type]": 1,
+    "Argument \"admin_user_id\" to \"expire_subscription\" has incompatible type \"Column[int]\"; expected \"int | None\"  [arg-type]": 1,
+    "Argument \"admin_user_id\" to \"log_subscription_history\" has incompatible type \"Column[int]\"; expected \"int | None\"  [arg-type]": 3,
+    "Argument \"admin_user_id\" to \"reinstate_subscription\" has incompatible type \"Column[int]\"; expected \"int | None\"  [arg-type]": 1,
+    "Argument \"company_id\" to \"_create_invoice_internal\" has incompatible type \"Column[int]\"; expected \"int\"  [arg-type]": 2,
+    "Argument \"from_plan_id\" to \"log_subscription_history\" has incompatible type \"Column[int] | None\"; expected \"int | None\"  [arg-type]": 1,
+    "Argument \"media_type\" to \"FileResponse\" has incompatible type \"Column[str] | str\"; expected \"str | None\"  [arg-type]": 1,
+    "Argument \"to_plan_id\" to \"log_subscription_history\" has incompatible type \"Column[int]\"; expected \"int | None\"  [arg-type]": 2,
+    "Argument 1 to \"in_\" of \"SQLCoreOperations\" has incompatible type \"Subquery\"; expected \"Iterable[Any] | BindParameter[Any] | InElementRole\"  [arg-type]": 1,
+    "Argument 2 to \"_create_invoice_internal\" has incompatible type \"Column[int]\"; expected \"int\"  [arg-type]": 2,
+    "Argument 2 to \"grant_credits\" has incompatible type \"User | None\"; expected \"User\"  [arg-type]": 1,
+    "Argument 3 to \"_create_invoice_internal\" has incompatible type \"Column[Any]\"; expected \"float\"  [arg-type]": 2,
+    "Argument 4 to \"_create_invoice_internal\" has incompatible type \"Column[int]\"; expected \"int\"  [arg-type]": 2,
+    "Incompatible default for parameter \"request\" (default has type \"None\", parameter has type \"Request\")  [assignment]": 1,
+    "Incompatible types in assignment (expression has type \"ColumnElement[datetime] | datetime\", variable has type \"Column[datetime]\")  [assignment]": 1,
+    "Incompatible types in assignment (expression has type \"None\", variable has type \"Column[datetime]\")  [assignment]": 2,
+    "Incompatible types in assignment (expression has type \"None\", variable has type \"Column[int]\")  [assignment]": 1,
+    "Incompatible types in assignment (expression has type \"bool\", variable has type \"Column[bool]\")  [assignment]": 1,
+    "Incompatible types in assignment (expression has type \"datetime\", variable has type \"Column[datetime]\")  [assignment]": 12,
+    "Incompatible types in assignment (expression has type \"str | None\", variable has type \"Column[str]\")  [assignment]": 1,
+    "Incompatible types in assignment (expression has type \"str\", variable has type \"Column[str]\")  [assignment]": 19,
+    "Item \"None\" of \"Address | None\" has no attribute \"host\"  [union-attr]": 12
+  },
+  "backend/routers/admin/tickets.py": {
+    "Incompatible types in assignment (expression has type \"datetime\", variable has type \"Column[datetime]\")  [assignment]": 3,
+    "Incompatible types in assignment (expression has type \"str\", variable has type \"Column[str]\")  [assignment]": 7
+  },
+  "backend/routers/admin/users.py": {
+    "Incompatible types in assignment (expression has type \"None\", variable has type \"Column[datetime]\")  [assignment]": 1,
+    "Incompatible types in assignment (expression has type \"datetime\", variable has type \"Column[datetime]\")  [assignment]": 2,
+    "Incompatible types in assignment (expression has type \"str\", variable has type \"Column[str]\")  [assignment]": 2,
+    "Item \"None\" of \"Address | None\" has no attribute \"host\"  [union-attr]": 6,
+    "Module \"backend.redis_cache\" has no attribute \"redis_cache\"  [attr-defined]": 3
+  },
+  "backend/routers/admin/verifications.py": {
+    "Argument 1 to \"send_email\" of \"EmailService\" has incompatible type \"Column[str]\"; expected \"str\"  [arg-type]": 2,
+    "Incompatible types in assignment (expression has type \"bool\", variable has type \"Column[bool]\")  [assignment]": 1,
+    "Incompatible types in assignment (expression has type \"datetime | None\", variable has type \"Column[datetime]\")  [assignment]": 1,
+    "Incompatible types in assignment (expression has type \"datetime\", variable has type \"Column[datetime]\")  [assignment]": 2,
+    "Incompatible types in assignment (expression has type \"str\", variable has type \"Column[str]\")  [assignment]": 7
+  },
+  "backend/routers/ai_interview/chat.py": {
+    "Argument \"calibration_data\" to \"generate_skill_driven_turn\" has incompatible type \"Any | None\"; expected \"dict[Any, Any]\"  [arg-type]": 1,
+    "Argument \"custom_question_prompt\" to \"generate_skill_driven_turn\" has incompatible type \"str | None\"; expected \"str\"  [arg-type]": 1,
+    "Argument \"declared_role\" to \"evaluate_answer\" has incompatible type \"Any | Column[str]\"; expected \"str\"  [arg-type]": 1,
+    "Argument \"declared_role\" to \"generate_skill_driven_turn\" has incompatible type \"Any | Column[str]\"; expected \"str\"  [arg-type]": 1,
+    "Argument \"feedback\" to \"write_turn\" has incompatible type \"str | Any | int | None\"; expected \"str | None\"  [arg-type]": 1,
+    "Argument \"focus\" to \"evaluate_answer\" has incompatible type \"Any | None\"; expected \"str\"  [arg-type]": 1,
+    "Argument \"gaming_detected\" to \"calculate_overall_score\" has incompatible type \"Literal['', 0] | Any | bool\"; expected \"bool\"  [arg-type]": 1,
+    "Argument \"initial_metrics\" to \"initialize_engine_state\" has incompatible type \"Any | None\"; expected \"dict[Any, Any]\"  [arg-type]": 1,
+    "Argument \"job_description\" to \"generate_interview_turn_with_timeout\" has incompatible type \"None\"; expected \"str\"  [arg-type]": 1,
+    "Argument \"job_rubric_db_id\" to \"evaluate_answer\" has incompatible type \"int | None\"; expected \"int\"  [arg-type]": 1,
+    "Argument \"quality\" to \"write_turn\" has incompatible type \"str | Any | int | None\"; expected \"str | None\"  [arg-type]": 1,
+    "Argument \"reasoning\" to \"write_turn\" has incompatible type \"str | Any | int | None\"; expected \"str | None\"  [arg-type]": 1,
+    "Argument \"rubric_categories\" to \"generate_skill_driven_turn\" has incompatible type \"list[CategoryDefinition] | None\"; expected \"list[Any]\"  [arg-type]": 1,
+    "Argument \"score\" to \"write_turn\" has incompatible type \"str | Any | int | None\"; expected \"float | None\"  [arg-type]": 1,
+    "Argument 1 to \"get_score_label\" has incompatible type \"str | Any | int\"; expected \"float\"  [arg-type]": 1,
+    "Argument 1 to \"record_answer\" of \"InterviewEngine\" has incompatible type \"Column[int]\"; expected \"int\"  [arg-type]": 2,
+    "Argument 2 to \"add_task\" of \"BackgroundTasks\" has incompatible type \"Column[int]\"; expected \"int\"  [arg-type]": 6,
+    "Argument 2 to \"update_engine_state\" has incompatible type \"Any | None\"; expected \"str\"  [arg-type]": 1,
+    "Argument 3 to \"add_task\" of \"BackgroundTasks\" has incompatible type \"Column[int]\"; expected \"int\"  [arg-type]": 6,
+    "Argument 3 to \"update_engine_state\" has incompatible type \"str | Any | int\"; expected \"float\"  [arg-type]": 1,
+    "Argument 4 to \"update_engine_state\" has incompatible type \"str | Any | int | None\"; expected \"dict[Any, Any]\"  [arg-type]": 1,
+    "Incompatible default for parameter \"initial_skills\" (default has type \"None\", parameter has type \"dict[Any, Any]\")  [assignment]": 1,
+    "Incompatible default for parameter \"instruction_state\" (default has type \"None\", parameter has type \"dict[Any, Any]\")  [assignment]": 1,
+    "Incompatible default for parameter \"interview_instructions\" (default has type \"None\", parameter has type \"dict[Any, Any]\")  [assignment]": 1,
+    "Incompatible types in assignment (expression has type \"Application | None\", variable has type \"Application\")  [assignment]": 2,
+    "Incompatible types in assignment (expression has type \"None\", variable has type \"Column[datetime]\")  [assignment]": 1,
+    "Incompatible types in assignment (expression has type \"Result[Any]\", variable has type \"CursorResult[Any]\")  [assignment]": 1,
+    "Incompatible types in assignment (expression has type \"str\", variable has type \"Column[str]\")  [assignment]": 1,
+    "Item \"None\" of \"Any | None\" has no attribute \"interview_time_left\"  [union-attr]": 1,
+    "Unsupported operand types for > (\"str\" and \"int\")  [operator]": 3
+  },
+  "backend/routers/ai_interview/chat_backup.py": {
+    "\"Result[Any]\" has no attribute \"rowcount\"  [attr-defined]": 2,
+    "Argument \"calibration_data\" to \"generate_skill_driven_turn\" has incompatible type \"Any | None\"; expected \"dict[Any, Any]\"  [arg-type]": 1,
+    "Argument \"candidate_name\" to \"send_interview_complete_email\" of \"EmailService\" has incompatible type \"Column[str] | str\"; expected \"str\"  [arg-type]": 1,
+    "Argument \"category_scores\" to \"update_engine_state\" has incompatible type \"Any | None\"; expected \"dict[Any, Any]\"  [arg-type]": 1,
+    "Argument \"declared_role\" to \"evaluate_answer\" has incompatible type \"Column[str]\"; expected \"str\"  [arg-type]": 1,
+    "Argument \"declared_role\" to \"evaluate_complete_interview\" has incompatible type \"Column[str] | str\"; expected \"str\"  [arg-type]": 1,
+    "Argument \"declared_role\" to \"evaluate_complete_interview\" has incompatible type \"Column[str]\"; expected \"str\"  [arg-type]": 1,
+    "Argument \"declared_role\" to \"generate_skill_driven_turn\" has incompatible type \"Column[str]\"; expected \"str\"  [arg-type]": 1,
+    "Argument \"job_description\" to \"generate_interview_turn_with_timeout\" has incompatible type \"None\"; expected \"str\"  [arg-type]": 1,
+    "Argument \"target_role\" to \"generate_career_roadmap\" has incompatible type \"Column[str] | str\"; expected \"str\"  [arg-type]": 1,
+    "Argument 1 to \"_sanitise_filename\" has incompatible type \"str | None\"; expected \"str\"  [arg-type]": 1,
+    "Argument 1 to \"normalize_interview_language\" has incompatible type \"Column[str]\"; expected \"str | None\"  [arg-type]": 1,
+    "Argument 1 to \"record_answer\" of \"InterviewEngine\" has incompatible type \"Column[int]\"; expected \"int\"  [arg-type]": 2,
+    "Argument 1 to \"where\" of \"DMLWhereBase\" has incompatible type \"bool\"; expected \"ColumnElement[bool] | _HasClauseElement[bool] | SQLCoreOperations[bool] | ExpressionElementRole[bool] | TypedColumnsClauseRole[bool] | Callable[[], ColumnElement[bool]] | LambdaElement\"  [arg-type]": 1,
+    "Argument 2 to \"add_task\" of \"BackgroundTasks\" has incompatible type \"Column[int]\"; expected \"int\"  [arg-type]": 2,
+    "Argument 2 to \"compute_final_decision\" has incompatible type \"Column[str]\"; expected \"str\"  [arg-type]": 1,
+    "Argument 2 to \"extract_skills_from_cv\" has incompatible type \"Column[str]\"; expected \"str\"  [arg-type]": 1,
+    "Argument 3 to \"add_task\" of \"BackgroundTasks\" has incompatible type \"Column[int]\"; expected \"int\"  [arg-type]": 1,
+    "Argument 3 to \"add_task\" of \"BackgroundTasks\" has incompatible type \"Column[str] | Any\"; expected \"str\"  [arg-type]": 1,
+    "Argument 3 to \"compute_final_decision\" has incompatible type \"Any | None\"; expected \"dict[Any, Any]\"  [arg-type]": 1,
+    "Argument 3 to \"getattr\" has incompatible type \"str\"; expected \"Column[str]\"  [arg-type]": 1,
+    "Incompatible default for parameter \"initial_skills\" (default has type \"None\", parameter has type \"dict[Any, Any]\")  [assignment]": 2,
+    "Incompatible default for parameter \"instruction_state\" (default has type \"None\", parameter has type \"dict[Any, Any]\")  [assignment]": 1,
+    "Incompatible default for parameter \"interview_instructions\" (default has type \"None\", parameter has type \"dict[Any, Any]\")  [assignment]": 1,
+    "Incompatible default for parameter \"technical_focus\" (default has type \"None\", parameter has type \"str\")  [assignment]": 1,
+    "Incompatible return value type (got \"Column[str]\", expected \"str\")  [return-value]": 1,
+    "Incompatible types in assignment (expression has type \"Application | None\", variable has type \"Application\")  [assignment]": 8,
+    "Incompatible types in assignment (expression has type \"str\", variable has type \"Column[str]\")  [assignment]": 8,
+    "Item \"None\" of \"Application | None\" has no attribute \"evaluation_state\"  [union-attr]": 1,
+    "Module \"fastapi\" has no attribute \"BackgroundTask\"; maybe \"BackgroundTasks\"?  [attr-defined]": 1
+  },
+  "backend/routers/ai_interview/evaluation.py": {
+    "\"Result[Any]\" has no attribute \"get\"  [attr-defined]": 5,
+    "\"Result[Any]\" has no attribute \"rowcount\"  [attr-defined]": 1,
+    "\"int\" has no attribute \"get\"  [attr-defined]": 4,
+    "Argument \"base_score\" to \"SkillScoreResult\" has incompatible type \"Column[Any]\"; expected \"int\"  [arg-type]": 1,
+    "Argument \"declared_role\" to \"evaluate_complete_interview\" has incompatible type \"Any | Column[str] | str\"; expected \"str\"  [arg-type]": 1,
+    "Argument \"declared_role\" to \"evaluate_complete_interview\" has incompatible type \"Column[str]\"; expected \"str\"  [arg-type]": 1,
+    "Argument \"explanation\" to \"SkillScoreResult\" has incompatible type \"Column[str] | str\"; expected \"str\"  [arg-type]": 1,
+    "Argument \"final_score\" to \"SkillScoreResult\" has incompatible type \"Column[Any]\"; expected \"int\"  [arg-type]": 1,
+    "Argument \"rubric_context\" to \"evaluate_complete_interview\" has incompatible type \"str | None\"; expected \"str\"  [arg-type]": 2,
+    "Argument \"skill_name\" to \"SkillScoreResult\" has incompatible type \"Column[str]\"; expected \"str\"  [arg-type]": 1,
+    "Argument \"target_role\" to \"generate_career_roadmap\" has incompatible type \"Column[str] | str\"; expected \"str\"  [arg-type]": 1,
+    "Argument 1 to \"get_canonical_score\" of \"ScoringService\" has incompatible type \"Column[int]\"; expected \"int\"  [arg-type]": 1,
+    "Argument after ** must be a mapping, not \"dict[str, Any] | None\"  [arg-type]": 1,
+    "Incompatible types in assignment (expression has type \"Application | None\", variable has type \"Application\")  [assignment]": 1,
+    "Incompatible types in assignment (expression has type \"datetime\", variable has type \"Column[datetime]\")  [assignment]": 1,
+    "Incompatible types in assignment (expression has type \"dict[str, Any]\", variable has type \"int\")  [assignment]": 2,
+    "Incompatible types in assignment (expression has type \"str\", variable has type \"Column[str]\")  [assignment]": 9,
+    "Item \"None\" of \"Application | None\" has no attribute \"_latest_eval_session\"  [union-attr]": 1,
+    "Module \"backend.pdf_generator\" has no attribute \"generate_interview_pdf\"; maybe \"generate_invoice_pdf\"?  [attr-defined]": 1,
+    "Need type annotation for \"all_turn_results\" (hint: \"all_turn_results: dict[<type>, <type>] = ...\")  [var-annotated]": 1,
+    "Unexpected keyword argument \"interview_id\" for \"aggregate_scores\"  [call-arg]": 1,
+    "Unsupported target for indexed assignment (\"Result[Any]\")  [index]": 1,
+    "Value of type \"Result[Any]\" is not indexable  [index]": 1,
+    "Value of type \"int\" is not indexable  [index]": 4
+  },
+  "backend/routers/ai_interview/media.py": {
+    "Argument 2 to \"add_task\" of \"BackgroundTasks\" has incompatible type \"Column[int]\"; expected \"int\"  [arg-type]": 1,
+    "Argument 3 to \"add_task\" of \"BackgroundTasks\" has incompatible type \"Column[int]\"; expected \"int\"  [arg-type]": 1,
+    "Incompatible default for parameter \"company_id\" (default has type \"None\", parameter has type \"int\")  [assignment]": 1,
+    "Incompatible types in assignment (expression has type \"Application | None\", variable has type \"Application\")  [assignment]": 2
+  },
+  "backend/routers/ai_interview/questions.py": {
+    "Argument \"reference_id\" to \"consume_credits_or_402\" has incompatible type \"Column[int]\"; expected \"int | None\"  [arg-type]": 1,
+    "Argument 2 to \"consume_credits_or_402\" has incompatible type \"User | None\"; expected \"User\"  [arg-type]": 1,
+    "Incompatible default for parameter \"technical_focus\" (default has type \"None\", parameter has type \"str\")  [assignment]": 1,
+    "Incompatible types in assignment (expression has type \"Application | None\", variable has type \"Application\")  [assignment]": 1
+  },
+  "backend/routers/ai_interview/session.py": {
+    "Argument 1 to \"normalize_interview_language\" has incompatible type \"Column[str]\"; expected \"str | None\"  [arg-type]": 1,
+    "Argument 2 to \"add_task\" of \"BackgroundTasks\" has incompatible type \"Column[int]\"; expected \"int\"  [arg-type]": 2,
+    "Argument 3 to \"add_task\" of \"BackgroundTasks\" has incompatible type \"Column[int]\"; expected \"int\"  [arg-type]": 1,
+    "Argument 3 to \"add_task\" of \"BackgroundTasks\" has incompatible type \"Column[str] | Any\"; expected \"str\"  [arg-type]": 1,
+    "Argument 3 to \"getattr\" has incompatible type \"str\"; expected \"Column[str]\"  [arg-type]": 1,
+    "Incompatible types in assignment (expression has type \"Application | None\", variable has type \"Application\")  [assignment]": 4,
+    "Name \"_ALLOWED_INTERVIEW_START_STATUSES\" is not defined  [name-defined]": 1
+  },
+  "backend/routers/ai_interview/utils.py": {
+    "Incompatible default for parameter \"initial_skills\" (default has type \"None\", parameter has type \"dict[Any, Any]\")  [assignment]": 1,
+    "Incompatible return value type (got \"Column[str]\", expected \"str\")  [return-value]": 1
+  },
+  "backend/routers/ai_sales.py": {
+    "Incompatible types in assignment (expression has type \"str\", variable has type \"Column[str]\")  [assignment]": 1
+  },
+  "backend/routers/analytics/insights.py": {
+    "Argument 2 to \"get_conversion_rates\" of \"MetricsRepository\" has incompatible type \"Column[int]\"; expected \"int\"  [arg-type]": 1,
+    "Argument 2 to \"get_daily_trend\" of \"MetricsRepository\" has incompatible type \"int | None\"; expected \"int\"  [arg-type]": 1,
+    "Argument 2 to \"get_dashboard_metrics\" of \"MetricsRepository\" has incompatible type \"Column[int]\"; expected \"int\"  [arg-type]": 2,
+    "Argument 2 to \"get_funnel\" of \"MetricsRepository\" has incompatible type \"Column[int]\"; expected \"int\"  [arg-type]": 2,
+    "Argument 2 to \"get_interview_metrics\" of \"MetricsRepository\" has incompatible type \"Column[int]\"; expected \"int\"  [arg-type]": 2,
+    "Argument 2 to \"get_status_counts\" of \"MetricsRepository\" has incompatible type \"Column[int]\"; expected \"int\"  [arg-type]": 2,
+    "Argument 2 to \"get_total_applications\" of \"MetricsRepository\" has incompatible type \"Column[int]\"; expected \"int\"  [arg-type]": 1,
+    "Argument 2 to \"get_total_candidates\" of \"MetricsRepository\" has incompatible type \"Column[int]\"; expected \"int\"  [arg-type]": 1,
+    "Argument 3 to \"get_daily_trend\" of \"MetricsRepository\" has incompatible type \"Column[int]\"; expected \"int\"  [arg-type]": 1,
+    "Argument 3 to \"get_interview_weekly_trend\" of \"MetricsRepository\" has incompatible type \"Column[int]\"; expected \"int\"  [arg-type]": 1,
+    "Argument 3 to \"get_weekly_trend\" of \"MetricsRepository\" has incompatible type \"Column[int]\"; expected \"int\"  [arg-type]": 1,
+    "Unsupported operand types for // (\"None\" and \"int\")  [operator]": 1,
+    "Value of type variable \"SupportsRichComparisonT\" of \"min\" cannot be \"int | None\"  [type-var]": 1
+  },
+  "backend/routers/analytics/monitoring.py": {
+    "Unsupported target for indexed assignment (\"Collection[str]\")  [index]": 8
+  },
+  "backend/routers/auth.py": {
+    "Argument 1 to \"decrypt_value\" has incompatible type \"Column[str]\"; expected \"str\"  [arg-type]": 1,
+    "Argument 1 to \"generate_interview_token\" has incompatible type \"Column[int]\"; expected \"int\"  [arg-type]": 1,
+    "Argument 1 to \"invalidate_all_user_tokens\" has incompatible type \"Column[int]\"; expected \"int\"  [arg-type]": 2,
+    "Argument 1 to \"send_email\" of \"EmailService\" has incompatible type \"Column[str]\"; expected \"str\"  [arg-type]": 1,
+    "Argument 2 to \"add_task\" of \"BackgroundTasks\" has incompatible type \"Column[str]\"; expected \"str\"  [arg-type]": 3,
+    "Argument 2 to \"filter\" of \"Query\" has incompatible type \"bool\"; expected \"ColumnElement[bool] | _HasClauseElement[bool] | SQLCoreOperations[bool] | ExpressionElementRole[bool] | TypedColumnsClauseRole[bool] | Callable[[], ColumnElement[bool]] | LambdaElement\"  [arg-type]": 5,
+    "Argument 3 to \"filter\" of \"Query\" has incompatible type \"bool\"; expected \"ColumnElement[bool] | _HasClauseElement[bool] | SQLCoreOperations[bool] | ExpressionElementRole[bool] | TypedColumnsClauseRole[bool] | Callable[[], ColumnElement[bool]] | LambdaElement\"  [arg-type]": 2,
+    "Incompatible default for parameter \"background_tasks\" (default has type \"None\", parameter has type \"BackgroundTasks\")  [assignment]": 2,
+    "Incompatible default for parameter \"code\" (default has type \"None\", parameter has type \"str\")  [assignment]": 1,
+    "Incompatible return value type (got \"Column[str]\", expected \"str\")  [return-value]": 1,
+    "Incompatible types in assignment (expression has type \"None\", variable has type \"Column[datetime]\")  [assignment]": 3,
+    "Incompatible types in assignment (expression has type \"bool\", variable has type \"Column[bool]\")  [assignment]": 9,
+    "Incompatible types in assignment (expression has type \"str\", variable has type \"Column[str]\")  [assignment]": 1,
+    "Item \"None\" of \"Any | None\" has no attribute \"has_table\"  [union-attr]": 1,
+    "Item \"None\" of \"User | None\" has no attribute \"email\"  [union-attr]": 1,
+    "Item \"None\" of \"User | None\" has no attribute \"hashed_password\"  [union-attr]": 1,
+    "Item \"None\" of \"User | None\" has no attribute \"id\"  [union-attr]": 2,
+    "Item \"None\" of \"User | None\" has no attribute \"role\"  [union-attr]": 2,
+    "Unexpected keyword argument \"reference_id\" for \"grant_credits\"  [call-arg]": 1,
+    "Unexpected keyword argument \"reference_type\" for \"grant_credits\"  [call-arg]": 1,
+    "Unexpected keyword argument \"resource\" for \"grant_credits\"  [call-arg]": 1
+  },
+  "backend/routers/bot.py": {
+    "Argument \"candway_user_id\" to \"link_platform_account\" of \"BotRouter\" has incompatible type \"Column[int]\"; expected \"int\"  [arg-type]": 2,
+    "Argument 1 to \"loads\" has incompatible type \"Column[str]\"; expected \"str | bytes | bytearray\"  [arg-type]": 1,
+    "Argument 1 to \"loads\" has incompatible type \"UploadFile | str\"; expected \"str | bytes | bytearray\"  [arg-type]": 1,
+    "Argument 2 to \"handle_ai_chat\" of \"SlackBot\" has incompatible type \"Column[int]\"; expected \"int\"  [arg-type]": 1,
+    "Incompatible types in assignment (expression has type \"bool\", variable has type \"Column[bool]\")  [assignment]": 1
+  },
+  "backend/routers/calendar.py": {
+    "Argument \"description\" to \"create_event\" of \"GoogleCalendarIntegration\" has incompatible type \"Column[str] | str\"; expected \"str\"  [arg-type]": 1,
+    "Argument \"description\" to \"create_google_calendar_link\" of \"CalendarService\" has incompatible type \"Column[str] | str\"; expected \"str\"  [arg-type]": 1,
+    "Argument \"description\" to \"create_outlook_calendar_link\" of \"CalendarService\" has incompatible type \"Column[str] | str\"; expected \"str\"  [arg-type]": 1,
+    "Argument \"description\" to \"generate_ics_file\" of \"CalendarService\" has incompatible type \"Column[str] | str\"; expected \"str\"  [arg-type]": 1,
+    "Argument \"location\" to \"create_event\" of \"GoogleCalendarIntegration\" has incompatible type \"Column[str]\"; expected \"str | None\"  [arg-type]": 1,
+    "Argument \"location\" to \"create_google_calendar_link\" of \"CalendarService\" has incompatible type \"Column[str]\"; expected \"str | None\"  [arg-type]": 1,
+    "Argument \"location\" to \"create_outlook_calendar_link\" of \"CalendarService\" has incompatible type \"Column[str]\"; expected \"str | None\"  [arg-type]": 1,
+    "Argument \"location\" to \"generate_ics_file\" of \"CalendarService\" has incompatible type \"Column[str]\"; expected \"str | None\"  [arg-type]": 1,
+    "Argument \"meeting_link\" to \"create_event\" of \"GoogleCalendarIntegration\" has incompatible type \"Column[str]\"; expected \"str | None\"  [arg-type]": 1,
+    "Argument \"meeting_link\" to \"generate_ics_file\" of \"CalendarService\" has incompatible type \"Column[str]\"; expected \"str | None\"  [arg-type]": 1,
+    "Argument \"minutes\" to \"timedelta\" has incompatible type \"Column[int]\"; expected \"float\"  [arg-type]": 3,
+    "Argument \"organizer_email\" to \"generate_ics_file\" of \"CalendarService\" has incompatible type \"Column[str]\"; expected \"str | None\"  [arg-type]": 1,
+    "Argument \"start_time\" to \"create_event\" of \"GoogleCalendarIntegration\" has incompatible type \"Column[datetime]\"; expected \"datetime\"  [arg-type]": 1,
+    "Argument \"start_time\" to \"create_google_calendar_link\" of \"CalendarService\" has incompatible type \"Column[datetime]\"; expected \"datetime\"  [arg-type]": 1,
+    "Argument \"start_time\" to \"create_outlook_calendar_link\" of \"CalendarService\" has incompatible type \"Column[datetime]\"; expected \"datetime\"  [arg-type]": 1,
+    "Argument \"start_time\" to \"generate_ics_file\" of \"CalendarService\" has incompatible type \"Column[datetime]\"; expected \"datetime\"  [arg-type]": 1,
+    "Incompatible types in assignment (expression has type \"ColumnElement[str] | str\", variable has type \"Column[str] | str\")  [assignment]": 1
+  },
+  "backend/routers/candidate/applications.py": {
+    "Argument \"user_id\" to \"create_application\" of \"ApplicationService\" has incompatible type \"Column[int]\"; expected \"int | None\"  [arg-type]": 1,
+    "Argument 1 to \"canonicalize_status\" has incompatible type \"Column[str]\"; expected \"str\"  [arg-type]": 4,
+    "Argument 1 to \"get_canonical_score\" of \"ScoringService\" has incompatible type \"Column[int]\"; expected \"int\"  [arg-type]": 1,
+    "Argument 1 to \"int\" has incompatible type \"Any | None\"; expected \"str | Buffer | SupportsInt | SupportsIndex | SupportsTrunc\"  [arg-type]": 1,
+    "Argument 2 to \"get_suggested_jobs\" has incompatible type \"Any | Column[str]\"; expected \"str\"  [arg-type]": 1,
+    "Incompatible types in assignment (expression has type \"Application | None\", variable has type \"Application\")  [assignment]": 2,
+    "Incompatible types in assignment (expression has type \"str\", variable has type \"Column[str]\")  [assignment]": 7,
+    "Need type annotation for \"clusters\" (hint: \"clusters: dict[<type>, <type>] = ...\")  [var-annotated]": 1,
+    "Unsupported operand types for * (\"None\" and \"float\")  [operator]": 1,
+    "Unsupported operand types for / (\"None\" and \"int\")  [operator]": 2,
+    "Unsupported operand types for <= (\"int\" and \"None\")  [operator]": 3
+  },
+  "backend/routers/candidate/cv.py": {
+    "Argument \"company_id\" to \"create_application\" of \"ApplicationService\" has incompatible type \"Column[int] | Any | None\"; expected \"int | None\"  [arg-type]": 2,
+    "Argument \"declared_role\" to \"get_cv_review_enriched_prompt\" has incompatible type \"Any | Column[str] | str\"; expected \"str\"  [arg-type]": 1,
+    "Argument \"reference_id\" to \"consume_credits_or_402\" has incompatible type \"Column[int] | None\"; expected \"int | None\"  [arg-type]": 2,
+    "Argument \"user_id\" to \"create_application\" of \"ApplicationService\" has incompatible type \"Column[int]\"; expected \"int | None\"  [arg-type]": 2,
+    "Argument 1 to \"get_canonical_score\" of \"ScoringService\" has incompatible type \"Column[int]\"; expected \"int\"  [arg-type]": 2,
+    "Argument 1 to \"max\" has incompatible type \"int\"; expected \"Column[int]\"  [arg-type]": 1,
+    "Argument 1 to \"secure_filename\" has incompatible type \"str | None\"; expected \"str\"  [arg-type]": 1,
+    "Argument 1 to \"sum\" has incompatible type \"list[Any | None]\"; expected \"Iterable[bool]\"  [arg-type]": 1,
+    "Argument 2 to \"extract_text_from_file\" has incompatible type \"str | None\"; expected \"str\"  [arg-type]": 1,
+    "Argument 2 to \"get_cv_improvement_prompt\" has incompatible type \"Any | Column[str] | str\"; expected \"str\"  [arg-type]": 1,
+    "Argument 2 to \"max\" has incompatible type \"ColumnElement[int] | int\"; expected \"Column[int]\"  [arg-type]": 1,
+    "Incompatible types in assignment (expression has type \"ColumnElement[int] | int\", variable has type \"Column[int]\")  [assignment]": 1,
+    "Incompatible types in assignment (expression has type \"str\", variable has type \"Column[str]\")  [assignment]": 6,
+    "Item \"None\" of \"str | None\" has no attribute \"lower\"  [union-attr]": 4,
+    "Need type annotation for \"builder_data\" (hint: \"builder_data: dict[<type>, <type>] = ...\")  [var-annotated]": 2,
+    "Value of type variable \"AnyOrLiteralStr\" of \"splitext\" cannot be \"str | None\"  [type-var]": 2
+  },
+  "backend/routers/candidate/eeo.py": {
+    "Incompatible types in assignment (expression has type \"bool\", variable has type \"Column[bool]\")  [assignment]": 1,
+    "Incompatible types in assignment (expression has type \"datetime\", variable has type \"Column[datetime]\")  [assignment]": 1,
+    "Incompatible types in assignment (expression has type \"str | None\", variable has type \"Column[str]\")  [assignment]": 5
+  },
+  "backend/routers/candidate/extras.py": {
+    "Argument \"user_id\" to \"generate_and_save_roadmap\" has incompatible type \"Column[int]\"; expected \"int\"  [arg-type]": 1,
+    "Argument 1 to \"canonicalize_status\" has incompatible type \"Column[str]\"; expected \"str\"  [arg-type]": 1
+  },
+  "backend/routers/candidate/interviews.py": {
+    "Argument \"user_id\" to \"get_ai_recommendations\" has incompatible type \"Column[int] | None\"; expected \"int\"  [arg-type]": 1,
+    "Argument 1 to \"sum\" has incompatible type \"list[Any | None]\"; expected \"Iterable[bool]\"  [arg-type]": 2,
+    "Incompatible types in assignment (expression has type \"Application | None\", variable has type \"Application\")  [assignment]": 1,
+    "Incompatible types in assignment (expression has type \"None\", variable has type \"Column[datetime]\")  [assignment]": 1,
+    "Incompatible types in assignment (expression has type \"str\", variable has type \"Column[str]\")  [assignment]": 2,
+    "Item \"None\" of \"EvaluationResult | None\" has no attribute \"rubric_version\"  [union-attr]": 1,
+    "Item \"None\" of \"EvaluationResult | None\" has no attribute \"score_breakdown\"  [union-attr]": 1,
+    "Unsupported left operand type for - (\"None\")  [operator]": 1,
+    "Unsupported operand types for < (\"int\" and \"None\")  [operator]": 2,
+    "Value of type variable \"SupportsRichComparisonT\" of \"max\" cannot be \"Any | None\"  [type-var]": 1,
+    "Value of type variable \"SupportsRichComparisonT\" of \"min\" cannot be \"Any | None\"  [type-var]": 1
+  },
+  "backend/routers/candidate/jobs.py": {
+    "Argument \"declared_role\" to \"create_application\" of \"ApplicationService\" has incompatible type \"Column[str]\"; expected \"str | None\"  [arg-type]": 1,
+    "Argument \"related_id\" to \"notify_user\" has incompatible type \"Column[int]\"; expected \"int | None\"  [arg-type]": 1,
+    "Argument \"user_id\" to \"create_application\" of \"ApplicationService\" has incompatible type \"Column[int]\"; expected \"int | None\"  [arg-type]": 1,
+    "Argument \"user_id\" to \"notify_user\" has incompatible type \"Column[int]\"; expected \"str\"  [arg-type]": 1,
+    "Argument 1 to \"canonicalize_status\" has incompatible type \"Column[str]\"; expected \"str\"  [arg-type]": 1,
+    "Argument 1 to \"loads\" has incompatible type \"Column[str]\"; expected \"str | bytes | bytearray\"  [arg-type]": 3,
+    "Argument 3 to \"_compute_match_score\" has incompatible type \"Column[str] | str\"; expected \"str\"  [arg-type]": 1,
+    "Incompatible types in assignment (expression has type \"Column[str]\", variable has type \"str\")  [assignment]": 1,
+    "Incompatible types in assignment (expression has type \"datetime\", variable has type \"Column[datetime]\")  [assignment]": 1,
+    "Incompatible types in assignment (expression has type \"str\", variable has type \"Column[str]\")  [assignment]": 2,
+    "Value of type \"Coroutine[Any, Any, Any]\" must be used  [unused-coroutine]": 1
+  },
+  "backend/routers/candidate/profile.py": {
+    "Argument 1 to \"float\" has incompatible type \"Any | None\"; expected \"str | Buffer | SupportsFloat | SupportsIndex\"  [arg-type]": 1,
+    "Argument 1 to \"secure_filename\" has incompatible type \"str | None\"; expected \"str\"  [arg-type]": 1,
+    "Incompatible types in assignment (expression has type \"bool\", variable has type \"Column[bool]\")  [assignment]": 1,
+    "Incompatible types in assignment (expression has type \"str\", variable has type \"Column[str]\")  [assignment]": 1,
+    "Item \"None\" of \"str | None\" has no attribute \"split\"  [union-attr]": 1,
+    "Item \"None\" of \"str | None\" has no attribute \"startswith\"  [union-attr]": 1,
+    "Need type annotation for \"profile_builder\" (hint: \"profile_builder: dict[<type>, <type>] = ...\")  [var-annotated]": 1,
+    "Unsupported right operand type for in (\"str | None\")  [operator]": 1
+  },
+  "backend/routers/candidate/qualifications.py": {
+    "Argument \"user_id\" to \"create_application\" of \"ApplicationService\" has incompatible type \"Column[int]\"; expected \"int | None\"  [arg-type]": 1,
+    "Incompatible types in assignment (expression has type \"datetime\", variable has type \"Column[datetime]\")  [assignment]": 1
+  },
+  "backend/routers/candidate/saved_jobs.py": {
+    "Argument \"id\" to \"SavedJobOut\" has incompatible type \"Column[int]\"; expected \"int\"  [arg-type]": 1
+  },
+  "backend/routers/candidate/subscriptions.py": {
+    "Argument \"amount\" to \"_create_invoice_internal\" has incompatible type \"Column[Any] | int\"; expected \"float\"  [arg-type]": 1,
+    "Argument \"company_id\" to \"_create_invoice_internal\" has incompatible type \"Column[int]\"; expected \"int\"  [arg-type]": 1,
+    "Argument \"transaction_id\" to \"_create_invoice_internal\" has incompatible type \"Column[int]\"; expected \"int\"  [arg-type]": 1,
+    "Argument \"user_id\" to \"_create_invoice_internal\" has incompatible type \"Column[int]\"; expected \"int\"  [arg-type]": 1,
+    "Argument 1 to \"FileResponse\" has incompatible type \"bytes\"; expected \"str | PathLike[str]\"  [arg-type]": 1,
+    "Argument 1 to \"secure_filename\" has incompatible type \"str | None\"; expected \"str\"  [arg-type]": 1,
+    "Argument 2 to \"scan_for_malware\" has incompatible type \"str | None\"; expected \"str\"  [arg-type]": 1,
+    "Item \"None\" of \"str | None\" has no attribute \"lower\"  [union-attr]": 1,
+    "Value of type variable \"AnyOrLiteralStr\" of \"splitext\" cannot be \"str | None\"  [type-var]": 1
+  },
+  "backend/routers/candidate_management.py": {
+    "Argument \"application_id\" to \"AssignResult\" has incompatible type \"Column[int]\"; expected \"int\"  [arg-type]": 2,
+    "Argument 1 to \"get_application_for_recruiter\" has incompatible type \"Column[int]\"; expected \"int\"  [arg-type]": 1,
+    "Incompatible types in assignment (expression has type \"None\", variable has type \"Column[datetime]\")  [assignment]": 1,
+    "Incompatible types in assignment (expression has type \"None\", variable has type \"Column[int]\")  [assignment]": 1,
+    "Incompatible types in assignment (expression has type \"int\", variable has type \"Column[int]\")  [assignment]": 1,
+    "Item \"None\" of \"User | None\" has no attribute \"id\"  [union-attr]": 1
+  },
+  "backend/routers/career.py": {
+    "Argument \"user_id\" to \"generate_and_save_roadmap\" has incompatible type \"Column[int]\"; expected \"int\"  [arg-type]": 1
+  },
+  "backend/routers/chatbot.py": {
+    "Argument \"related_id\" to \"notify_user\" has incompatible type \"Column[int]\"; expected \"int | None\"  [arg-type]": 2,
+    "Argument 1 to \"get_chatbot_lead_for_recruiter\" has incompatible type \"Column[int]\"; expected \"int\"  [arg-type]": 2,
+    "Argument 1 to \"loads\" has incompatible type \"Column[str]\"; expected \"str | bytes | bytearray\"  [arg-type]": 3,
+    "Argument 2 to \"_user_company_id\" has incompatible type \"Column[int]\"; expected \"int\"  [arg-type]": 1,
+    "Incompatible types in assignment (expression has type \"datetime\", variable has type \"Column[datetime]\")  [assignment]": 1,
+    "Incompatible types in assignment (expression has type \"int\", variable has type \"Column[int]\")  [assignment]": 4,
+    "Incompatible types in assignment (expression has type \"str\", variable has type \"Column[str]\")  [assignment]": 10,
+    "Need type annotation for \"CONVERSATION_RATE_LIMIT\" (hint: \"CONVERSATION_RATE_LIMIT: dict[<type>, <type>] = ...\")  [var-annotated]": 1
+  },
+  "backend/routers/consent.py": {
+    "List comprehension has incompatible type List[Column[int]]; expected List[int]  [misc]": 1
+  },
+  "backend/routers/copilot.py": {
+    "Argument 2 to \"full_text_search\" of \"CopilotEngine\" has incompatible type \"Column[int]\"; expected \"int\"  [arg-type]": 1,
+    "Argument 2 to \"semantic_search\" of \"CopilotEngine\" has incompatible type \"Column[int]\"; expected \"int\"  [arg-type]": 1,
+    "Incompatible types in assignment (expression has type \"str\", variable has type \"list[str]\")  [assignment]": 1,
+    "Unpacking a string is disallowed  [str-unpack]": 1
+  },
+  "backend/routers/courses.py": {
+    "Argument \"amount\" to \"init_payment\" of \"KonnectService\" has incompatible type \"Column[Any]\"; expected \"float\"  [arg-type]": 1,
+    "Argument \"enrollment_id\" to \"init_payment\" of \"KonnectService\" has incompatible type \"Column[int]\"; expected \"int\"  [arg-type]": 1,
+    "Argument \"user_email\" to \"init_payment\" of \"KonnectService\" has incompatible type \"Column[str]\"; expected \"str\"  [arg-type]": 1,
+    "Argument 1 to \"decrypt_value\" has incompatible type \"Column[str]\"; expected \"str\"  [arg-type]": 1,
+    "Incompatible types in assignment (expression has type \"Any | str\", variable has type \"Column[str]\")  [assignment]": 1,
+    "Incompatible types in assignment (expression has type \"bool\", variable has type \"Column[bool]\")  [assignment]": 1,
+    "Incompatible types in assignment (expression has type \"datetime\", variable has type \"Column[datetime]\")  [assignment]": 4,
+    "Incompatible types in assignment (expression has type \"int | None\", variable has type \"Column[int]\")  [assignment]": 2,
+    "Incompatible types in assignment (expression has type \"int\", variable has type \"Column[int]\")  [assignment]": 2,
+    "Incompatible types in assignment (expression has type \"str\", variable has type \"Column[str]\")  [assignment]": 3,
+    "Invalid index type \"Column[int]\" for \"dict[int, int]\"; expected type \"int\"  [index]": 1
+  },
+  "backend/routers/feature_flags.py": {
+    "Argument 1 to \"max\" has incompatible type \"int\"; expected \"Column[int]\"  [arg-type]": 1,
+    "Argument 1 to \"min\" has incompatible type \"int\"; expected \"Column[int]\"  [arg-type]": 1,
+    "Argument 2 to \"_check_rollout\" has incompatible type \"Column[int]\"; expected \"int\"  [arg-type]": 2,
+    "Argument 2 to \"filter\" of \"Query\" has incompatible type \"bool\"; expected \"ColumnElement[bool] | _HasClauseElement[bool] | SQLCoreOperations[bool] | ExpressionElementRole[bool] | TypedColumnsClauseRole[bool] | Callable[[], ColumnElement[bool]] | LambdaElement\"  [arg-type]": 2,
+    "Argument 2 to \"min\" has incompatible type \"int\"; expected \"Column[int]\"  [arg-type]": 1,
+    "Incompatible return value type (got \"ColumnElement[bool]\", expected \"bool\")  [return-value]": 1,
+    "Incompatible types in assignment (expression has type \"Column[bool]\", target has type \"bool\")  [assignment]": 1,
+    "Incompatible types in assignment (expression has type \"bool\", variable has type \"Column[bool]\")  [assignment]": 3,
+    "Incompatible types in assignment (expression has type \"datetime\", variable has type \"Column[datetime]\")  [assignment]": 1,
+    "Incompatible types in assignment (expression has type \"int\", variable has type \"Column[int]\")  [assignment]": 2,
+    "Incompatible types in assignment (expression has type \"str\", variable has type \"Column[str]\")  [assignment]": 6,
+    "Invalid index type \"str\" for \"dict[Column[str], bool]\"; expected type \"Column[str]\"  [index]": 1
+  },
+  "backend/routers/gdpr.py": {
+    "Argument \"requester_id\" to \"request_erasure\" has incompatible type \"Column[int]\"; expected \"int\"  [arg-type]": 1
+  },
+  "backend/routers/hiring.py": {
+    "Incompatible types in assignment (expression has type \"Column[str]\", variable has type \"str\")  [assignment]": 1
+  },
+  "backend/routers/jd_bias.py": {
+    "Argument 1 to \"analyze_jd\" of \"JDBiasDetector\" has incompatible type \"Column[str] | str\"; expected \"str\"  [arg-type]": 1,
+    "Argument 2 to \"analyze_jd\" of \"JDBiasDetector\" has incompatible type \"Column[str] | str\"; expected \"str\"  [arg-type]": 1,
+    "Argument 3 to \"analyze_jd\" of \"JDBiasDetector\" has incompatible type \"list[str] | None\"; expected \"list[Any]\"  [arg-type]": 1
+  },
+  "backend/routers/linkedin.py": {
+    "Incompatible default for parameter \"code\" (default has type \"None\", parameter has type \"str\")  [assignment]": 1,
+    "Incompatible default for parameter \"data\" (default has type \"None\", parameter has type \"PostJobRequest\")  [assignment]": 1,
+    "Incompatible default for parameter \"error\" (default has type \"None\", parameter has type \"str\")  [assignment]": 1,
+    "Incompatible default for parameter \"state\" (default has type \"None\", parameter has type \"str\")  [assignment]": 1,
+    "No overload variant of \"get\" of \"dict\" matches argument types \"Column[str]\", \"str\"  [call-overload]": 1
+  },
+  "backend/routers/mentor.py": {
+    "Argument 1 to \"generate_course_syllabus\" has incompatible type \"Column[str]\"; expected \"str\"  [arg-type]": 1,
+    "Argument 1 to \"generate_quiz_questions\" has incompatible type \"Column[str]\"; expected \"str\"  [arg-type]": 1,
+    "Argument 2 to \"generate_quiz_questions\" has incompatible type \"Column[str]\"; expected \"str\"  [arg-type]": 1,
+    "Argument 3 to \"generate_course_syllabus\" has incompatible type \"Column[str]\"; expected \"str\"  [arg-type]": 1,
+    "Incompatible types in assignment (expression has type \"datetime\", variable has type \"Column[datetime]\")  [assignment]": 1,
+    "Incompatible types in assignment (expression has type \"float\", variable has type \"Column[Any]\")  [assignment]": 1,
+    "Incompatible types in assignment (expression has type \"str | None\", variable has type \"Column[str]\")  [assignment]": 3,
+    "Incompatible types in assignment (expression has type \"str\", variable has type \"Column[str]\")  [assignment]": 5
+  },
+  "backend/routers/messages.py": {
+    "Argument 1 to \"loads\" has incompatible type \"Column[str]\"; expected \"str | bytes | bytearray\"  [arg-type]": 1,
+    "Argument 2 to \"_get_other_participant\" has incompatible type \"Column[int]\"; expected \"int\"  [arg-type]": 1,
+    "Argument 2 to \"_serialize_conversation\" has incompatible type \"Column[int]\"; expected \"int\"  [arg-type]": 4,
+    "Argument 2 to \"send_personal_message\" of \"ConnectionManager\" has incompatible type \"Column[int] | int\"; expected \"int\"  [arg-type]": 1,
+    "Incompatible types in assignment (expression has type \"str\", variable has type \"Column[str]\")  [assignment]": 1,
+    "Item \"None\" of \"Conversation | None\" has no attribute \"last_message_at\"  [union-attr]": 1,
+    "Item \"None\" of \"Conversation | None\" has no attribute \"last_message_preview\"  [union-attr]": 1,
+    "Item \"None\" of \"Conversation | None\" has no attribute \"participants\"  [union-attr]": 1,
+    "Value of type \"Coroutine[Any, Any, int]\" must be used  [unused-coroutine]": 2,
+    "Value of type variable \"SupportsRichComparisonT\" of \"sorted\" cannot be \"object\"  [type-var]": 2
+  },
+  "backend/routers/notifications.py": {
+    "Argument 1 to \"filter\" of \"Query\" has incompatible type \"bool\"; expected \"ColumnElement[bool] | _HasClauseElement[bool] | SQLCoreOperations[bool] | ExpressionElementRole[bool] | TypedColumnsClauseRole[bool] | Callable[[], ColumnElement[bool]] | LambdaElement\"  [arg-type]": 1,
+    "Argument 1 to \"loads\" has incompatible type \"Column[str]\"; expected \"str | bytes | bytearray\"  [arg-type]": 1,
+    "Argument 2 to \"filter\" of \"Query\" has incompatible type \"bool\"; expected \"ColumnElement[bool] | _HasClauseElement[bool] | SQLCoreOperations[bool] | ExpressionElementRole[bool] | TypedColumnsClauseRole[bool] | Callable[[], ColumnElement[bool]] | LambdaElement\"  [arg-type]": 2,
+    "Incompatible types in assignment (expression has type \"bool\", variable has type \"Column[bool]\")  [assignment]": 1,
+    "Incompatible types in assignment (expression has type \"datetime\", variable has type \"Column[datetime]\")  [assignment]": 1
+  },
+  "backend/routers/onboarding.py": {
+    "Argument \"user_id\" to \"create_application\" of \"ApplicationService\" has incompatible type \"Column[int]\"; expected \"int | None\"  [arg-type]": 1,
+    "Dict entry 2 has incompatible type \"str\": \"list[str]\"; expected \"str\": \"str\"  [dict-item]": 8,
+    "Incompatible default for parameter \"skills_with_confidence\" (default has type \"None\", parameter has type \"list[dict[Any, Any]]\")  [assignment]": 1,
+    "Incompatible return value type (got \"list[dict[str, str] | dict[str, Sequence[str]]] | list[dict[str, str]] | list[dict[str, Sequence[str]]]\", expected \"list[dict[str, str]]\")  [return-value]": 1,
+    "Incompatible return value type (got \"list[dict[str, str]] | list[dict[str, Sequence[str]]]\", expected \"list[dict[str, str]]\")  [return-value]": 1,
+    "Incompatible types in assignment (expression has type \"Column[int]\", variable has type \"int | None\")  [assignment]": 2,
+    "Incompatible types in assignment (expression has type \"str\", variable has type \"Column[str]\")  [assignment]": 1,
+    "Item \"None\" of \"dict[Any, Any] | None\" has no attribute \"get\"  [union-attr]": 7,
+    "Value of type \"dict[Any, Any] | None\" is not indexable  [index]": 1
+  },
+  "backend/routers/org/billing.py": {
+    "Argument 1 to \"loads\" has incompatible type \"Column[str]\"; expected \"str | bytes | bytearray\"  [arg-type]": 1,
+    "Argument 1 to \"secure_filename\" has incompatible type \"str | None\"; expected \"str\"  [arg-type]": 1,
+    "Argument 2 to \"_count_active_recruiters\" has incompatible type \"Column[int]\"; expected \"int\"  [arg-type]": 1,
+    "Argument 2 to \"_current_company_subscription\" has incompatible type \"Column[int]\"; expected \"int\"  [arg-type]": 2,
+    "Argument 2 to \"resolve_company_billing_user\" has incompatible type \"Column[int]\"; expected \"int | None\"  [arg-type]": 1,
+    "Argument 2 to \"scan_for_malware\" has incompatible type \"str | None\"; expected \"str\"  [arg-type]": 2,
+    "Argument 3 to \"grant_credits\" has incompatible type \"Column[int]\"; expected \"int\"  [arg-type]": 1,
+    "Incompatible types in assignment (expression has type \"None\", variable has type \"Column[datetime]\")  [assignment]": 1,
+    "Incompatible types in assignment (expression has type \"bool\", variable has type \"Column[bool]\")  [assignment]": 2,
+    "Incompatible types in assignment (expression has type \"datetime\", variable has type \"Column[datetime]\")  [assignment]": 4,
+    "Incompatible types in assignment (expression has type \"int\", variable has type \"Column[int]\")  [assignment]": 1,
+    "Incompatible types in assignment (expression has type \"str | None\", variable has type \"Column[str]\")  [assignment]": 2,
+    "Incompatible types in assignment (expression has type \"str\", variable has type \"Column[str]\")  [assignment]": 10,
+    "Item \"None\" of \"Address | None\" has no attribute \"host\"  [union-attr]": 5,
+    "Item \"None\" of \"str | None\" has no attribute \"lower\"  [union-attr]": 1,
+    "Need type annotation for \"saved\" (hint: \"saved: list[<type>] = ...\")  [var-annotated]": 1,
+    "Value of type variable \"AnyOrLiteralStr\" of \"splitext\" cannot be \"str | None\"  [type-var]": 1
+  },
+  "backend/routers/org/members.py": {
+    "Argument \"admin_user_id\" to \"transfer_company_credits\" has incompatible type \"Column[int]\"; expected \"int | None\"  [arg-type]": 1,
+    "Incompatible types in assignment (expression has type \"bool\", variable has type \"Column[bool]\")  [assignment]": 2,
+    "Incompatible types in assignment (expression has type \"datetime\", variable has type \"Column[datetime]\")  [assignment]": 1,
+    "Incompatible types in assignment (expression has type \"int\", variable has type \"Column[int]\")  [assignment]": 3,
+    "Incompatible types in assignment (expression has type \"str\", variable has type \"Column[str]\")  [assignment]": 1,
+    "Item \"None\" of \"Address | None\" has no attribute \"host\"  [union-attr]": 8
+  },
+  "backend/routers/payments.py": {
+    "Argument \"company_id\" to \"_create_invoice_internal\" has incompatible type \"Column[int]\"; expected \"int\"  [arg-type]": 1,
+    "Argument \"user_email\" to \"init_payment\" of \"KonnectService\" has incompatible type \"Column[str]\"; expected \"str\"  [arg-type]": 1,
+    "Argument 2 to \"_create_invoice_internal\" has incompatible type \"Column[int]\"; expected \"int\"  [arg-type]": 1,
+    "Argument 3 to \"_create_invoice_internal\" has incompatible type \"Column[Any]\"; expected \"float\"  [arg-type]": 1,
+    "Argument 4 to \"_create_invoice_internal\" has incompatible type \"Column[int]\"; expected \"int\"  [arg-type]": 1,
+    "Incompatible types in assignment (expression has type \"datetime\", variable has type \"Column[datetime]\")  [assignment]": 3,
+    "Incompatible types in assignment (expression has type \"str\", variable has type \"Column[str]\")  [assignment]": 6,
+    "Item \"None\" of \"Address | None\" has no attribute \"host\"  [union-attr]": 2
+  },
+  "backend/routers/prompt_management.py": {
+    "\"str\" has no attribute \"get\"  [attr-defined]": 2,
+    "Argument \"key\" to \"max\" has incompatible type \"Callable[[dict[str, object]], object]\"; expected \"Callable[[dict[str, object]], SupportsDunderLT[Any] | SupportsDunderGT[Any]]\"  [arg-type]": 1,
+    "Argument \"test_id\" to \"add_task\" of \"BackgroundTasks\" has incompatible type \"Column[int]\"; expected \"int\"  [arg-type]": 1,
+    "Argument 1 to \"case\" has incompatible type \"list[tuple[ColumnElement[bool], int]]\"; expected \"tuple[ColumnElement[bool] | _HasClauseElement[bool] | SQLCoreOperations[bool] | ExpressionElementRole[bool] | TypedColumnsClauseRole[bool] | Callable[[], ColumnElement[bool]] | LambdaElement, Any] | Mapping[Any, Any]\"  [arg-type]": 1,
+    "Argument 1 to \"execute_generic_test\" has incompatible type \"Column[str]\"; expected \"str\"  [arg-type]": 1,
+    "Argument 1 to \"filter\" of \"Query\" has incompatible type \"bool\"; expected \"ColumnElement[bool] | _HasClauseElement[bool] | SQLCoreOperations[bool] | ExpressionElementRole[bool] | TypedColumnsClauseRole[bool] | Callable[[], ColumnElement[bool]] | LambdaElement\"  [arg-type]": 1,
+    "Argument 2 to \"calculate_quality_score\" has incompatible type \"Any | None\"; expected \"dict[Any, Any]\"  [arg-type]": 1,
+    "Argument 2 to \"calculate_similarity\" has incompatible type \"Any | None\"; expected \"dict[Any, Any]\"  [arg-type]": 1,
+    "Generator has incompatible item type \"int\"; expected \"bool\"  [misc]": 1,
+    "Incompatible return value type (got \"object\", expected \"SupportsDunderLT[Any] | SupportsDunderGT[Any]\")  [return-value]": 1,
+    "Incompatible types in assignment (expression has type \"ColumnElement[Any]\", target has type \"int\")  [assignment]": 2,
+    "Incompatible types in assignment (expression has type \"ColumnElement[float | Decimal] | float | int\", variable has type \"Column[Any]\")  [assignment]": 2,
+    "Incompatible types in assignment (expression has type \"ColumnElement[float | Decimal] | float\", variable has type \"Column[Any]\")  [assignment]": 1,
+    "Incompatible types in assignment (expression has type \"bool\", variable has type \"Column[bool]\")  [assignment]": 1,
+    "Incompatible types in assignment (expression has type \"datetime\", variable has type \"Column[datetime]\")  [assignment]": 2,
+    "Incompatible types in assignment (expression has type \"float\", target has type \"int\")  [assignment]": 3,
+    "Incompatible types in assignment (expression has type \"float\", variable has type \"Column[Any]\")  [assignment]": 2,
+    "Incompatible types in assignment (expression has type \"int\", variable has type \"Column[int]\")  [assignment]": 3,
+    "Incompatible types in assignment (expression has type \"str\", variable has type \"Column[str]\")  [assignment]": 1,
+    "Unsupported left operand type for / (\"object\")  [operator]": 3,
+    "Unsupported operand types for + (\"object\" and \"int\")  [operator]": 3,
+    "Unsupported operand types for < (\"int\" and \"object\")  [operator]": 1
+  },
+  "backend/routers/public.py": {
+    "Argument 1 to \"sanitize_rich_text\" has incompatible type \"Column[str]\"; expected \"str\"  [arg-type]": 1,
+    "Argument 2 to \"filter\" of \"Query\" has incompatible type \"bool\"; expected \"ColumnElement[bool] | _HasClauseElement[bool] | SQLCoreOperations[bool] | ExpressionElementRole[bool] | TypedColumnsClauseRole[bool] | Callable[[], ColumnElement[bool]] | LambdaElement\"  [arg-type]": 1,
+    "Incompatible default for parameter \"category_id\" (default has type \"None\", parameter has type \"int\")  [assignment]": 1,
+    "Incompatible default for parameter \"search\" (default has type \"None\", parameter has type \"str\")  [assignment]": 1,
+    "Incompatible types in assignment (expression has type \"ColumnElement[datetime]\", variable has type \"Column[datetime]\")  [assignment]": 1,
+    "Incompatible types in assignment (expression has type \"ColumnElement[int]\", variable has type \"Column[int]\")  [assignment]": 1,
+    "Incompatible types in assignment (expression has type \"str\", variable has type \"Column[str]\")  [assignment]": 1,
+    "No overload variant of \"get\" of \"dict\" matches argument type \"str\"  [call-overload]": 2,
+    "No overload variant of \"get\" of \"dict\" matches argument types \"str\", \"str\"  [call-overload]": 1
+  },
+  "backend/routers/recommendations.py": {
+    "Argument \"interview_results\" to \"get_ai_recommendations\" has incompatible type \"dict[str, Any] | None\"; expected \"dict[str, Any]\"  [arg-type]": 1,
+    "Argument \"limit\" to \"get_ai_recommendations\" has incompatible type \"int | None\"; expected \"int\"  [arg-type]": 1,
+    "Argument \"user_id\" to \"get_ai_recommendations\" has incompatible type \"Column[int]\"; expected \"int\"  [arg-type]": 2
+  },
+  "backend/routers/recruiter_assessments.py": {
+    "Argument \"candidate_email\" to \"invite_candidate\" of \"AssessmentService\" has incompatible type \"Column[str]\"; expected \"str\"  [arg-type]": 2,
+    "Argument \"candidate_name\" to \"invite_candidate\" of \"AssessmentService\" has incompatible type \"Column[str]\"; expected \"str\"  [arg-type]": 2,
+    "Argument \"recruiter_id\" to \"create_assessment\" of \"AssessmentService\" has incompatible type \"Column[int]\"; expected \"int\"  [arg-type]": 1,
+    "Incompatible default for parameter \"req\" (default has type \"None\", parameter has type \"InviteCandidateRequest\")  [assignment]": 1,
+    "Module \"backend.database\" has no attribute \"Assessment\"  [attr-defined]": 1,
+    "Module \"backend.database\" has no attribute \"AssessmentInvitation\"  [attr-defined]": 1
+  },
+  "backend/routers/recruiter_background_checks.py": {
+    "Argument \"company_id\" to \"_log_status_change\" of \"BackgroundCheckService\" has incompatible type \"Column[int]\"; expected \"int\"  [arg-type]": 1,
+    "Argument \"company_id\" to \"check_dispute_period\" of \"AdverseActionService\" has incompatible type \"Any | None\"; expected \"int\"  [arg-type]": 1,
+    "Argument \"company_id\" to \"create_candidate\" of \"BackgroundCheckService\" has incompatible type \"Any | None\"; expected \"int\"  [arg-type]": 1,
+    "Argument \"company_id\" to \"create_invitation\" of \"BackgroundCheckService\" has incompatible type \"Any | None\"; expected \"int\"  [arg-type]": 1,
+    "Argument \"company_id\" to \"send_final_adverse\" of \"AdverseActionService\" has incompatible type \"Any | None\"; expected \"int\"  [arg-type]": 1,
+    "Argument \"company_id\" to \"send_pre_adverse\" of \"AdverseActionService\" has incompatible type \"Any | None\"; expected \"int\"  [arg-type]": 1,
+    "Argument \"related_id\" to \"notify_user\" has incompatible type \"Column[int]\"; expected \"int | None\"  [arg-type]": 1,
+    "Argument 1 to \"_log_status_change\" of \"BackgroundCheckService\" has incompatible type \"Column[int]\"; expected \"int\"  [arg-type]": 1,
+    "Argument 1 to \"get_application_for_recruiter\" has incompatible type \"Column[int]\"; expected \"int\"  [arg-type]": 1,
+    "Argument 1 to \"get_offer_for_recruiter\" has incompatible type \"Column[int]\"; expected \"int\"  [arg-type]": 1,
+    "Argument 1 to \"loads\" has incompatible type \"Column[str]\"; expected \"str | bytes | bytearray\"  [arg-type]": 1,
+    "Argument 1 to \"send_email\" has incompatible type \"Column[str]\"; expected \"str\"  [arg-type]": 1,
+    "Argument 2 to \"_log_status_change\" of \"BackgroundCheckService\" has incompatible type \"Column[str]\"; expected \"str | None\"  [arg-type]": 1,
+    "Incompatible types in assignment (expression has type \"str\", variable has type \"Column[str]\")  [assignment]": 2
+  },
+  "backend/routers/recruiter_campaigns/candidates.py": {
+    "Argument 1 to \"escape\" has incompatible type \"Column[str]\"; expected \"str\"  [arg-type]": 1,
+    "Argument 1 to \"send_email\" of \"EmailService\" has incompatible type \"Column[str]\"; expected \"str\"  [arg-type]": 1,
+    "Argument 2 to \"ensure_candidate_account\" has incompatible type \"Column[str]\"; expected \"str\"  [arg-type]": 1,
+    "Argument 3 to \"ensure_candidate_account\" has incompatible type \"Column[str] | str\"; expected \"str\"  [arg-type]": 1,
+    "Incompatible types in assignment (expression has type \"Any | ColumnElement[Any]\", variable has type \"int\")  [assignment]": 1,
+    "Incompatible types in assignment (expression has type \"ColumnElement[int] | int\", variable has type \"int\")  [assignment]": 2,
+    "Incompatible types in assignment (expression has type \"str\", variable has type \"Column[str]\")  [assignment]": 4,
+    "Need type annotation for \"analysis\" (hint: \"analysis: dict[<type>, <type>] = ...\")  [var-annotated]": 1
+  },
+  "backend/routers/recruiter_campaigns/management.py": {
+    "Argument 2 to \"batch_counters\" has incompatible type \"Column[int]\"; expected \"int\"  [arg-type]": 1,
+    "Incompatible types in assignment (expression has type \"None\", variable has type \"Column[datetime]\")  [assignment]": 1,
+    "Incompatible types in assignment (expression has type \"datetime\", variable has type \"Column[datetime]\")  [assignment]": 1,
+    "Incompatible types in assignment (expression has type \"str\", variable has type \"Column[str]\")  [assignment]": 2,
+    "Item \"None\" of \"Rubric | None\" has no attribute \"id\"  [union-attr]": 1,
+    "No overload variant of \"get\" of \"dict\" matches argument types \"Column[int]\", \"dict[Never, Never]\"  [call-overload]": 1
+  },
+  "backend/routers/recruiter_campaigns/team.py": {
+    "Incompatible types in assignment (expression has type \"bool\", variable has type \"Column[bool]\")  [assignment]": 1,
+    "Incompatible types in assignment (expression has type \"str\", variable has type \"Column[str]\")  [assignment]": 1
+  },
+  "backend/routers/recruiter_campaigns/templates.py": {
+    "Incompatible types in assignment (expression has type \"str\", variable has type \"Column[str]\")  [assignment]": 5
+  },
+  "backend/routers/recruiter_campaigns/tracking.py": {
+    "Incompatible types in assignment (expression has type \"bool\", variable has type \"Column[bool]\")  [assignment]": 1,
+    "Incompatible types in assignment (expression has type \"datetime\", variable has type \"Column[datetime]\")  [assignment]": 2,
+    "Incompatible types in assignment (expression has type \"str\", variable has type \"Column[str]\")  [assignment]": 1
+  },
+  "backend/routers/recruiter_campaigns/upload.py": {
+    "Argument \"batch_id\" to \"create_application\" of \"ApplicationService\" has incompatible type \"Column[int]\"; expected \"int | None\"  [arg-type]": 1,
+    "Argument \"job_id\" to \"create_application\" of \"ApplicationService\" has incompatible type \"Column[int]\"; expected \"int | None\"  [arg-type]": 1,
+    "Argument \"related_id\" to \"notify_user\" has incompatible type \"Column[int]\"; expected \"int | None\"  [arg-type]": 1,
+    "Argument 1 to \"background_analyze_batch\" has incompatible type \"Column[int]\"; expected \"int\"  [arg-type]": 1,
+    "Argument 1 to \"get_user_plan\" of \"SubscriptionService\" has incompatible type \"Any | None\"; expected \"User\"  [arg-type]": 1,
+    "Argument 1 to \"validate_file\" has incompatible type \"str | None\"; expected \"str\"  [arg-type]": 1,
+    "Argument 2 to \"batch_counters\" has incompatible type \"Column[int]\"; expected \"int\"  [arg-type]": 1,
+    "Argument 2 to \"extract_skills_from_cv\" has incompatible type \"Column[str] | str\"; expected \"str\"  [arg-type]": 2,
+    "Argument 3 to \"background_analyze_batch\" has incompatible type \"Column[int]\"; expected \"int\"  [arg-type]": 1,
+    "Argument 4 to \"background_analyze_batch\" has incompatible type \"Any | None\"; expected \"int\"  [arg-type]": 1,
+    "Dict entry 2 has incompatible type \"str\": \"Column[int]\"; expected \"str\": \"str | None\"  [dict-item]": 1,
+    "Incompatible types in assignment (expression has type \"bool\", variable has type \"Column[bool]\")  [assignment]": 2,
+    "Incompatible types in assignment (expression has type \"str\", variable has type \"Column[str]\")  [assignment]": 7,
+    "Item \"None\" of \"str | None\" has no attribute \"lower\"  [union-attr]": 2
+  },
+  "backend/routers/recruiter_candidates/applications.py": {
+    "\"object\" has no attribute \"email\"  [attr-defined]": 2,
+    "Argument \"bearer_user_id\" to \"make_signed_cv_token\" has incompatible type \"Column[int]\"; expected \"int\"  [arg-type]": 1,
+    "Argument \"subject_user_id\" to \"make_signed_cv_token\" has incompatible type \"Column[int]\"; expected \"int\"  [arg-type]": 1,
+    "Argument 1 to \"loads\" has incompatible type \"Column[str]\"; expected \"str | bytes | bytearray\"  [arg-type]": 1,
+    "Argument 2 to \"add_task\" of \"BackgroundTasks\" has incompatible type \"Column[int]\"; expected \"int\"  [arg-type]": 1,
+    "Argument 2 to \"send_status_email\" has incompatible type \"Column[int]\"; expected \"int\"  [arg-type]": 1,
+    "Argument 3 to \"add_task\" of \"BackgroundTasks\" has incompatible type \"Column[int]\"; expected \"int\"  [arg-type]": 1,
+    "Argument 3 to \"dispatch_webhook\" has incompatible type \"Column[int]\"; expected \"int\"  [arg-type]": 1,
+    "Argument 3 to \"send_status_email\" has incompatible type \"Column[str] | str\"; expected \"str\"  [arg-type]": 1,
+    "Argument 4 to \"send_status_email\" has incompatible type \"Column[str]\"; expected \"str\"  [arg-type]": 1,
+    "Incompatible types in assignment (expression has type \"Any | None\", target has type \"Sequence[str]\")  [assignment]": 1,
+    "Incompatible types in assignment (expression has type \"datetime\", variable has type \"Column[datetime]\")  [assignment]": 4,
+    "Incompatible types in assignment (expression has type \"float\", variable has type \"int\")  [assignment]": 3,
+    "Incompatible types in assignment (expression has type \"int\", variable has type \"Column[int]\")  [assignment]": 2,
+    "Incompatible types in assignment (expression has type \"list[Any] | dict[Any, Any] | Any\", variable has type \"list[Any]\")  [assignment]": 1,
+    "Incompatible types in assignment (expression has type \"str\", variable has type \"Column[str]\")  [assignment]": 6,
+    "Need type annotation for \"analysis\" (hint: \"analysis: dict[<type>, <type>] = ...\")  [var-annotated]": 1,
+    "Need type annotation for \"proctoring_violations\" (hint: \"proctoring_violations: list[<type>] = ...\")  [var-annotated]": 1,
+    "No overload variant of \"get\" of \"dict\" matches argument types \"Column[str]\", \"list[Never]\"  [call-overload]": 1
+  },
+  "backend/routers/recruiter_candidates/email.py": {
+    "Argument 2 to \"get_recruiter_email_settings\" has incompatible type \"Column[int]\"; expected \"int\"  [arg-type]": 4,
+    "Argument 2 to \"save_recruiter_email_settings\" has incompatible type \"Column[int]\"; expected \"int\"  [arg-type]": 3,
+    "Incompatible types in assignment (expression has type \"chain[list[str]] | Reader\", variable has type \"Reader\")  [assignment]": 1,
+    "Incompatible types in assignment (expression has type \"str\", variable has type \"Column[str]\")  [assignment]": 3
+  },
+  "backend/routers/recruiter_candidates/integrations.py": {
+    "Argument 2 to \"get_recruiter_email_settings\" has incompatible type \"Column[int]\"; expected \"int\"  [arg-type]": 2,
+    "Argument 2 to \"save_recruiter_email_settings\" has incompatible type \"Column[int]\"; expected \"int\"  [arg-type]": 1
+  },
+  "backend/routers/recruiter_candidates/invitations.py": {
+    "Argument 1 to \"escape\" has incompatible type \"Column[str]\"; expected \"str\"  [arg-type]": 1,
+    "Argument 1 to \"generate_interview_token\" has incompatible type \"Column[int]\"; expected \"int\"  [arg-type]": 3,
+    "Argument 1 to \"make_tracking_token\" has incompatible type \"Column[int]\"; expected \"int\"  [arg-type]": 1,
+    "Argument 1 to \"quote\" has incompatible type \"Column[str] | str\"; expected \"str\"  [arg-type]": 1,
+    "Argument 1 to \"send_email\" of \"EmailService\" has incompatible type \"Column[str]\"; expected \"str\"  [arg-type]": 2,
+    "Argument 2 to \"ensure_candidate_account\" has incompatible type \"Column[str]\"; expected \"str\"  [arg-type]": 3,
+    "Argument 2 to \"replace\" of \"str\" has incompatible type \"Column[str]\"; expected \"str\"  [arg-type]": 2,
+    "Argument 2 to \"sendmail\" of \"SMTP\" has incompatible type \"str | Column[str]\"; expected \"str | Sequence[str]\"  [arg-type]": 1,
+    "Argument 3 to \"ensure_candidate_account\" has incompatible type \"Column[str] | str\"; expected \"str\"  [arg-type]": 3,
+    "Incompatible default for parameter \"email_data\" (default has type \"None\", parameter has type \"EmailRequest\")  [assignment]": 1,
+    "Incompatible default for parameter \"request\" (default has type \"None\", parameter has type \"QualifiedInviteRequest\")  [assignment]": 1,
+    "Incompatible types in assignment (expression has type \"str | Column[str]\", target has type \"str\")  [assignment]": 1,
+    "Incompatible types in assignment (expression has type \"str\", variable has type \"Column[str]\")  [assignment]": 4,
+    "No overload variant of \"get\" of \"dict\" matches argument type \"str\"  [call-overload]": 4
+  },
+  "backend/routers/recruiter_candidates/scoring.py": {
+    "\"Collection[str]\" has no attribute \"get\"  [attr-defined]": 2,
+    "\"ScoringEngine\" has no attribute \"compare_candidates\"  [attr-defined]": 1,
+    "Argument \"key\" to \"sort\" of \"list\" has incompatible type \"Callable[[dict[str, dict[str, float] | dict[str, Any | int | None] | Column[int] | Column[str] | str | Any | int | dict[str, Any] | None]], dict[str, float] | dict[str, Any | int | None] | Column[int] | Column[str] | str | Any | int | dict[str, Any]]\"; expected \"Callable[[dict[str, dict[str, float] | dict[str, Any | int | None] | Column[int] | Column[str] | str | Any | int | dict[str, Any] | None]], SupportsDunderLT[Any] | SupportsDunderGT[Any]]\"  [arg-type]": 1,
+    "Argument 1 to \"extract_interview_highlights\" has incompatible type \"Any | None\"; expected \"str\"  [arg-type]": 1,
+    "Argument 2 to \"_build_legacy_response\" has incompatible type \"Literal[True] | ColumnElement[bool]\"; expected \"bool\"  [arg-type]": 1,
+    "Argument 2 to \"get_application_count_for_job\" of \"MetricsRepository\" has incompatible type \"Any | None\"; expected \"int\"  [arg-type]": 1,
+    "Argument 3 to \"_build_application_data_for_scoring\" has incompatible type \"Literal[True] | ColumnElement[bool]\"; expected \"bool\"  [arg-type]": 1,
+    "Incompatible return value type (got \"dict[str, float] | dict[str, Any | int | None] | Column[int] | Column[str] | str | Any | int | dict[str, Any]\", expected \"SupportsDunderLT[Any] | SupportsDunderGT[Any]\")  [return-value]": 1,
+    "Incompatible types in assignment (expression has type \"Literal[True] | ColumnElement[bool]\", variable has type \"bool\")  [assignment]": 1,
+    "Incompatible types in assignment (expression has type \"dict[Any, Any]\", target has type \"list[Any]\")  [assignment]": 1,
+    "Incompatible types in assignment (expression has type \"float\", variable has type \"int\")  [assignment]": 2,
+    "Incompatible types in assignment (expression has type \"str\", variable has type \"Column[str]\")  [assignment]": 2,
+    "Name \"scores_map\" is not defined  [name-defined]": 1,
+    "Need type annotation for \"_cv_analysis\" (hint: \"_cv_analysis: dict[<type>, <type>] = ...\")  [var-annotated]": 1,
+    "Need type annotation for \"analysis\" (hint: \"analysis: dict[<type>, <type>] = ...\")  [var-annotated]": 2,
+    "Need type annotation for \"category_breakdown\" (hint: \"category_breakdown: list[<type>] = ...\")  [var-annotated]": 1,
+    "Need type annotation for \"gaps\" (hint: \"gaps: list[<type>] = ...\")  [var-annotated]": 1,
+    "Need type annotation for \"highlights\" (hint: \"highlights: list[<type>] = ...\")  [var-annotated]": 1,
+    "Unsupported target for indexed assignment (\"Collection[str]\")  [index]": 2,
+    "Value of type \"Any | None\" is not indexable  [index]": 1
+  },
+  "backend/routers/recruiter_candidates/search.py": {
+    "Argument \"batch_id\" to \"get_paginated_applications\" of \"MetricsRepository\" has incompatible type \"int | None\"; expected \"int\"  [arg-type]": 1,
+    "Argument \"company_id\" to \"get_paginated_applications\" of \"MetricsRepository\" has incompatible type \"Any | None\"; expected \"int\"  [arg-type]": 1,
+    "Argument \"company_id\" to \"get_paginated_candidates\" of \"MetricsRepository\" has incompatible type \"Any | None\"; expected \"int\"  [arg-type]": 1,
+    "Argument \"company_id\" to \"search_paginated_candidates\" of \"MetricsRepository\" has incompatible type \"Any | None\"; expected \"int\"  [arg-type]": 1,
+    "Argument \"has_interview\" to \"search_paginated_candidates\" of \"MetricsRepository\" has incompatible type \"bool | None\"; expected \"bool\"  [arg-type]": 1,
+    "Argument \"job_id\" to \"get_paginated_applications\" of \"MetricsRepository\" has incompatible type \"int | None\"; expected \"int\"  [arg-type]": 1,
+    "Argument \"job_id\" to \"get_paginated_candidates\" of \"MetricsRepository\" has incompatible type \"int | None\"; expected \"int\"  [arg-type]": 1,
+    "Argument \"location\" to \"search_paginated_candidates\" of \"MetricsRepository\" has incompatible type \"str | None\"; expected \"str\"  [arg-type]": 1,
+    "Argument \"max_score\" to \"search_paginated_candidates\" of \"MetricsRepository\" has incompatible type \"float | None\"; expected \"float\"  [arg-type]": 1,
+    "Argument \"min_score\" to \"get_paginated_applications\" of \"MetricsRepository\" has incompatible type \"int | None\"; expected \"int\"  [arg-type]": 1,
+    "Argument \"min_score\" to \"get_paginated_candidates\" of \"MetricsRepository\" has incompatible type \"int | None\"; expected \"int\"  [arg-type]": 1,
+    "Argument \"min_score\" to \"search_paginated_candidates\" of \"MetricsRepository\" has incompatible type \"float | None\"; expected \"float\"  [arg-type]": 1,
+    "Argument \"q\" to \"search_paginated_candidates\" of \"MetricsRepository\" has incompatible type \"str | None\"; expected \"str\"  [arg-type]": 1,
+    "Argument \"recruiter_id\" to \"get_paginated_applications\" of \"MetricsRepository\" has incompatible type \"Column[int]\"; expected \"int\"  [arg-type]": 1,
+    "Argument \"recruiter_id\" to \"get_paginated_candidates\" of \"MetricsRepository\" has incompatible type \"Column[int]\"; expected \"int\"  [arg-type]": 1,
+    "Argument \"role\" to \"search_paginated_candidates\" of \"MetricsRepository\" has incompatible type \"str | None\"; expected \"str\"  [arg-type]": 1,
+    "Argument \"role_filter\" to \"get_paginated_applications\" of \"MetricsRepository\" has incompatible type \"str | None\"; expected \"str\"  [arg-type]": 1,
+    "Argument \"search\" to \"get_paginated_applications\" of \"MetricsRepository\" has incompatible type \"str | None\"; expected \"str\"  [arg-type]": 1,
+    "Argument \"search\" to \"get_paginated_candidates\" of \"MetricsRepository\" has incompatible type \"str | None\"; expected \"str\"  [arg-type]": 1,
+    "Argument \"skills\" to \"search_paginated_candidates\" of \"MetricsRepository\" has incompatible type \"str | None\"; expected \"str\"  [arg-type]": 1,
+    "Argument \"source\" to \"search_paginated_candidates\" of \"MetricsRepository\" has incompatible type \"str | None\"; expected \"str\"  [arg-type]": 1,
+    "Argument \"status\" to \"get_paginated_applications\" of \"MetricsRepository\" has incompatible type \"str | None\"; expected \"str\"  [arg-type]": 1,
+    "Argument \"status\" to \"get_paginated_candidates\" of \"MetricsRepository\" has incompatible type \"str | None\"; expected \"str\"  [arg-type]": 1,
+    "Argument \"status\" to \"search_paginated_candidates\" of \"MetricsRepository\" has incompatible type \"str | None\"; expected \"str\"  [arg-type]": 1,
+    "Argument 1 to \"_display_status\" has incompatible type \"Column[str]\"; expected \"str\"  [arg-type]": 2,
+    "Argument 1 to \"get_application_details\" has incompatible type \"Column[int]\"; expected \"int\"  [arg-type]": 1,
+    "Argument 1 to \"get_funnel\" of \"MetricsRepository\" has incompatible type \"Any | None\"; expected \"int\"  [arg-type]": 1,
+    "Argument 1 to \"get_new_this_week\" of \"MetricsRepository\" has incompatible type \"Any | None\"; expected \"int\"  [arg-type]": 1,
+    "Argument 1 to \"get_search_facets\" of \"MetricsRepository\" has incompatible type \"Any | None\"; expected \"int\"  [arg-type]": 1,
+    "Argument 1 to \"get_status_counts\" of \"MetricsRepository\" has incompatible type \"Any | None\"; expected \"int\"  [arg-type]": 1,
+    "Argument 1 to \"get_total_candidates\" of \"MetricsRepository\" has incompatible type \"Any | None\"; expected \"int\"  [arg-type]": 1,
+    "Argument 2 to \"_sign_cv_url\" has incompatible type \"Column[int]\"; expected \"int | None\"  [arg-type]": 1,
+    "Argument 2 to \"get_funnel\" of \"MetricsRepository\" has incompatible type \"Column[int]\"; expected \"int\"  [arg-type]": 1,
+    "Argument 2 to \"get_new_this_week\" of \"MetricsRepository\" has incompatible type \"Column[int]\"; expected \"int\"  [arg-type]": 1,
+    "Argument 2 to \"get_status_counts\" of \"MetricsRepository\" has incompatible type \"Column[int]\"; expected \"int\"  [arg-type]": 1,
+    "Argument 2 to \"mask_candidate_data\" has incompatible type \"Literal[True] | ColumnElement[bool]\"; expected \"bool\"  [arg-type]": 4,
+    "Argument 3 to \"_sign_cv_url\" has incompatible type \"Column[int]\"; expected \"int\"  [arg-type]": 1,
+    "Incompatible return value type (got \"str | Any | None\", expected \"str\")  [return-value]": 1,
+    "Need type annotation for \"seen_general_users\" (hint: \"seen_general_users: set[<type>] = ...\")  [var-annotated]": 1,
+    "No overload variant of \"__and__\" of \"bool\" matches argument type \"ColumnElement[bool]\"  [operator]": 2
+  },
+  "backend/routers/recruiter_collaboration/activity.py": {
+    "Argument 1 to \"loads\" has incompatible type \"Column[str]\"; expected \"str | bytes | bytearray\"  [arg-type]": 1,
+    "Incompatible default for parameter \"application_id\" (default has type \"None\", parameter has type \"int\")  [assignment]": 1,
+    "Incompatible default for parameter \"company_id\" (default has type \"None\", parameter has type \"int\")  [assignment]": 1,
+    "Incompatible default for parameter \"details\" (default has type \"None\", parameter has type \"dict[Any, Any]\")  [assignment]": 1
+  },
+  "backend/routers/recruiter_collaboration/comments.py": {
+    "Argument \"company_id\" to \"log_activity\" has incompatible type \"Column[int]\"; expected \"int\"  [arg-type]": 1,
+    "Argument 2 to \"log_activity\" has incompatible type \"Column[int]\"; expected \"int\"  [arg-type]": 1,
+    "Incompatible default for parameter \"application_id\" (default has type \"None\", parameter has type \"int\")  [assignment]": 1,
+    "Incompatible default for parameter \"company_id\" (default has type \"None\", parameter has type \"int\")  [assignment]": 1,
+    "Incompatible default for parameter \"details\" (default has type \"None\", parameter has type \"dict[Any, Any]\")  [assignment]": 1,
+    "Item \"None\" of \"Application | None\" has no attribute \"full_name\"  [union-attr]": 1
+  },
+  "backend/routers/recruiter_collaboration/ratings.py": {
+    "Argument \"company_id\" to \"log_activity\" has incompatible type \"Column[int]\"; expected \"int\"  [arg-type]": 1,
+    "Argument 2 to \"log_activity\" has incompatible type \"Column[int]\"; expected \"int\"  [arg-type]": 1,
+    "Incompatible default for parameter \"application_id\" (default has type \"None\", parameter has type \"int\")  [assignment]": 1,
+    "Incompatible default for parameter \"company_id\" (default has type \"None\", parameter has type \"int\")  [assignment]": 1,
+    "Incompatible default for parameter \"details\" (default has type \"None\", parameter has type \"dict[Any, Any]\")  [assignment]": 1,
+    "Incompatible types in assignment (expression has type \"int\", variable has type \"Column[int]\")  [assignment]": 1,
+    "Incompatible types in assignment (expression has type \"str | None\", variable has type \"Column[str]\")  [assignment]": 1
+  },
+  "backend/routers/recruiter_collaboration/team.py": {
+    "\"int\" has no attribute \"__iter__\"; maybe \"__int__\"? (not iterable)  [attr-defined]": 1,
+    "Argument \"application_id\" to \"log_activity\" has incompatible type \"Column[int]\"; expected \"int\"  [arg-type]": 1,
+    "Argument \"company_id\" to \"log_activity\" has incompatible type \"Any | None\"; expected \"int\"  [arg-type]": 2,
+    "Argument \"company_id\" to \"log_activity\" has incompatible type \"Column[int]\"; expected \"int\"  [arg-type]": 1,
+    "Argument 1 to \"loads\" has incompatible type \"Column[str]\"; expected \"str | bytes | bytearray\"  [arg-type]": 1,
+    "Argument 2 to \"log_activity\" has incompatible type \"Column[int]\"; expected \"int\"  [arg-type]": 3,
+    "Argument 2 to \"or_\" has incompatible type \"BinaryExpression[bool] | bool\"; expected \"ColumnElement[bool] | _HasClauseElement[bool] | SQLCoreOperations[bool] | ExpressionElementRole[bool] | TypedColumnsClauseRole[bool] | Callable[[], ColumnElement[bool]] | LambdaElement\"  [arg-type]": 1,
+    "Incompatible default for parameter \"application_id\" (default has type \"None\", parameter has type \"int\")  [assignment]": 1,
+    "Incompatible default for parameter \"company_id\" (default has type \"None\", parameter has type \"int\")  [assignment]": 1,
+    "Incompatible default for parameter \"details\" (default has type \"None\", parameter has type \"dict[Any, Any]\")  [assignment]": 1,
+    "Incompatible types in assignment (expression has type \"User | None\", variable has type \"User\")  [assignment]": 2,
+    "Incompatible types in assignment (expression has type \"str\", variable has type \"Column[str]\")  [assignment]": 2,
+    "Item \"None\" of \"TeamMember | None\" has no attribute \"member_id\"  [union-attr]": 1,
+    "Item \"None\" of \"TeamMember | None\" has no attribute \"role\"  [union-attr]": 1,
+    "Need type annotation for \"my_status_counts\" (hint: \"my_status_counts: dict[<type>, <type>] = ...\")  [var-annotated]": 1,
+    "Need type annotation for \"status_counts\" (hint: \"status_counts: dict[<type>, <type>] = ...\")  [var-annotated]": 3,
+    "No overload variant of \"__or__\" of \"bool\" matches argument type \"BinaryExpression[bool]\"  [operator]": 1,
+    "No overload variant of \"__or__\" of \"bool\" matches argument type \"ColumnElement[bool]\"  [operator]": 1
+  },
+  "backend/routers/recruiter_dashboard.py": {
+    "Argument \"recruiter_id\" to \"get_daily_trend\" of \"MetricsRepository\" has incompatible type \"Column[int]\"; expected \"int\"  [arg-type]": 1,
+    "Argument 2 to \"get_avg_time_to_hire\" of \"MetricsRepository\" has incompatible type \"Column[int]\"; expected \"int\"  [arg-type]": 1,
+    "Argument 2 to \"get_dashboard_metrics\" of \"MetricsRepository\" has incompatible type \"Column[int]\"; expected \"int\"  [arg-type]": 2,
+    "Argument 2 to \"get_funnel\" of \"MetricsRepository\" has incompatible type \"Column[int]\"; expected \"int\"  [arg-type]": 2,
+    "Argument 2 to \"get_interview_metrics\" of \"MetricsRepository\" has incompatible type \"Column[int]\"; expected \"int\"  [arg-type]": 1,
+    "Argument 2 to \"get_recent_applications\" of \"MetricsRepository\" has incompatible type \"Column[int]\"; expected \"int\"  [arg-type]": 1,
+    "Argument 2 to \"get_top_scored_applications\" of \"MetricsRepository\" has incompatible type \"Column[int]\"; expected \"int\"  [arg-type]": 1
+  },
+  "backend/routers/recruiter_eeo.py": {
+    "Incompatible types in assignment (expression has type \"datetime\", target has type \"int\")  [assignment]": 2
+  },
+  "backend/routers/recruiter_enhancements/actions.py": {
+    "Argument 1 to \"get_application_for_recruiter\" has incompatible type \"Column[int]\"; expected \"int\"  [arg-type]": 2,
+    "Argument 1 to \"loads\" has incompatible type \"Column[str]\"; expected \"str | bytes | bytearray\"  [arg-type]": 1,
+    "Argument 2 to \"add_task\" of \"BackgroundTasks\" has incompatible type \"Column[int]\"; expected \"int\"  [arg-type]": 1,
+    "Argument 2 to \"filter\" of \"Query\" has incompatible type \"bool\"; expected \"ColumnElement[bool] | _HasClauseElement[bool] | SQLCoreOperations[bool] | ExpressionElementRole[bool] | TypedColumnsClauseRole[bool] | Callable[[], ColumnElement[bool]] | LambdaElement\"  [arg-type]": 1,
+    "Argument 3 to \"add_task\" of \"BackgroundTasks\" has incompatible type \"Column[str]\"; expected \"str\"  [arg-type]": 1,
+    "Argument 3 to \"filter\" of \"Query\" has incompatible type \"bool\"; expected \"ColumnElement[bool] | _HasClauseElement[bool] | SQLCoreOperations[bool] | ExpressionElementRole[bool] | TypedColumnsClauseRole[bool] | Callable[[], ColumnElement[bool]] | LambdaElement\"  [arg-type]": 1,
+    "Argument 4 to \"add_task\" of \"BackgroundTasks\" has incompatible type \"Column[str]\"; expected \"str\"  [arg-type]": 1,
+    "Argument 5 to \"add_task\" of \"BackgroundTasks\" has incompatible type \"Column[int]\"; expected \"int\"  [arg-type]": 1,
+    "Incompatible types in assignment (expression has type \"None\", variable has type \"Column[datetime]\")  [assignment]": 1,
+    "Incompatible types in assignment (expression has type \"bool\", variable has type \"Column[bool]\")  [assignment]": 2,
+    "Incompatible types in assignment (expression has type \"str\", variable has type \"Column[str]\")  [assignment]": 4,
+    "Item \"Column[str]\" of \"list[Any] | Column[str] | Any | int | None\" has no attribute \"__iter__\" (not iterable)  [union-attr]": 1,
+    "Item \"None\" of \"list[Any] | Column[str] | Any | int | None\" has no attribute \"__iter__\" (not iterable)  [union-attr]": 1,
+    "Item \"None\" of \"list[Any] | Column[str] | Any | int | None\" has no attribute \"append\"  [union-attr]": 5,
+    "Item \"int\" of \"list[Any] | Column[str] | Any | int | None\" has no attribute \"__iter__\" (not iterable)  [union-attr]": 1,
+    "Item \"int\" of \"list[Any] | Column[str] | Any | int | None\" has no attribute \"append\"  [union-attr]": 5,
+    "Need type annotation for \"debrief\"  [var-annotated]": 1,
+    "Value of type \"list[Any] | Column[str] | Any | int | None\" is not indexable  [index]": 1
+  },
+  "backend/routers/recruiter_enhancements/analytics.py": {
+    "Argument \"recruiter_id\" to \"get_cost_per_hire\" of \"MetricsRepository\" has incompatible type \"Column[int]\"; expected \"int\"  [arg-type]": 1,
+    "Argument \"recruiter_id\" to \"get_rubric_deep_analytics\" of \"MetricsRepository\" has incompatible type \"Column[int]\"; expected \"int\"  [arg-type]": 1,
+    "Argument \"recruiter_id\" to \"get_source_attribution\" of \"MetricsRepository\" has incompatible type \"Column[int]\"; expected \"int\"  [arg-type]": 1,
+    "Argument \"recruiter_id\" to \"get_time_in_stage_analytics\" of \"MetricsRepository\" has incompatible type \"Column[int]\"; expected \"int\"  [arg-type]": 1
+  },
+  "backend/routers/recruiter_enhancements/automation.py": {
+    "Incompatible return value type (got \"ColumnElement[bool]\", expected \"bool\")  [return-value]": 1,
+    "Incompatible types in assignment (expression has type \"ColumnElement[int]\", variable has type \"Column[int]\")  [assignment]": 1,
+    "Incompatible types in assignment (expression has type \"bool\", variable has type \"Column[bool]\")  [assignment]": 2,
+    "Incompatible types in assignment (expression has type \"str\", variable has type \"Column[str]\")  [assignment]": 2
+  },
+  "backend/routers/recruiter_enhancements/notes.py": {
+    "Argument 1 to \"loads\" has incompatible type \"Column[str]\"; expected \"str | bytes | bytearray\"  [arg-type]": 1,
+    "Incompatible types in assignment (expression has type \"bool\", variable has type \"Column[bool]\")  [assignment]": 2,
+    "Incompatible types in assignment (expression has type \"str\", variable has type \"Column[str]\")  [assignment]": 3
+  },
+  "backend/routers/recruiter_enhancements/previews.py": {
+    "Argument 1 to \"loads\" has incompatible type \"Column[str]\"; expected \"str | bytes | bytearray\"  [arg-type]": 1,
+    "Argument 2 to \"filter\" of \"Query\" has incompatible type \"bool\"; expected \"ColumnElement[bool] | _HasClauseElement[bool] | SQLCoreOperations[bool] | ExpressionElementRole[bool] | TypedColumnsClauseRole[bool] | Callable[[], ColumnElement[bool]] | LambdaElement\"  [arg-type]": 1
+  },
+  "backend/routers/recruiter_enhancements/scorecards.py": {
+    "Argument 1 to \"get\" of \"dict\" has incompatible type \"str | None\"; expected \"str\"  [arg-type]": 1,
+    "Argument 1 to \"loads\" has incompatible type \"Column[str]\"; expected \"str | bytes | bytearray\"  [arg-type]": 5,
+    "Incompatible types in assignment (expression has type \"str | None\", variable has type \"Column[str]\")  [assignment]": 1,
+    "Incompatible types in assignment (expression has type \"str\", variable has type \"Column[str]\")  [assignment]": 4
+  },
+  "backend/routers/recruiter_enhancements/stages.py": {
+    "Argument 3 to \"filter\" of \"Query\" has incompatible type \"bool\"; expected \"ColumnElement[bool] | _HasClauseElement[bool] | SQLCoreOperations[bool] | ExpressionElementRole[bool] | TypedColumnsClauseRole[bool] | Callable[[], ColumnElement[bool]] | LambdaElement\"  [arg-type]": 1,
+    "Incompatible types in assignment (expression has type \"bool\", variable has type \"Column[bool]\")  [assignment]": 2,
+    "Incompatible types in assignment (expression has type \"int\", variable has type \"Column[int]\")  [assignment]": 2,
+    "Incompatible types in assignment (expression has type \"str\", variable has type \"Column[str]\")  [assignment]": 4
+  },
+  "backend/routers/recruiter_enhancements/webhook_events.py": {
+    "Argument 3 to \"dispatch_webhook\" has incompatible type \"Any | None\"; expected \"int\"  [arg-type]": 1,
+    "Too many arguments for \"dispatch_webhook\"  [call-arg]": 1
+  },
+  "backend/routers/recruiter_enhancements/webhooks.py": {
+    "Argument 1 to \"_mask_webhook_url\" has incompatible type \"Column[str]\"; expected \"str\"  [arg-type]": 1,
+    "Argument 1 to \"loads\" has incompatible type \"Column[str]\"; expected \"str | bytes | bytearray\"  [arg-type]": 1,
+    "Incompatible types in assignment (expression has type \"bool\", variable has type \"Column[bool]\")  [assignment]": 1,
+    "Incompatible types in assignment (expression has type \"str\", variable has type \"Column[str]\")  [assignment]": 3
+  },
+  "backend/routers/recruiter_interviews/feedback.py": {
+    "Argument 1 to \"send_email\" has incompatible type \"Column[str]\"; expected \"str\"  [arg-type]": 2,
+    "Incompatible default for parameter \"company_id\" (default has type \"None\", parameter has type \"int\")  [assignment]": 2,
+    "Incompatible types in assignment (expression has type \"str\", variable has type \"Column[str]\")  [assignment]": 1,
+    "Item \"None\" of \"Application | None\" has no attribute \"status\"  [union-attr]": 4,
+    "Unsupported operand types for in (\"Column[str] | Any\" and \"tuple[str, str]\")  [operator]": 2
+  },
+  "backend/routers/recruiter_interviews/management.py": {
+    "Argument 1 to \"get_application_for_recruiter\" has incompatible type \"Column[int]\"; expected \"int\"  [arg-type]": 1,
+    "Argument 2 to \"add_task\" of \"BackgroundTasks\" has incompatible type \"Column[int]\"; expected \"int\"  [arg-type]": 1,
+    "Argument 3 to \"add_task\" of \"BackgroundTasks\" has incompatible type \"Column[str] | Any\"; expected \"str\"  [arg-type]": 1,
+    "Argument 5 to \"add_task\" of \"BackgroundTasks\" has incompatible type \"Column[int]\"; expected \"int\"  [arg-type]": 1,
+    "Incompatible types in assignment (expression has type \"datetime\", variable has type \"Column[datetime]\")  [assignment]": 1,
+    "Incompatible types in assignment (expression has type \"int\", variable has type \"Column[int]\")  [assignment]": 1,
+    "Incompatible types in assignment (expression has type \"str\", variable has type \"Column[str]\")  [assignment]": 9,
+    "Item \"None\" of \"Application | None\" has no attribute \"email\"  [union-attr]": 1,
+    "List comprehension has incompatible type List[Column[int]]; expected List[int]  [misc]": 1
+  },
+  "backend/routers/recruiter_interviews/scheduling.py": {
+    "Argument 2 to \"add_task\" of \"BackgroundTasks\" has incompatible type \"Column[int]\"; expected \"int\"  [arg-type]": 1,
+    "Argument 2 to \"mask_candidate_data\" has incompatible type \"Literal[True] | ColumnElement[bool]\"; expected \"bool\"  [arg-type]": 3,
+    "Argument 3 to \"add_task\" of \"BackgroundTasks\" has incompatible type \"Column[str]\"; expected \"str\"  [arg-type]": 1,
+    "Argument 3 to \"dispatch_webhook\" has incompatible type \"Column[int]\"; expected \"int\"  [arg-type]": 1,
+    "Argument 4 to \"add_task\" of \"BackgroundTasks\" has incompatible type \"Column[str]\"; expected \"str\"  [arg-type]": 1,
+    "Argument 6 to \"add_task\" of \"BackgroundTasks\" has incompatible type \"Column[int]\"; expected \"int\"  [arg-type]": 1,
+    "Incompatible types in assignment (expression has type \"str\", variable has type \"Column[str]\")  [assignment]": 1
+  },
+  "backend/routers/recruiter_job_wizard.py": {
+    "Argument \"job_id\" to \"WizardProgress\" has incompatible type \"Column[int]\"; expected \"int\"  [arg-type]": 1,
+    "Argument 1 to \"join\" of \"str\" has incompatible type \"list[Column[str]]\"; expected \"Iterable[str]\"  [arg-type]": 1,
+    "Generator has incompatible item type \"object\"; expected \"str\"  [misc]": 1,
+    "Incompatible types in assignment (expression has type \"bool\", variable has type \"Column[bool]\")  [assignment]": 2,
+    "Incompatible types in assignment (expression has type \"datetime\", variable has type \"Column[datetime]\")  [assignment]": 1,
+    "Incompatible types in assignment (expression has type \"int | None\", variable has type \"Column[int]\")  [assignment]": 1,
+    "Incompatible types in assignment (expression has type \"int\", variable has type \"Column[int]\")  [assignment]": 3,
+    "Incompatible types in assignment (expression has type \"list[dict[str, object]]\", target has type \"dict[str, Any]\")  [assignment]": 4,
+    "Incompatible types in assignment (expression has type \"list[dict[str, object]]\", variable has type \"Column[Any]\")  [assignment]": 1,
+    "Incompatible types in assignment (expression has type \"str | None\", variable has type \"Column[str]\")  [assignment]": 1,
+    "Incompatible types in assignment (expression has type \"str\", variable has type \"Column[str]\")  [assignment]": 6
+  },
+  "backend/routers/recruiter_jobs.py": {
+    "Argument 1 to \"get\" of \"dict\" has incompatible type \"Column[str] | str\"; expected \"str\"  [arg-type]": 2,
+    "Argument 3 to \"add_task\" of \"BackgroundTasks\" has incompatible type \"Column[int]\"; expected \"int\"  [arg-type]": 1,
+    "Incompatible types in assignment (expression has type \"bool\", variable has type \"Column[bool]\")  [assignment]": 1,
+    "Incompatible types in assignment (expression has type \"datetime\", variable has type \"Column[datetime]\")  [assignment]": 1,
+    "Invalid index type \"Column[str] | str\" for \"dict[str, int]\"; expected type \"str\"  [index]": 2,
+    "List item 0 has incompatible type \"Column[int]\"; expected \"int\"  [list-item]": 1,
+    "No overload variant of \"get\" of \"dict\" matches argument types \"Column[int]\", \"int\"  [call-overload]": 1,
+    "Unsupported operand types for / (\"object\" and \"int\")  [operator]": 1
+  },
+  "backend/routers/recruiter_offers.py": {
+    "Argument \"candidate_email\" to \"create_esign_envelope\" has incompatible type \"Column[str]\"; expected \"str\"  [arg-type]": 2,
+    "Argument \"candidate_name\" to \"create_esign_envelope\" has incompatible type \"Column[str]\"; expected \"str\"  [arg-type]": 2,
+    "Argument \"recruiter_email\" to \"create_esign_envelope\" has incompatible type \"Column[str]\"; expected \"str\"  [arg-type]": 2,
+    "Argument 1 to \"get_application_for_recruiter\" has incompatible type \"Column[int]\"; expected \"int\"  [arg-type]": 3,
+    "Argument 1 to \"get_esign_status\" has incompatible type \"Column[str]\"; expected \"str\"  [arg-type]": 1,
+    "Argument 1 to \"replace_placeholders\" has incompatible type \"str | None\"; expected \"str\"  [arg-type]": 2,
+    "Argument 1 to \"send_email\" has incompatible type \"Column[str]\"; expected \"str\"  [arg-type]": 2,
+    "Argument 2 to \"add_task\" of \"BackgroundTasks\" has incompatible type \"Column[int]\"; expected \"int\"  [arg-type]": 2,
+    "Argument 3 to \"add_task\" of \"BackgroundTasks\" has incompatible type \"Column[str]\"; expected \"str\"  [arg-type]": 2,
+    "Argument 3 to \"dispatch_webhook\" has incompatible type \"Any | None\"; expected \"int\"  [arg-type]": 1,
+    "Argument 4 to \"add_task\" of \"BackgroundTasks\" has incompatible type \"Column[str]\"; expected \"str\"  [arg-type]": 2,
+    "Argument 5 to \"add_task\" of \"BackgroundTasks\" has incompatible type \"Column[str]\"; expected \"str\"  [arg-type]": 1,
+    "Argument 6 to \"add_task\" of \"BackgroundTasks\" has incompatible type \"Column[str]\"; expected \"str\"  [arg-type]": 1,
+    "Argument 7 to \"add_task\" of \"BackgroundTasks\" has incompatible type \"Any | None\"; expected \"str\"  [arg-type]": 1,
+    "Argument 7 to \"add_task\" of \"BackgroundTasks\" has incompatible type \"Session\"; expected \"str\"  [arg-type]": 1,
+    "Incompatible default for parameter \"signing_url\" (default has type \"None\", parameter has type \"str\")  [assignment]": 1,
+    "Incompatible types in assignment (expression has type \"Any | None\", variable has type \"Column[str]\")  [assignment]": 1,
+    "Incompatible types in assignment (expression has type \"Column[str]\", variable has type \"str | None\")  [assignment]": 2,
+    "Incompatible types in assignment (expression has type \"bool\", variable has type \"Column[bool]\")  [assignment]": 1,
+    "Incompatible types in assignment (expression has type \"str | None\", variable has type \"Column[str]\")  [assignment]": 1,
+    "Incompatible types in assignment (expression has type \"str\", variable has type \"Column[str]\")  [assignment]": 5
+  },
+  "backend/routers/recruiter_questions.py": {
+    "Argument 1 to \"get_job_for_recruiter\" has incompatible type \"Column[int]\"; expected \"int\"  [arg-type]": 1
+  },
+  "backend/routers/recruiter_reengagement.py": {
+    "Argument \"related_id\" to \"notify_user\" has incompatible type \"Column[int]\"; expected \"int | None\"  [arg-type]": 1,
+    "Argument 1 to \"_generate_personalized_message\" has incompatible type \"Column[str] | str\"; expected \"str\"  [arg-type]": 1,
+    "Argument 1 to \"_make_unsubscribe_token\" has incompatible type \"Column[int]\"; expected \"int\"  [arg-type]": 1,
+    "Argument 1 to \"check_daily_sending_limit\" of \"ReEngagementEngine\" has incompatible type \"Column[int]\"; expected \"int\"  [arg-type]": 2,
+    "Argument 1 to \"escape\" has incompatible type \"Column[str] | str\"; expected \"str\"  [arg-type]": 1,
+    "Argument 1 to \"escape\" has incompatible type \"Column[str]\"; expected \"str\"  [arg-type]": 1,
+    "Argument 1 to \"get_application_for_recruiter\" has incompatible type \"Column[int]\"; expected \"int\"  [arg-type]": 3,
+    "Argument 1 to \"send_email\" of \"EmailService\" has incompatible type \"Column[str]\"; expected \"str\"  [arg-type]": 1,
+    "Argument 2 to \"_generate_personalized_message\" has incompatible type \"Column[str]\"; expected \"str\"  [arg-type]": 1,
+    "Argument 3 to \"add_task\" of \"BackgroundTasks\" has incompatible type \"Column[int]\"; expected \"int\"  [arg-type]": 1,
+    "Argument 4 to \"_generate_personalized_message\" has incompatible type \"Column[Any]\"; expected \"float\"  [arg-type]": 1,
+    "Incompatible types in assignment (expression has type \"ColumnElement[int] | int\", variable has type \"Column[int]\")  [assignment]": 2,
+    "Incompatible types in assignment (expression has type \"datetime\", variable has type \"Column[datetime]\")  [assignment]": 2,
+    "Incompatible types in assignment (expression has type \"str\", variable has type \"Column[str]\")  [assignment]": 2
+  },
+  "backend/routers/recruiter_reports.py": {
+    "Argument 1 to \"build_report\" of \"ReportBuilder\" has incompatible type \"Column[str]\"; expected \"dict[Any, Any]\"  [arg-type]": 2,
+    "Argument 1 to \"loads\" has incompatible type \"Column[str]\"; expected \"str | bytes | bytearray\"  [arg-type]": 2,
+    "Argument 2 to \"build_report\" of \"ReportBuilder\" has incompatible type \"Column[int]\"; expected \"int\"  [arg-type]": 3,
+    "Argument 2 to \"export_pdf\" of \"ReportBuilder\" has incompatible type \"Column[str]\"; expected \"str\"  [arg-type]": 1,
+    "Incompatible types in assignment (expression has type \"None\", variable has type \"Column[datetime]\")  [assignment]": 1,
+    "Incompatible types in assignment (expression has type \"None\", variable has type \"Column[str]\")  [assignment]": 2,
+    "Incompatible types in assignment (expression has type \"bool\", variable has type \"Column[bool]\")  [assignment]": 2,
+    "Incompatible types in assignment (expression has type \"datetime\", variable has type \"Column[datetime]\")  [assignment]": 2,
+    "Incompatible types in assignment (expression has type \"str\", variable has type \"Column[str]\")  [assignment]": 2
+  },
+  "backend/routers/recruiter_settings.py": {
+    "Argument 1 to \"SMTP\" has incompatible type \"Any | None\"; expected \"str\"  [arg-type]": 1,
+    "Argument 1 to \"login\" of \"SMTP\" has incompatible type \"Any | None\"; expected \"str\"  [arg-type]": 1,
+    "Argument 1 to \"secure_filename\" has incompatible type \"str | None\"; expected \"str\"  [arg-type]": 2,
+    "Argument 1 to \"sendmail\" of \"SMTP\" has incompatible type \"Any | None\"; expected \"str\"  [arg-type]": 1,
+    "Argument 2 to \"SMTP\" has incompatible type \"Any | None\"; expected \"int\"  [arg-type]": 1,
+    "Argument 2 to \"login\" of \"SMTP\" has incompatible type \"Any | None\"; expected \"str\"  [arg-type]": 1,
+    "Argument 2 to \"resolve_company_billing_user\" has incompatible type \"Column[int]\"; expected \"int | None\"  [arg-type]": 1,
+    "Argument 2 to \"scan_for_malware\" has incompatible type \"str | None\"; expected \"str\"  [arg-type]": 2,
+    "Argument 2 to \"sendmail\" of \"SMTP\" has incompatible type \"str | Column[str]\"; expected \"str | Sequence[str]\"  [arg-type]": 1,
+    "Incompatible types in assignment (expression has type \"Any | None\", target has type \"str\")  [assignment]": 1,
+    "Incompatible types in assignment (expression has type \"bool\", variable has type \"Column[bool]\")  [assignment]": 1,
+    "Incompatible types in assignment (expression has type \"float\", variable has type \"int\")  [assignment]": 1,
+    "Incompatible types in assignment (expression has type \"str | Column[str]\", target has type \"str\")  [assignment]": 1,
+    "Incompatible types in assignment (expression has type \"str | None\", variable has type \"Column[str]\")  [assignment]": 1,
+    "Incompatible types in assignment (expression has type \"str\", variable has type \"Column[str]\")  [assignment]": 6,
+    "Item \"None\" of \"Company | None\" has no attribute \"subscription_status\"  [union-attr]": 1,
+    "Item \"None\" of \"str | None\" has no attribute \"lower\"  [union-attr]": 1,
+    "Item \"None\" of \"str | None\" has no attribute \"startswith\"  [union-attr]": 1,
+    "Value of type variable \"AnyOrLiteralStr\" of \"splitext\" cannot be \"str | None\"  [type-var]": 1
+  },
+  "backend/routers/recruiter_skill_trees.py": {
+    "Argument 1 to \"dict\" has incompatible type \"list[Row[tuple[int, int]]]\"; expected \"Iterable[tuple[Never, Never]]\"  [arg-type]": 1,
+    "Argument 2 to \"_format_skill_tree\" has incompatible type \"Job | None\"; expected \"Job\"  [arg-type]": 3,
+    "Incompatible default for parameter \"data\" (default has type \"None\", parameter has type \"SkillTreeDuplicate\")  [assignment]": 1,
+    "Incompatible default for parameter \"extra\" (default has type \"None\", parameter has type \"dict[Any, Any]\")  [assignment]": 1,
+    "Incompatible default for parameter \"job\" (default has type \"None\", parameter has type \"Job\")  [assignment]": 1,
+    "Incompatible types in assignment (expression has type \"ColumnElement[int]\", variable has type \"int\")  [assignment]": 1,
+    "Incompatible types in assignment (expression has type \"Job | None\", variable has type \"Job\")  [assignment]": 1,
+    "Incompatible types in assignment (expression has type \"bool\", variable has type \"Column[int]\")  [assignment]": 4,
+    "Incompatible types in assignment (expression has type \"str\", variable has type \"Column[str]\")  [assignment]": 4,
+    "Need type annotation for \"campaign_counts\" (hint: \"campaign_counts: dict[<type>, <type>] = ...\")  [var-annotated]": 1
+  },
+  "backend/routers/recruiter_sourcing.py": {
+    "Argument 3 to \"add_task\" of \"BackgroundTasks\" has incompatible type \"Column[int]\"; expected \"int\"  [arg-type]": 1,
+    "Argument 3 to \"filter\" of \"Query\" has incompatible type \"bool\"; expected \"ColumnElement[bool] | _HasClauseElement[bool] | SQLCoreOperations[bool] | ExpressionElementRole[bool] | TypedColumnsClauseRole[bool] | Callable[[], ColumnElement[bool]] | LambdaElement\"  [arg-type]": 1,
+    "Argument 4 to \"filter\" of \"Query\" has incompatible type \"bool\"; expected \"ColumnElement[bool] | _HasClauseElement[bool] | SQLCoreOperations[bool] | ExpressionElementRole[bool] | TypedColumnsClauseRole[bool] | Callable[[], ColumnElement[bool]] | LambdaElement\"  [arg-type]": 2,
+    "Module \"backend.database\" has no attribute \"SourcedCandidate\"  [attr-defined]": 1
+  },
+  "backend/routers/recruiter_talent_pool.py": {
+    "Argument \"added_at\" to \"PoolCandidateOut\" has incompatible type \"Column[datetime]\"; expected \"datetime | None\"  [arg-type]": 1,
+    "Argument \"candidate_id\" to \"PoolCandidateOut\" has incompatible type \"Column[int]\"; expected \"int\"  [arg-type]": 1,
+    "Argument \"created_at\" to \"PoolOut\" has incompatible type \"Column[datetime]\"; expected \"datetime | None\"  [arg-type]": 4,
+    "Argument \"created_by\" to \"PoolOut\" has incompatible type \"Column[int]\"; expected \"int | None\"  [arg-type]": 4,
+    "Argument \"description\" to \"PoolOut\" has incompatible type \"Column[str]\"; expected \"str | None\"  [arg-type]": 4,
+    "Argument \"id\" to \"PoolCandidateOut\" has incompatible type \"Column[int]\"; expected \"int\"  [arg-type]": 1,
+    "Argument \"id\" to \"PoolOut\" has incompatible type \"Column[int]\"; expected \"int\"  [arg-type]": 4,
+    "Argument \"name\" to \"PoolOut\" has incompatible type \"Column[str]\"; expected \"str\"  [arg-type]": 4,
+    "Argument \"notes\" to \"PoolCandidateOut\" has incompatible type \"Column[str]\"; expected \"str | None\"  [arg-type]": 1,
+    "Argument \"updated_at\" to \"PoolOut\" has incompatible type \"Column[datetime]\"; expected \"datetime | None\"  [arg-type]": 4,
+    "Incompatible types in assignment (expression has type \"str\", variable has type \"Column[str]\")  [assignment]": 2
+  },
+  "backend/routers/search.py": {
+    "Argument 1 to \"filter\" of \"Query\" has incompatible type \"bool\"; expected \"ColumnElement[bool] | _HasClauseElement[bool] | SQLCoreOperations[bool] | ExpressionElementRole[bool] | TypedColumnsClauseRole[bool] | Callable[[], ColumnElement[bool]] | LambdaElement\"  [arg-type]": 1,
+    "Argument 2 to \"mask_candidate_data\" has incompatible type \"Literal[True] | ColumnElement[bool]\"; expected \"bool\"  [arg-type]": 1
+  },
+  "backend/routers/skill_progress.py": {
+    "Need type annotation for \"skill_entries\" (hint: \"skill_entries: list[<type>] = ...\")  [var-annotated]": 1
+  },
+  "backend/routers/support.py": {
+    "Argument 1 to \"send_email\" of \"EmailService\" has incompatible type \"Column[str]\"; expected \"str\"  [arg-type]": 1
+  },
+  "backend/routers/tracking.py": {
+    "Incompatible default for parameter \"token\" (default has type \"None\", parameter has type \"str\")  [assignment]": 1,
+    "Incompatible types in assignment (expression has type \"datetime\", variable has type \"Column[datetime]\")  [assignment]": 2
+  },
+  "backend/routers/unsubscribe.py": {
+    "Argument 1 to \"escape\" has incompatible type \"Column[str] | str\"; expected \"str\"  [arg-type]": 1,
+    "Incompatible types in assignment (expression has type \"str\", variable has type \"Column[str]\")  [assignment]": 1
+  },
+  "backend/rubric/config_reader.py": {
+    "Incompatible types in assignment (expression has type \"None\", variable has type \"list[dict[str, Any]]\")  [assignment]": 2
+  },
+  "backend/rubric/config_resolver.py": {
+    "Argument \"language\" to \"ResolvedEvaluationConfig\" has incompatible type \"str | None\"; expected \"str\"  [arg-type]": 1,
+    "Argument \"max_score\" to \"ResolvedEvaluationConfig\" has incompatible type \"float | None\"; expected \"float\"  [arg-type]": 1,
+    "Argument \"total_questions\" to \"ResolvedEvaluationConfig\" has incompatible type \"int | None\"; expected \"int\"  [arg-type]": 1,
+    "Unsupported operand types for * (\"None\" and \"int\")  [operator]": 1
+  },
+  "backend/rubric/interview_starter.py": {
+    "Argument \"application_id\" to \"EntryPoint\" has incompatible type \"Column[int]\"; expected \"int | None\"  [arg-type]": 1,
+    "Argument \"company_id\" to \"load_rubric_by_id\" has incompatible type \"Column[int]\"; expected \"int | None\"  [arg-type]": 1,
+    "Argument \"company_id\" to \"resolve\" of \"ConfigurationResolver\" has incompatible type \"Column[int]\"; expected \"int\"  [arg-type]": 1,
+    "Argument \"seconds\" to \"timedelta\" has incompatible type \"Column[int]\"; expected \"float\"  [arg-type]": 1,
+    "Argument \"source_id\" to \"EntryPoint\" has incompatible type \"Column[int]\"; expected \"int | None\"  [arg-type]": 1,
+    "Incompatible types in assignment (expression has type \"str\", variable has type \"Column[str]\")  [assignment]": 1
+  },
+  "backend/rubric/rubric_engine.py": {
+    "Need type annotation for \"results\" (hint: \"results: dict[<type>, <type>] = ...\")  [var-annotated]": 1
+  },
+  "backend/rubric/rubric_loader.py": {
+    "Incompatible return value type (got \"tuple[JobRubric, Column[int] | None]\", expected \"tuple[JobRubric | None, int | None]\")  [return-value]": 1
+  },
+  "backend/rubric/rubric_router.py": {
+    "\"object\" has no attribute \"__iter__\"; maybe \"__dir__\" or \"__str__\"? (not iterable)  [attr-defined]": 1,
+    "\"object\" has no attribute \"append\"  [attr-defined]": 4,
+    "Argument \"base_score\" to \"SkillScoreResult\" has incompatible type \"float\"; expected \"int\"  [arg-type]": 1,
+    "Argument \"explanation\" to \"SkillScoreResult\" has incompatible type \"Column[str] | str\"; expected \"str\"  [arg-type]": 1,
+    "Argument \"final_score\" to \"SkillScoreResult\" has incompatible type \"float\"; expected \"int\"  [arg-type]": 1,
+    "Argument \"job_id\" to \"JobRubric\" has incompatible type \"Column[int]\"; expected \"int\"  [arg-type]": 1,
+    "Argument \"skill_id\" to \"SkillScoreResult\" has incompatible type \"Column[str] | str\"; expected \"str\"  [arg-type]": 1,
+    "Argument \"skill_name\" to \"SkillScoreResult\" has incompatible type \"Column[str]\"; expected \"str\"  [arg-type]": 1,
+    "Argument \"version\" to \"JobRubric\" has incompatible type \"ColumnElement[int] | int\"; expected \"int\"  [arg-type]": 1,
+    "Argument 1 to \"_count_skills\" has incompatible type \"Any | list[Any] | None\"; expected \"list[Any]\"  [arg-type]": 1,
+    "Argument 1 to \"_stats\" has incompatible type \"list[Column[int]]\"; expected \"list[int]\"  [arg-type]": 3,
+    "Argument 1 to \"count\" of \"list\" has incompatible type \"str\"; expected \"Column[str]\"  [arg-type]": 2,
+    "Argument 1 to \"get\" of \"dict\" has incompatible type \"Any | None\"; expected \"Column[int]\"  [arg-type]": 1,
+    "Argument 1 to \"invalidate_cache\" has incompatible type \"Column[int]\"; expected \"int\"  [arg-type]": 1,
+    "Argument 1 to \"len\" has incompatible type \"Any | list[Any] | None\"; expected \"Sized\"  [arg-type]": 1,
+    "Argument 1 to \"len\" has incompatible type \"object\"; expected \"Sized\"  [arg-type]": 2,
+    "Argument 2 to \"_ensure_job_access\" has incompatible type \"Column[int]\"; expected \"int\"  [arg-type]": 7,
+    "Argument 2 to \"_user_company_id\" has incompatible type \"Column[int]\"; expected \"int\"  [arg-type]": 1,
+    "Argument 2 to \"map_extracted_skills\" has incompatible type \"dict[str, SkillDefinition]\"; expected \"dict[str, object]\"  [arg-type]": 1,
+    "Generator has incompatible item type \"int\"; expected \"bool\"  [misc]": 2,
+    "Incompatible types in assignment (expression has type \"ColumnElement[int] | int\", variable has type \"int\")  [assignment]": 1,
+    "Incompatible types in assignment (expression has type \"datetime\", variable has type \"Column[datetime]\")  [assignment]": 2,
+    "Incompatible types in assignment (expression has type \"int\", target has type \"Collection[Collection[str]]\")  [assignment]": 1,
+    "Incompatible types in assignment (expression has type \"int\", variable has type \"Column[int]\")  [assignment]": 2,
+    "Incompatible types in assignment (expression has type \"str | Any\", variable has type \"dict[str, Any] | None\")  [assignment]": 1,
+    "Incompatible types in assignment (expression has type \"str\", variable has type \"Column[str]\")  [assignment]": 2,
+    "Item \"None\" of \"JobRubric | None\" has no attribute \"categories\"  [union-attr]": 1,
+    "Item \"None\" of \"str | None\" has no attribute \"endswith\"  [union-attr]": 1,
+    "Item \"None\" of \"str | None\" has no attribute \"replace\"  [union-attr]": 1,
+    "Item \"int\" of \"list[Any] | int | Column[int] | Column[str] | str\" has no attribute \"lower\"  [union-attr]": 1,
+    "Item \"list[Any]\" of \"list[Any] | int | Column[int] | Column[str] | str\" has no attribute \"lower\"  [union-attr]": 1,
+    "Need type annotation for \"job_by_linked_rubric\" (hint: \"job_by_linked_rubric: dict[<type>, <type>] = ...\")  [var-annotated]": 1,
+    "Unsupported right operand type for in (\"object\")  [operator]": 3,
+    "Value of type variable \"SupportsRichComparisonT\" of \"max\" cannot be \"Reversible[Any]\"  [type-var]": 1
+  },
+  "backend/rubric/scoring_aggregator.py": {
+    "Incompatible types in assignment (expression has type \"SkillScoreResult | None\", variable has type \"SkillScoreResult\")  [assignment]": 1,
+    "Need type annotation for \"gaps\" (hint: \"gaps: list[<type>] = ...\")  [var-annotated]": 1
+  },
+  "backend/sales_autobot.py": {
+    "Incompatible default for parameter \"mission_name\" (default has type \"None\", parameter has type \"str\")  [assignment]": 1,
+    "Incompatible types in assignment (expression has type \"datetime\", variable has type \"Column[datetime]\")  [assignment]": 2,
+    "Incompatible types in assignment (expression has type \"int\", variable has type \"Column[int]\")  [assignment]": 1,
+    "Incompatible types in assignment (expression has type \"str\", variable has type \"Column[str]\")  [assignment]": 3,
+    "Unsupported operand types for < (\"int\" and \"object\")  [operator]": 1
+  },
+  "backend/scheduler.py": {
+    "Argument 3 to \"record_dead_letter\" has incompatible type \"Exception | None\"; expected \"Exception\"  [arg-type]": 1
+  },
+  "backend/schemas.py": {
+    "Name \"QuestionCreate\" already defined on line 140  [no-redef]": 1,
+    "Name \"QuestionOut\" already defined on line 152  [no-redef]": 1
+  },
+  "backend/scoring_engine.py": {
+    "Signature of \"score_interview\" incompatible with supertype \"backend.scoring_transparent.ScoringEngine\"  [override]": 1
+  },
+  "backend/scoring_service.py": {
+    "Argument 1 to \"get_canonical_score\" of \"ScoringService\" has incompatible type \"Column[int]\"; expected \"int\"  [arg-type]": 5,
+    "Argument 1 to \"round\" has incompatible type \"float\"; expected \"_SupportsRound2[Column[Any]]\"  [arg-type]": 1,
+    "Incompatible return value type (got \"Column[int]\", expected \"int | None\")  [return-value]": 1,
+    "Incompatible return value type (got \"Column[str]\", expected \"str | None\")  [return-value]": 2,
+    "Incompatible types in assignment (expression has type \"Column[int] | int\", variable has type \"Column[int]\")  [assignment]": 1,
+    "Incompatible types in assignment (expression has type \"Column[str] | str\", variable has type \"Column[str]\")  [assignment]": 1,
+    "Incompatible types in assignment (expression has type \"None\", variable has type \"Column[Any]\")  [assignment]": 1,
+    "Incompatible types in assignment (expression has type \"bool\", variable has type \"Column[bool]\")  [assignment]": 1,
+    "Incompatible types in assignment (expression has type \"datetime\", variable has type \"Column[datetime]\")  [assignment]": 4,
+    "Incompatible types in assignment (expression has type \"float\", variable has type \"Column[Any]\")  [assignment]": 6,
+    "Incompatible types in assignment (expression has type \"int\", variable has type \"Column[int]\")  [assignment]": 3,
+    "Incompatible types in assignment (expression has type \"str | None\", variable has type \"Column[str]\")  [assignment]": 1,
+    "Incompatible types in assignment (expression has type \"str\", variable has type \"Column[str]\")  [assignment]": 10,
+    "Missing return statement  [return]": 1
+  },
+  "backend/scoring_transparent.py": {
+    "Incompatible default for parameter \"config\" (default has type \"None\", parameter has type \"ScoringConfig\")  [assignment]": 1
+  },
+  "backend/scoring_weights.py": {
+    "Incompatible types in assignment (expression has type \"str\", variable has type \"Column[str]\")  [assignment]": 1
+  },
+  "backend/scripts/backfill_candidate_enrichment.py": {
+    "\"Result[Any]\" has no attribute \"rowcount\"  [attr-defined]": 1
+  },
+  "backend/scripts/backfill_company_ids.py": {
+    "Argument 2 to \"_app_company\" has incompatible type \"int | None\"; expected \"int\"  [arg-type]": 3
+  },
+  "backend/scripts/backfill_config_snapshots.py": {
+    "Argument \"application_id\" to \"EntryPoint\" has incompatible type \"Column[int]\"; expected \"int | None\"  [arg-type]": 1,
+    "Argument \"company_id\" to \"resolve\" of \"ConfigurationResolver\" has incompatible type \"Column[int]\"; expected \"int\"  [arg-type]": 1,
+    "Argument \"source_id\" to \"EntryPoint\" has incompatible type \"Column[str] | str | None\"; expected \"int | None\"  [arg-type]": 1,
+    "Argument \"source_type\" to \"EntryPoint\" has incompatible type \"Column[str] | str\"; expected \"str\"  [arg-type]": 1
+  },
+  "backend/scripts/backfill_cv_documents.py": {
+    "\"Result[Any]\" has no attribute \"rowcount\"  [attr-defined]": 1
+  },
+  "backend/secret_encryption.py": {
+    "Incompatible default for parameter \"secret_key\" (default has type \"None\", parameter has type \"str\")  [assignment]": 1
+  },
+  "backend/security.py": {
+    "Incompatible default for parameter \"content\" (default has type \"None\", parameter has type \"bytes\")  [assignment]": 1,
+    "Incompatible default for parameter \"secret_key\" (default has type \"None\", parameter has type \"str\")  [assignment]": 1,
+    "Incompatible return value type (got \"None\", expected \"tuple[Any, ...]\")  [return-value]": 3,
+    "Incompatible types in assignment (expression has type \"None\", target has type \"str\")  [assignment]": 1,
+    "Need type annotation for \"result\" (hint: \"result: dict[<type>, <type>] = ...\")  [var-annotated]": 1
+  },
+  "backend/services/admin_snapshot_service.py": {
+    "List comprehension has incompatible type List[Column[int]]; expected List[int]  [misc]": 1
+  },
+  "backend/services/candidate_service.py": {
+    "Incompatible types in assignment (expression has type \"Candidate | None\", variable has type \"Candidate\")  [assignment]": 1
+  },
+  "backend/services/feature_service.py": {
+    "Argument 2 to \"_check_rollout\" has incompatible type \"Column[int]\"; expected \"int\"  [arg-type]": 1,
+    "Incompatible return value type (got \"ColumnElement[bool]\", expected \"bool\")  [return-value]": 1,
+    "Incompatible types in assignment (expression has type \"Column[str] | str\", variable has type \"str\")  [assignment]": 1
+  },
+  "backend/simple_rate_limiter.py": {
+    "Incompatible default for parameter \"identifier\" (default has type \"None\", parameter has type \"str\")  [assignment]": 1
+  },
+  "backend/slack_bot.py": {
+    "Argument 1 to \"handle_recent\" of \"SlackBot\" has incompatible type \"Column[int]\"; expected \"int\"  [arg-type]": 1,
+    "Argument 2 to \"handle_interviews\" of \"SlackBot\" has incompatible type \"Column[int]\"; expected \"int\"  [arg-type]": 1,
+    "Argument 2 to \"handle_search\" of \"SlackBot\" has incompatible type \"Column[int]\"; expected \"int\"  [arg-type]": 1,
+    "Argument 2 to \"handle_stats\" of \"SlackBot\" has incompatible type \"Column[int]\"; expected \"int\"  [arg-type]": 1,
+    "Argument 2 to \"handle_top_candidates\" of \"SlackBot\" has incompatible type \"Column[int]\"; expected \"int\"  [arg-type]": 1,
+    "Argument 3 to \"handle_offer\" of \"SlackBot\" has incompatible type \"Column[int]\"; expected \"int\"  [arg-type]": 1,
+    "Incompatible types in assignment (expression has type \"list[Job]\", variable has type \"Query[Job]\")  [assignment]": 1,
+    "Incompatible types in assignment (expression has type \"str\", variable has type \"Column[str]\")  [assignment]": 1
+  },
+  "backend/sourcing_agent.py": {
+    "Argument \"params\" to \"get\" of \"AsyncClient\" has incompatible type \"dict[str, object]\"; expected \"QueryParams | Mapping[str, str | int | float | bool | None | Sequence[str | int | float | bool | None]] | list[tuple[str, str | int | float | bool | None]] | tuple[tuple[str, str | int | float | bool | None], ...] | str | bytes | None\"  [arg-type]": 2,
+    "Argument 1 to \"extend\" of \"list\" has incompatible type \"list[Any] | BaseException\"; expected \"Iterable[Any]\"  [arg-type]": 1,
+    "Item \"BaseException\" of \"list[Any] | BaseException\" has no attribute \"__iter__\" (not iterable)  [union-attr]": 1,
+    "Module \"backend.database\" has no attribute \"SourcedCandidate\"  [attr-defined]": 1,
+    "Need type annotation for \"all_candidates\" (hint: \"all_candidates: list[<type>] = ...\")  [var-annotated]": 1
+  },
+  "backend/subscription_lifecycle_service.py": {
+    "Argument \"amount_paid\" to \"log_subscription_history\" has incompatible type \"Column[Any] | None\"; expected \"float | None\"  [arg-type]": 1,
+    "Argument \"from_plan_id\" to \"log_subscription_history\" has incompatible type \"Column[int]\"; expected \"int | None\"  [arg-type]": 1,
+    "Argument \"to_plan_id\" to \"log_subscription_history\" has incompatible type \"Column[int]\"; expected \"int | None\"  [arg-type]": 1,
+    "Argument 2 to \"get_user_company_id\" has incompatible type \"Column[int]\"; expected \"int\"  [arg-type]": 1,
+    "Argument 3 to \"grant_credits\" has incompatible type \"Column[int]\"; expected \"int\"  [arg-type]": 1,
+    "Incompatible types in assignment (expression has type \"Column[int] | None\", variable has type \"Column[int]\")  [assignment]": 1,
+    "Incompatible types in assignment (expression has type \"None\", variable has type \"Column[datetime]\")  [assignment]": 3,
+    "Incompatible types in assignment (expression has type \"None\", variable has type \"Column[str]\")  [assignment]": 1,
+    "Incompatible types in assignment (expression has type \"bool\", variable has type \"Column[bool]\")  [assignment]": 4,
+    "Incompatible types in assignment (expression has type \"datetime\", variable has type \"Column[datetime]\")  [assignment]": 4,
+    "Incompatible types in assignment (expression has type \"str\", variable has type \"Column[str]\")  [assignment]": 7
+  },
+  "backend/subscription_service.py": {
+    "Incompatible return value type (got \"Any | ColumnElement[bool]\", expected \"bool\")  [return-value]": 1,
+    "Need type annotation for \"_USAGE_LIMITS\" (hint: \"_USAGE_LIMITS: dict[<type>, <type>] = ...\")  [var-annotated]": 1
+  },
+  "backend/teams_bot.py": {
+    "Argument 1 to \"_create_stats_card\" of \"TeamsBot\" has incompatible type \"Query[Job]\"; expected \"list[Any]\"  [arg-type]": 1,
+    "Dict entry 2 has incompatible type \"str\": \"bool\"; expected \"str\": \"str\"  [dict-item]": 1,
+    "Incompatible types in assignment (expression has type \"list[Job]\", variable has type \"Query[Job]\")  [assignment]": 1,
+    "Incompatible types in assignment (expression has type \"str\", variable has type \"Column[str]\")  [assignment]": 2
+  },
+  "backend/tenant.py": {
+    "\"type\" has no attribute \"company_id\"  [attr-defined]": 2,
+    "\"type\" has no attribute \"id\"  [attr-defined]": 1,
+    "Need type annotation for \"mapper\"  [var-annotated]": 1
+  },
+  "backend/tests/perf_benchmark.py": {
+    "Incompatible default for parameter \"body\" (default has type \"None\", parameter has type \"dict[Any, Any]\")  [assignment]": 2,
+    "Need type annotation for \"statuses\" (hint: \"statuses: dict[<type>, <type>] = ...\")  [var-annotated]": 1
+  },
+  "backend/tests/test_ai_interview_quality_fixes.py": {
+    "Argument \"categories\" to \"ParsedRubric\" has incompatible type \"object\"; expected \"list[dict[str, Any]]\"  [arg-type]": 1,
+    "Argument \"id\" to \"ParsedRubric\" has incompatible type \"str\"; expected \"int | None\"  [arg-type]": 1,
+    "Argument 1 to \"JobRubric\" has incompatible type \"**dict[str, object]\"; expected \"bool\"  [arg-type]": 1,
+    "Argument 1 to \"JobRubric\" has incompatible type \"**dict[str, object]\"; expected \"int\"  [arg-type]": 1,
+    "Argument 1 to \"JobRubric\" has incompatible type \"**dict[str, object]\"; expected \"list[CategoryDefinition]\"  [arg-type]": 1,
+    "Argument 1 to \"JobRubric\" has incompatible type \"**dict[str, object]\"; expected \"str\"  [arg-type]": 1,
+    "List item 0 has incompatible type \"str\"; expected \"dict[str, Any]\"  [list-item]": 1
+  },
+  "backend/tests/test_ai_interview_scoring_hardening.py": {
+    "Argument 1 to \"JobRubric\" has incompatible type \"**dict[str, object]\"; expected \"bool\"  [arg-type]": 1,
+    "Argument 1 to \"JobRubric\" has incompatible type \"**dict[str, object]\"; expected \"int\"  [arg-type]": 1,
+    "Argument 1 to \"JobRubric\" has incompatible type \"**dict[str, object]\"; expected \"list[CategoryDefinition]\"  [arg-type]": 1,
+    "Argument 1 to \"JobRubric\" has incompatible type \"**dict[str, object]\"; expected \"str\"  [arg-type]": 1
+  },
+  "backend/tests/test_interview_generation_safety.py": {
+    "Argument 1 to \"JobRubric\" has incompatible type \"**dict[str, object]\"; expected \"bool\"  [arg-type]": 1,
+    "Argument 1 to \"JobRubric\" has incompatible type \"**dict[str, object]\"; expected \"int\"  [arg-type]": 1,
+    "Argument 1 to \"JobRubric\" has incompatible type \"**dict[str, object]\"; expected \"list[CategoryDefinition]\"  [arg-type]": 1,
+    "Argument 1 to \"JobRubric\" has incompatible type \"**dict[str, object]\"; expected \"str\"  [arg-type]": 1
+  },
+  "backend/tests/test_migration_m79.py": {
+    "Argument 1 to \"module_from_spec\" has incompatible type \"ModuleSpec | None\"; expected \"ModuleSpec\"  [arg-type]": 1,
+    "Item \"None\" of \"Loader | Any | None\" has no attribute \"exec_module\"  [union-attr]": 1,
+    "Item \"None\" of \"ModuleSpec | None\" has no attribute \"loader\"  [union-attr]": 1
+  },
+  "backend/tests/test_payment_proofs.py": {
+    "Argument \"headers\" to \"post\" of \"TestClient\" has incompatible type \"dict[str, Any | str | None]\"; expected \"Headers | Mapping[str, str] | Mapping[bytes, bytes] | Sequence[tuple[str, str]] | Sequence[tuple[bytes, bytes]] | None\"  [arg-type]": 1
+  },
+  "backend/tests/test_scoring_fixes_regression.py": {
+    "Argument 1 to \"get_canonical_score\" of \"ScoringService\" has incompatible type \"Column[int]\"; expected \"int\"  [arg-type]": 1,
+    "Argument 1 to \"run_background_final_evaluation\" has incompatible type \"Column[int]\"; expected \"int\"  [arg-type]": 1,
+    "Argument 2 to \"run_background_final_evaluation\" has incompatible type \"Column[int]\"; expected \"int\"  [arg-type]": 1,
+    "Incompatible types in assignment (expression has type \"float\", variable has type \"Column[Any]\")  [assignment]": 1,
+    "Item \"None\" of \"EvaluationResult | None\" has no attribute \"cv_score\"  [union-attr]": 1,
+    "Item \"None\" of \"EvaluationResult | None\" has no attribute \"final_score\"  [union-attr]": 1
+  },
+  "backend/tests/test_security_fixes.py": {
+    "Incompatible default for parameter \"job_id\" (default has type \"None\", parameter has type \"int\")  [assignment]": 1
+  },
+  "backend/trakin/ai_monitor.py": {
+    "Incompatible default for parameter \"user_id\" (default has type \"None\", parameter has type \"int\")  [assignment]": 1
+  },
+  "backend/utils/account_service.py": {
+    "Incompatible return value type (got \"tuple[User, Column[str]]\", expected \"tuple[User, str]\")  [return-value]": 1,
+    "Incompatible return value type (got \"tuple[User, None]\", expected \"tuple[User, str]\")  [return-value]": 1,
+    "Incompatible types in assignment (expression has type \"None\", variable has type \"Column[datetime]\")  [assignment]": 1,
+    "Incompatible types in assignment (expression has type \"str\", variable has type \"Column[str]\")  [assignment]": 2
+  },
+  "backend/webhook_dispatcher.py": {
+    "Argument 1 to \"loads\" has incompatible type \"Column[str]\"; expected \"str | bytes | bytearray\"  [arg-type]": 1,
+    "Argument 1 to \"post\" of \"AsyncClient\" has incompatible type \"Column[str]\"; expected \"URL | str\"  [arg-type]": 1,
+    "Incompatible types in assignment (expression has type \"ColumnElement[int] | int\", variable has type \"Column[int]\")  [assignment]": 2,
+    "Incompatible types in assignment (expression has type \"bool\", variable has type \"Column[bool]\")  [assignment]": 2,
+    "Incompatible types in assignment (expression has type \"int\", variable has type \"Column[int]\")  [assignment]": 1
+  }
+}

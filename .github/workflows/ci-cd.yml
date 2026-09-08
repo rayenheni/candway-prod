@@ -36,7 +36,7 @@ jobs:
         run: |
           python -m pip install --upgrade pip
           pip install -r requirements.txt
-          pip install ruff mypy
+          pip install ruff "mypy==2.3.1"
 
       - name: Lint with Ruff
         run: ruff check backend/ --select E,F,W,I --ignore E501
@@ -56,8 +56,21 @@ jobs:
             echo "$changed" | xargs ruff format --check
           fi
 
-      - name: Type check with Mypy
-        run: mypy backend/ --ignore-missing-imports
+      - name: Type check with Mypy (regression gate)
+        env:
+          BASE_SHA: ${{ github.event_name == 'pull_request' && github.event.pull_request.base.sha || github.event.before }}
+        run: |
+          set +e
+          python -m mypy backend/ --ignore-missing-imports --no-incremental --show-error-codes > mypy_dump.txt 2>&1
+          mypy_status=$?
+          set -e
+
+          if [ "$mypy_status" -ne 0 ] && [ ! -s mypy_dump.txt ]; then
+            echo "::error::Mypy failed without producing an error report (exit $mypy_status); failing closed."
+            exit "$mypy_status"
+          fi
+
+          python scripts/ci_mypy_gate.py check scripts/mypy_baseline.json mypy_dump.txt --base "$BASE_SHA"
 
   # ============================================
   # SECURITY SCAN

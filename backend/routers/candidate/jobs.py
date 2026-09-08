@@ -1,7 +1,7 @@
 import json
 import logging
 from datetime import UTC, datetime
-from typing import Optional
+from typing import Optional, cast
 
 from fastapi import APIRouter, BackgroundTasks, Depends, HTTPException
 from pydantic import BaseModel
@@ -649,7 +649,7 @@ def apply_to_job(
                 analysis_cost,
                 "cv_analysis",
                 reference_type="application",
-                reference_id=new_app.id,
+                reference_id=cast(int, new_app.id),
             )
         except ValueError as funding_fail:
             db.rollback()
@@ -667,12 +667,12 @@ def apply_to_job(
         try:
             record_usage_event_in_transaction(
                 db,
-                user_id=billing_user.id,
+                user_id=cast(int, billing_user.id),
                 company_id=company_id,
                 resource="cv_analysis",
                 credits=int(abs(getattr(funding_tx, "amount", 0) or 0)),
                 reference_type="application",
-                reference_id=new_app.id,
+                reference_id=cast(int, new_app.id),
             )
         except Exception as usage_err:
             logger.warning(
