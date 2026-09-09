@@ -42,7 +42,9 @@ def make_request(url: str, method: str = "GET", body: dict = None) -> tuple[int,
     try:
         data = json.dumps(body).encode() if body else None
         headers = {"Content-Type": "application/json"} if body else None
-        resp = _HTTP_CLIENT.request(method, url, content=data, headers=headers, timeout=10)
+        resp = _HTTP_CLIENT.request(
+            method, url, content=data, headers=headers, timeout=10
+        )
         status = resp.status_code
     except httpx.RequestError:
         status = 0

@@ -88,7 +88,9 @@ class ABExperiment:
 
     def assign_variant(self, candidate_id: str) -> str:
         """Deterministically assign a variant based on candidate ID"""
-        hash_val = int(hashlib.md5(candidate_id.encode(), usedforsecurity=False).hexdigest(), 16)
+        hash_val = int(
+            hashlib.md5(candidate_id.encode(), usedforsecurity=False).hexdigest(), 16
+        )
         normalized = hash_val % 1000 / 1000.0
 
         cumulative = 0

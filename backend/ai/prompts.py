@@ -207,7 +207,9 @@ def get_prompt_variant(user_id=None, prompt_type=None):
 
     # Hash user_id to get consistent bucket assignment
     hash_value = int(
-        hashlib.md5(f"{user_id}:{prompt_type}".encode(), usedforsecurity=False).hexdigest(),
+        hashlib.md5(
+            f"{user_id}:{prompt_type}".encode(), usedforsecurity=False
+        ).hexdigest(),
         16,
     )
     bucket = hash_value % 100
@@ -1075,7 +1077,9 @@ def get_cv_extraction_prompt(cv_text, job_description=""):
     """
 
 
-def get_cv_extraction_prompt_with_rubric(cv_text, job_description="", rubric_context=""):
+def get_cv_extraction_prompt_with_rubric(
+    cv_text, job_description="", rubric_context=""
+):
     _cv = _escape_prompt_text(cv_text[:4000])
     _jd = _escape_prompt_text(job_description)
     _rubric = _escape_prompt_text(rubric_context)

@@ -238,9 +238,7 @@ def _send_interview_invite_on_claim(db: Session, user: User):
             # Generate interview token
             token_data = generate_interview_token(app.id)
             token = token_data["token"]
-            interview_url = (
-                f"{settings.frontend_url}/auth/interview-access?app_id={app.id}&token={token}"
-            )
+            interview_url = f"{settings.frontend_url}/auth/interview-access?app_id={app.id}&token={token}"
 
             campaign_title = campaign.title if campaign else "the position"
             target_role = (
@@ -417,7 +415,9 @@ def signup(
                     user_id=db_user.id,
                     agreement_type="terms_and_privacy",
                     version=_consent_version(db),
-                    ip_address=request.client.host if request.client else UNKNOWN_CLIENT_IP,
+                    ip_address=request.client.host
+                    if request.client
+                    else UNKNOWN_CLIENT_IP,
                     user_agent=request.headers.get("user-agent", "signup_flow")[:255],
                 )
                 db.add(consent)
@@ -499,6 +499,7 @@ def signup(
     # Grant welcome starter credits (20 for candidate, 50 for recruiter)
     try:
         from backend.credit_service import grant_credits
+
         grant_credits(
             db,
             new_user,
@@ -510,7 +511,6 @@ def signup(
         )
     except Exception as err:
         logger.warning(f"Failed to grant starter credits for user {new_user.id}: {err}")
-
 
     # SECURITY FIX: Generate Email Verification Token
     token = secrets.token_urlsafe(32)
@@ -688,7 +688,9 @@ def signup_org(
                     user_id=org_admin.id,
                     agreement_type="terms_and_privacy",
                     version=_consent_version(db),
-                    ip_address=request.client.host if request.client else UNKNOWN_CLIENT_IP,
+                    ip_address=request.client.host
+                    if request.client
+                    else UNKNOWN_CLIENT_IP,
                     user_agent=request.headers.get("user-agent", "org_signup_flow")[
                         :255
                     ],

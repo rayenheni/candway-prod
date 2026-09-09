@@ -232,9 +232,7 @@ async def background_analyze_batch(
                             final_score = float(weighted["cv_score"])
                             analysis["score"] = final_score
                             analysis["cv_rubric_weighted"] = True
-                            analysis["scoring_method"] = weighted[
-                                "scoring_method"
-                            ]
+                            analysis["scoring_method"] = weighted["scoring_method"]
                             analysis["coverage_pct"] = weighted["coverage_pct"]
                             analysis["missing_skills"] = weighted["missing_skills"]
                             analysis["skill_scores"] = weighted["skill_scores"]
@@ -249,7 +247,9 @@ async def background_analyze_batch(
                                         "name": name,
                                         "category": details.get("category"),
                                     }
-                                    for name, details in weighted["skill_scores"].items()
+                                    for name, details in weighted[
+                                        "skill_scores"
+                                    ].items()
                                     if details.get("score", 0) > 0
                                 ],
                                 "missing_skills": [
@@ -257,7 +257,9 @@ async def background_analyze_batch(
                                         "name": name,
                                         "category": details.get("category"),
                                     }
-                                    for name, details in weighted["skill_scores"].items()
+                                    for name, details in weighted[
+                                        "skill_scores"
+                                    ].items()
                                     if details.get("score", 0) == 0
                                 ],
                             }
@@ -415,8 +417,11 @@ async def background_analyze_batch(
         # Task 7: Start email sequence if enabled
         if batch.email_sequence_enabled:
             try:
-                logger.info(f"Email sequence enabled for campaign {batch.id}. Running automated sequence worker.")
+                logger.info(
+                    f"Email sequence enabled for campaign {batch.id}. Running automated sequence worker."
+                )
                 from backend.email_sequence_worker import process_email_sequences
+
                 process_email_sequences(db)
             except Exception as seq_err:
                 logger.error(f"Failed to initiate email sequence: {seq_err}")
@@ -649,8 +654,7 @@ async def upload_cvs(
         skipped_duplicates = [
             r
             for r in results
-            if r.get("status") == "skipped"
-            and "Duplicate" in (r.get("reason") or "")
+            if r.get("status") == "skipped" and "Duplicate" in (r.get("reason") or "")
         ]
         failed_items = [r for r in results if r.get("status") == "failed"]
         duplicate_emails = [
