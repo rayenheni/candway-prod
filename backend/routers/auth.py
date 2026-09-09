@@ -98,6 +98,9 @@ LOGIN_BACKOFF_SECONDS = [0, 1.0, 2.0, 4.0, 8.0, 16.0, 30.0]
 LOGIN_IP_FAIL_THRESHOLD = 20
 # Per-account failed-attempt count that triggers a 1-hour lock.
 LOGIN_ACCOUNT_FAIL_THRESHOLD = 5
+# Fallback when ``request.client is None`` (missing/unknown client IP)
+# in audit, consent, and rate-limit records. Not a bind address.
+UNKNOWN_CLIENT_IP = "0.0.0.0"  # nosec: B104 - sentinel value, not a bind address
 
 
 def _get_client_ip(request: Request) -> str:
@@ -414,7 +417,7 @@ def signup(
                     user_id=db_user.id,
                     agreement_type="terms_and_privacy",
                     version=_consent_version(db),
-                    ip_address=request.client.host if request.client else "0.0.0.0",
+                    ip_address=request.client.host if request.client else UNKNOWN_CLIENT_IP,
                     user_agent=request.headers.get("user-agent", "signup_flow")[:255],
                 )
                 db.add(consent)
@@ -526,7 +529,7 @@ def signup(
             user_id=new_user.id,
             agreement_type="terms_and_privacy",
             version=_consent_version(db),
-            ip_address=request.client.host if request.client else "0.0.0.0",
+            ip_address=request.client.host if request.client else UNKNOWN_CLIENT_IP,
             user_agent=request.headers.get("user-agent", "signup_flow")[:255],
         )
         db.add(consent)
@@ -685,7 +688,7 @@ def signup_org(
                     user_id=org_admin.id,
                     agreement_type="terms_and_privacy",
                     version=_consent_version(db),
-                    ip_address=request.client.host if request.client else "0.0.0.0",
+                    ip_address=request.client.host if request.client else UNKNOWN_CLIENT_IP,
                     user_agent=request.headers.get("user-agent", "org_signup_flow")[
                         :255
                     ],
@@ -1487,7 +1490,7 @@ async def reset_password(
     from backend.redis_rate_limiter import check_rate_limit
 
     # Rate limiting
-    client_ip = request.client.host if request.client else "0.0.0.0"
+    client_ip = request.client.host if request.client else UNKNOWN_CLIENT_IP
     is_allowed, metadata = await check_rate_limit(
         identifier=f"reset_pw_final:{client_ip}", max_requests=5, window_seconds=3600
     )
@@ -1577,7 +1580,7 @@ async def change_password(
     """
     from backend.redis_rate_limiter import check_rate_limit
 
-    client_ip = request.client.host if request.client else "0.0.0.0"
+    client_ip = request.client.host if request.client else UNKNOWN_CLIENT_IP
     is_allowed, metadata = await check_rate_limit(
         identifier=f"change_pw:{current_user.id}:{client_ip}",
         max_requests=5,
@@ -1701,11 +1704,10 @@ async def google_callback(
     if not client_id or not client_secret:
         raise HTTPException(status_code=400, detail="OAuth not configured")
 
-    import json
-    import urllib.parse
-    import urllib.request
+    import httpx
 
     token_url = "https://oauth2.googleapis.com/token"
+    userinfo_url = "https://www.googleapis.com/oauth2/v2/userinfo"
     secret_key = settings.secret_key
     decrypted_client_secret = decrypt_value(client_secret.value, secret_key)
 
@@ -1721,20 +1723,19 @@ async def google_callback(
         "redirect_uri": f"{settings.frontend_url}/auth/google/callback",
     }
 
-    req = urllib.request.Request(
-        token_url, data=urllib.parse.urlencode(token_data).encode()
-    )
-    req.add_header("Content-Type", "application/x-www-form-urlencoded")
+    async with httpx.AsyncClient(timeout=30.0) as client:
+        token_response = await client.post(
+            token_url,
+            data=token_data,
+            headers={"Content-Type": "application/x-www-form-urlencoded"},
+        )
+        tokens = token_response.json()
 
-    with urllib.request.urlopen(req) as token_response:
-        tokens = json.loads(token_response.read())
-
-        userinfo_url = "https://www.googleapis.com/oauth2/v2/userinfo"
-        req = urllib.request.Request(userinfo_url)
-        req.add_header("Authorization", f"Bearer {tokens['access_token']}")
-
-        with urllib.request.urlopen(req) as userinfo_response:
-            google_user = json.loads(userinfo_response.read())
+        userinfo_response = await client.get(
+            userinfo_url,
+            headers={"Authorization": f"Bearer {tokens['access_token']}"},
+        )
+        google_user = userinfo_response.json()
 
         user = db.query(User).filter(User.email == google_user["email"]).first()
 

@@ -88,7 +88,7 @@ class ABExperiment:
 
     def assign_variant(self, candidate_id: str) -> str:
         """Deterministically assign a variant based on candidate ID"""
-        hash_val = int(hashlib.md5(candidate_id.encode()).hexdigest(), 16)
+        hash_val = int(hashlib.md5(candidate_id.encode(), usedforsecurity=False).hexdigest(), 16)
         normalized = hash_val % 1000 / 1000.0
 
         cumulative = 0
@@ -205,7 +205,7 @@ class ABTestManager:
     ) -> ABExperiment:
         """Create a new A/B test experiment"""
         exp_id = hashlib.md5(
-            f"{name}{datetime.now(UTC).isoformat()}".encode()
+            f"{name}{datetime.now(UTC).isoformat()}".encode(), usedforsecurity=False
         ).hexdigest()[:8]
 
         if traffic_split is None:

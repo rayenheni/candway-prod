@@ -206,7 +206,10 @@ def get_prompt_variant(user_id=None, prompt_type=None):
         return "control"
 
     # Hash user_id to get consistent bucket assignment
-    hash_value = int(hashlib.md5(f"{user_id}:{prompt_type}".encode()).hexdigest(), 16)
+    hash_value = int(
+        hashlib.md5(f"{user_id}:{prompt_type}".encode(), usedforsecurity=False).hexdigest(),
+        16,
+    )
     bucket = hash_value % 100
 
     return "variant" if bucket < AB_TEST_BUCKET_SIZE else "control"

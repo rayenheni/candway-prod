@@ -321,7 +321,7 @@ async def background_analyze_batch(
                     or "redacted" in str(final_email).lower()
                 ):
                     text_hash = hashlib.md5(
-                        text.encode("utf-8", errors="ignore")
+                        text.encode("utf-8", errors="ignore"), usedforsecurity=False
                     ).hexdigest()[:10]
                     final_email = f"no-email-{text_hash}@import.local"
 

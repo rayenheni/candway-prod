@@ -186,7 +186,9 @@ def _check_rollout(flag: FeatureFlag, user_id: int) -> bool:
     if flag.rollout_percentage <= 0:
         return False
     hash_input = f"{flag.flag_key}:{user_id}"
-    hash_val = int(hashlib.md5(hash_input.encode()).hexdigest(), 16) % 100
+    hash_val = int(
+        hashlib.md5(hash_input.encode(), usedforsecurity=False).hexdigest(), 16
+    ) % 100
     return hash_val < flag.rollout_percentage
 
 

@@ -2005,7 +2005,10 @@ def assign_ab_user(
         raise HTTPException(status_code=400, detail="Experiment is not running")
 
     identity = str(user_id or candidate_id)
-    hash_val = int(hashlib.md5(f"{experiment_id}:{identity}".encode()).hexdigest(), 16)
+    hash_val = int(
+        hashlib.md5(f"{experiment_id}:{identity}".encode(), usedforsecurity=False).hexdigest(),
+        16,
+    )
     variant = "a" if (hash_val % 100) < exp.traffic_split else "b"
 
     existing = (

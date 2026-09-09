@@ -232,7 +232,9 @@ async def analyze_cv(
         try:
             from backend.ai.advanced_cv_analyzer import AdvancedCVAnalyzer
 
-            digest = hashlib.sha1(text_anonymized.encode("utf-8")).hexdigest()[:12]
+            digest = hashlib.sha1(
+                text_anonymized.encode("utf-8"), usedforsecurity=False
+            ).hexdigest()[:12]
             analyzer = AdvancedCVAnalyzer()
             advanced = await analyzer.analyze_cv(
                 cv_content=text_anonymized,

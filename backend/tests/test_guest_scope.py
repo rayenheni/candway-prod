@@ -80,7 +80,7 @@ def _make_app(db, company_id, email, user_id=None, status="invited"):
 
 
 def _seed_company_user(db, email):
-    slug = f"h2-{hashlib.md5(email.encode()).hexdigest()[:10]}"
+    slug = f"h2-{hashlib.md5(email.encode(), usedforsecurity=False).hexdigest()[:10]}"
     company = db.query(Company).filter(Company.slug == slug).first()
     if not company:
         company = Company(name=email.split("@")[0], slug=slug)

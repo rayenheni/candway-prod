@@ -14,8 +14,8 @@ import statistics
 import sys
 import time
 from concurrent.futures import ThreadPoolExecutor, as_completed
-from urllib.error import HTTPError, URLError
-from urllib.request import Request, urlopen
+
+import httpx
 
 ENDPOINTS = [
     ("GET", "/"),
@@ -33,18 +33,18 @@ AUTH_ENDPOINTS = [
     ),
 ]
 
+# Shared connection-pooled client (thread-safe; used across benchmark threads).
+_HTTP_CLIENT = httpx.Client()
+
 
 def make_request(url: str, method: str = "GET", body: dict = None) -> tuple[int, float]:
     start = time.perf_counter()
     try:
         data = json.dumps(body).encode() if body else None
-        req = Request(url, data=data, method=method)
-        req.add_header("Content-Type", "application/json") if body else None
-        with urlopen(req, timeout=10) as resp:
-            status = resp.status
-    except HTTPError as e:
-        status = e.code
-    except URLError:
+        headers = {"Content-Type": "application/json"} if body else None
+        resp = _HTTP_CLIENT.request(method, url, content=data, headers=headers, timeout=10)
+        status = resp.status_code
+    except httpx.RequestError:
         status = 0
     elapsed = time.perf_counter() - start
     return status, elapsed
@@ -119,9 +119,10 @@ def main():
 
     # Sanity check: server is alive
     try:
-        req = Request("%s/api/v1/monitoring/health" % args.url.rstrip("/"))
-        with urlopen(req, timeout=5) as resp:
-            health = resp.read().decode()
+        resp = _HTTP_CLIENT.get(
+            "%s/api/v1/monitoring/health" % args.url.rstrip("/"), timeout=5
+        )
+        health = resp.content.decode()
         print("  [OK] Server reachable (health: %s)" % health[:50])
         print()
     except Exception as e:
