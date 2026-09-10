@@ -1378,8 +1378,12 @@ function populateFilterDropdown(name, items, defaultLabel) {
     if (!menu) return;
     const select = document.getElementById(`filter-${name}`);
     select.innerHTML = '<option value=""></option>';
-    const safeLabel = defaultLabel.replace(/'/g, "\\'");
-    menu.innerHTML = `<div class="dropdown-option selected" data-value="" onclick="selectFilter('${name}', '', '${safeLabel}')">${safeLabel}</div>`;
+    const defaultDiv = document.createElement('div');
+    defaultDiv.className = 'dropdown-option selected';
+    defaultDiv.dataset.value = '';
+    defaultDiv.textContent = defaultLabel;
+    defaultDiv.onclick = function(){ selectFilter(name, '', defaultLabel); };
+    menu.appendChild(defaultDiv);
     items.forEach(item => {
         const val = item.id || item.value;
         const lbl = item.title || item.name || item.label || val;

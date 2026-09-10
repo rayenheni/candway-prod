@@ -60,15 +60,16 @@ def _make_rubric(job_id: int) -> JobRubric:
     )
 
 
-def _seed_rubric_summary(db_session, app_id: int, rubric_db_id: int):
-    summary = RubricScoringDetail(
-        application_id=app_id,
-        rubric_id=rubric_db_id,
-        rubric_version=2,
-        overall_score=72,
-        confidence_lower=60,
-        confidence_upper=85,
-        category_scores=[
+def _seed_rubric_summary(db_session, evaluation_result):
+    """Populate the rubric breakdown on EvaluationResult.score_breakdown.
+
+    In the current schema the rubric "summary" (category/skill/gap breakdown)
+    is the EvaluationResult.score_breakdown JSON column — the single source of
+    truth written by ScoringService.set_evaluation_result. RubricScoringDetail
+    rows hold per-criterion evidence only, keyed by evaluation_result_id.
+    """
+    evaluation_result.score_breakdown = {
+        "category_scores": [
             {
                 "name": "Technical",
                 "score": 72,
@@ -91,7 +92,7 @@ def _seed_rubric_summary(db_session, app_id: int, rubric_db_id: int):
                 ],
             }
         ],
-        skill_scores={
+        "skill_scores": {
             "python": {
                 "skill_name": "python",
                 "final_score": 72,
@@ -99,7 +100,7 @@ def _seed_rubric_summary(db_session, app_id: int, rubric_db_id: int):
                 "category": "Technical",
             }
         },
-        gaps=[
+        "gaps": [
             {
                 "skill_name": "System Design",
                 "category": "Technical",
@@ -108,25 +109,23 @@ def _seed_rubric_summary(db_session, app_id: int, rubric_db_id: int):
                 "description": "No assessment data for System Design",
             }
         ],
-        num_answers_scored=5,
-    )
-    db_session.add(summary)
+    }
+    db_session.flush()
+    return evaluation_result
 
 
-def _seed_scoring_results(db_session, app_id: int, rubric_db_id: int):
+def _seed_scoring_results(db_session, evaluation_result):
     result = RubricScoringDetail(
-        application_id=app_id,
-        rubric_id=rubric_db_id,
-        skill_name="Python",
-        base_score=70,
-        quality_multiplier=1.0,
-        final_score=70,
-        turn_number=1,
-        matched_keywords=["python"],
-        missing_competencies=["async"],
-        explanation="Candidate demonstrated basic Python but missing async patterns.",
+        evaluation_result_id=evaluation_result.id,
+        criterion_name="Python",
+        criterion_key="python",
+        score=70.0,
+        weight=1.0,
+        feedback="Candidate demonstrated basic Python but missing async patterns.",
+        source="interview",
     )
     db_session.add(result)
+    db_session.flush()
 
 
 DEFAULT_FIVE = [
@@ -141,9 +140,9 @@ DEFAULT_FIVE = [
 class TestCandidateAnalysisRubricDriven:
     """GET /api/v1/candidate/interviews/{app_id}/analysis with rubric data."""
 
-    def _setup_rubric_app(self, db_session, client, auth_headers):
+    def _setup_rubric_app(self, db_session, client, auth_headers, test_company):
         user = db_session.query(User).filter_by(role="candidate").first()
-        job = Job(recruiter_id=user.id, company_id=test_company.id, title="Engineer")  # noqa: F821
+        job = Job(recruiter_id=user.id, company_id=test_company.id, title="Engineer")
         db_session.add(job)
         db_session.flush()
 
@@ -162,6 +161,7 @@ class TestCandidateAnalysisRubricDriven:
         app = Application(
             user_id=user.id,
             job_id=job.id,
+            company_id=job.company_id,
             declared_role="Engineer",
         )
         db_session.add(app)
@@ -181,13 +181,15 @@ class TestCandidateAnalysisRubricDriven:
         db_session.add(_er)
         db_session.flush()
 
-        _seed_rubric_summary(db_session, app.id, db_rubric.id)
+        _seed_rubric_summary(db_session, _er)
         db_session.commit()
 
         return app
 
-    def test_returns_rubric_fields(self, db_session, client, auth_headers):
-        app = self._setup_rubric_app(db_session, client, auth_headers)
+    def test_returns_rubric_fields(
+        self, db_session, client, auth_headers, test_company
+    ):
+        app = self._setup_rubric_app(db_session, client, auth_headers, test_company)
         resp = client.get(
             f"/api/v1/candidate/interviews/{app.id}/analysis",
             headers=auth_headers,
@@ -201,9 +203,9 @@ class TestCandidateAnalysisRubricDriven:
         # This test verifies is_rubric_driven and rubric_version are correct
 
     def test_performance_overview_uses_category_scores(
-        self, db_session, client, auth_headers
+        self, db_session, client, auth_headers, test_company
     ):
-        app = self._setup_rubric_app(db_session, client, auth_headers)
+        app = self._setup_rubric_app(db_session, client, auth_headers, test_company)
         resp = client.get(
             f"/api/v1/candidate/interviews/{app.id}/analysis",
             headers=auth_headers,
@@ -217,8 +219,10 @@ class TestCandidateAnalysisRubricDriven:
             assert isinstance(m["score"], (int, float))
             assert m["label_score"] in ("Excellent", "Good", "Fair")
 
-    def test_metrics_uses_category_names(self, db_session, client, auth_headers):
-        app = self._setup_rubric_app(db_session, client, auth_headers)
+    def test_metrics_uses_category_names(
+        self, db_session, client, auth_headers, test_company
+    ):
+        app = self._setup_rubric_app(db_session, client, auth_headers, test_company)
         resp = client.get(
             f"/api/v1/candidate/interviews/{app.id}/analysis",
             headers=auth_headers,
@@ -233,8 +237,8 @@ class TestCandidateAnalysisRubricDriven:
                 f"Should not contain fabricated '{dim}' when rubric-driven"
             )
 
-    def test_returns_gaps(self, db_session, client, auth_headers):
-        app = self._setup_rubric_app(db_session, client, auth_headers)
+    def test_returns_gaps(self, db_session, client, auth_headers, test_company):
+        app = self._setup_rubric_app(db_session, client, auth_headers, test_company)
         resp = client.get(
             f"/api/v1/candidate/interviews/{app.id}/analysis",
             headers=auth_headers,
@@ -259,6 +263,7 @@ class TestCandidateAnalysisLegacyFallback:
         app = Application(
             user_id=user.id,
             job_id=job.id,
+            company_id=job.company_id,
             declared_role="Engineer",
         )
         db_session.add(app)
@@ -267,13 +272,6 @@ class TestCandidateAnalysisLegacyFallback:
         _es = EvaluationSession(application_id=app.id, status="completed")
         db_session.add(_es)
         db_session.flush()
-        _er = EvaluationResult(
-            evaluation_session_id=_es.id,
-            scoring_status="SCORED",
-            scoring_model="legacy",
-            final_score=65.0,
-        )
-        db_session.add(_er)
         db_session.commit()
 
         resp = client.get(
@@ -286,7 +284,7 @@ class TestCandidateAnalysisLegacyFallback:
         assert data["rubric_version"] is None
         assert data["gaps"] == []
 
-    def test_fabricated_dimensions_when_no_rubric(
+    def test_no_fabricated_dimensions_when_no_rubric(
         self, db_session, client, auth_headers
     , test_company):
         user = db_session.query(User).filter_by(role="candidate").first()
@@ -297,6 +295,7 @@ class TestCandidateAnalysisLegacyFallback:
         app = Application(
             user_id=user.id,
             job_id=job.id,
+            company_id=job.company_id,
             declared_role="Engineer",
         )
         db_session.add(app)
@@ -305,13 +304,6 @@ class TestCandidateAnalysisLegacyFallback:
         _es = EvaluationSession(application_id=app.id, status="completed")
         db_session.add(_es)
         db_session.flush()
-        _er = EvaluationResult(
-            evaluation_session_id=_es.id,
-            scoring_status="SCORED",
-            scoring_model="legacy",
-            final_score=65.0,
-        )
-        db_session.add(_er)
         db_session.commit()
 
         resp = client.get(
@@ -323,10 +315,11 @@ class TestCandidateAnalysisLegacyFallback:
         overview = data["performance_overview"]
         labels = [m["label"] for m in overview]
         for dim in DEFAULT_FIVE:
-            assert dim in labels, (
-                f"Fabricated dimension '{dim}' should be present when no rubric"
+            assert dim not in labels, (
+                f"Fabricated dimension '{dim}' should NOT be present without real turns"
             )
-        assert len(overview) == 5
+        # Production never fabricates metric scores from thin air (Sprint 18 B-4)
+        assert overview == []
 
     def test_is_rubric_driven_false_when_no_rubric(
         self, db_session, client, auth_headers
@@ -339,6 +332,7 @@ class TestCandidateAnalysisLegacyFallback:
         app = Application(
             user_id=user.id,
             job_id=job.id,
+            company_id=job.company_id,
             declared_role="Engineer",
         )
         db_session.add(app)
@@ -347,13 +341,6 @@ class TestCandidateAnalysisLegacyFallback:
         _es = EvaluationSession(application_id=app.id, status="completed")
         db_session.add(_es)
         db_session.flush()
-        _er = EvaluationResult(
-            evaluation_session_id=_es.id,
-            scoring_status="SCORED",
-            scoring_model="legacy",
-            final_score=65.0,
-        )
-        db_session.add(_er)
         db_session.commit()
 
         resp = client.get(
@@ -369,9 +356,9 @@ class TestCandidateAnalysisLegacyFallback:
 class TestRecruiterAllInterviewsRubricDriven:
     """GET /api/v1/recruiter/applications/{app_id}/all-interviews with rubric."""
 
-    def _setup_rubric_app(self, db_session, client, recruiter_headers):
+    def _setup_rubric_app(self, db_session, client, recruiter_headers, test_company):
         recruiter = db_session.query(User).filter_by(role="recruiter").first()
-        job = Job(recruiter_id=recruiter.id, company_id=test_company.id, title="Engineer")  # noqa: F821
+        job = Job(recruiter_id=recruiter.id, company_id=test_company.id, title="Engineer")
         db_session.add(job)
         db_session.flush()
 
@@ -390,6 +377,7 @@ class TestRecruiterAllInterviewsRubricDriven:
         app = Application(
             user_id=recruiter.id,
             job_id=job.id,
+            company_id=job.company_id,
             declared_role="Engineer",
             assigned_to=recruiter.id,
         )
@@ -410,15 +398,15 @@ class TestRecruiterAllInterviewsRubricDriven:
         db_session.add(_er)
         db_session.flush()
 
-        _seed_rubric_summary(db_session, app.id, db_rubric.id)
+        _seed_rubric_summary(db_session, _er)
         db_session.commit()
 
         return app
 
     def test_performance_overview_uses_rubric_categories(
-        self, db_session, client, recruiter_headers
+        self, db_session, client, recruiter_headers, test_company
     ):
-        app = self._setup_rubric_app(db_session, client, recruiter_headers)
+        app = self._setup_rubric_app(db_session, client, recruiter_headers, test_company)
         resp = client.get(
             f"/api/v1/recruiter/applications/{app.id}/all-interviews",
             headers=recruiter_headers,
@@ -440,8 +428,10 @@ class TestRecruiterAllInterviewsRubricDriven:
         ]:
             pass
 
-    def test_rubric_gaps_in_response(self, db_session, client, recruiter_headers):
-        app = self._setup_rubric_app(db_session, client, recruiter_headers)
+    def test_rubric_gaps_in_response(
+        self, db_session, client, recruiter_headers, test_company
+    ):
+        app = self._setup_rubric_app(db_session, client, recruiter_headers, test_company)
         resp = client.get(
             f"/api/v1/recruiter/applications/{app.id}/all-interviews",
             headers=recruiter_headers,
@@ -455,9 +445,9 @@ class TestRecruiterAllInterviewsRubricDriven:
         assert iv["rubric_skill_scores"] is not None
 
     def test_performance_overview_no_fabricated_dims_when_rubric(
-        self, db_session, client, recruiter_headers
+        self, db_session, client, recruiter_headers, test_company
     ):
-        app = self._setup_rubric_app(db_session, client, recruiter_headers)
+        app = self._setup_rubric_app(db_session, client, recruiter_headers, test_company)
         resp = client.get(
             f"/api/v1/recruiter/applications/{app.id}/all-interviews",
             headers=recruiter_headers,
@@ -492,6 +482,7 @@ class TestRecruiterAllInterviewsLegacyFallback:
         app = Application(
             user_id=recruiter.id,
             job_id=job.id,
+            company_id=job.company_id,
             declared_role="Engineer",
             assigned_to=recruiter.id,
         )
@@ -532,6 +523,7 @@ class TestRecruiterAllInterviewsLegacyFallback:
         app = Application(
             user_id=recruiter.id,
             job_id=job.id,
+            company_id=job.company_id,
             declared_role="Engineer",
             assigned_to=recruiter.id,
         )

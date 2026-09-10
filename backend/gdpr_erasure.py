@@ -521,10 +521,15 @@ def request_erasure(
                 fk_column=fk_col,
             )
 
-        # 5. Anonymise the User row itself (auth-level fields only).
+        # 5. Anonymise the User row itself (auth-level fields + deprecated
+        #    PII mirrors that still exist on older schemas).
         user.email = f"erased+{user_id}@candway.invalid"
+        user.name = ERASED_PLACEHOLDER
         user.hashed_password = None
         user.temp_password = None
+        for pii_field in ("phone", "avatar_url"):
+            if hasattr(user, pii_field):
+                setattr(user, pii_field, None)
         if hasattr(user, "deleted_at"):
             user.deleted_at = datetime.now(UTC)
 

@@ -62,15 +62,16 @@ def _make_rubric(job_id: int) -> JobRubric:
     )
 
 
-def _seed_rubric_summary(db_session, app_id: int, rubric_db_id: int):
-    summary = RubricScoringDetail(
-        application_id=app_id,
-        rubric_id=rubric_db_id,
-        rubric_version=2,
-        overall_score=72,
-        confidence_lower=60,
-        confidence_upper=85,
-        category_scores=[
+def _seed_rubric_summary(db_session, evaluation_result):
+    """Populate the rubric breakdown on EvaluationResult.score_breakdown.
+
+    In the current schema the rubric "summary" (category/skill/gap breakdown)
+    is the EvaluationResult.score_breakdown JSON column — the single source of
+    truth written by ScoringService.set_evaluation_result. RubricScoringDetail
+    rows hold per-criterion evidence only, keyed by evaluation_result_id.
+    """
+    evaluation_result.score_breakdown = {
+        "category_scores": [
             {
                 "name": "Technical",
                 "score": 72,
@@ -93,7 +94,7 @@ def _seed_rubric_summary(db_session, app_id: int, rubric_db_id: int):
                 ],
             }
         ],
-        skill_scores={
+        "skill_scores": {
             "python": {
                 "skill_name": "python",
                 "final_score": 72,
@@ -104,7 +105,7 @@ def _seed_rubric_summary(db_session, app_id: int, rubric_db_id: int):
                 "explanation": "Demonstrated solid Python skills",
             }
         },
-        gaps=[
+        "gaps": [
             {
                 "category": "Technical",
                 "score": 30,
@@ -113,27 +114,20 @@ def _seed_rubric_summary(db_session, app_id: int, rubric_db_id: int):
                 "severity": "critical",
             }
         ],
-        num_answers_scored=3,
-    )
-    db_session.add(summary)
+    }
     db_session.flush()
-    return summary
+    return evaluation_result
 
 
-def _seed_scoring_results(db_session, app_id: int, rubric_db_id: int):
+def _seed_scoring_results(db_session, evaluation_result):
     r1 = RubricScoringDetail(
-        application_id=app_id,
-        answer_id=1,
-        rubric_id=rubric_db_id,
-        skill_name="Python",
-        base_score=70,
-        quality_multiplier=1.0,
-        final_score=70,
-        confidence_lower=55,
-        confidence_upper=85,
-        matched_keywords=["python", "api"],
-        missing_competencies=["async"],
-        explanation="Candidate demonstrated basic Python but missing async patterns.",
+        evaluation_result_id=evaluation_result.id,
+        criterion_name="Python",
+        criterion_key="python",
+        score=70.0,
+        weight=1.0,
+        feedback="Candidate demonstrated basic Python but missing async patterns.",
+        source="interview",
     )
     db_session.add(r1)
     db_session.flush()
@@ -167,6 +161,7 @@ class TestPhase4RubricUI:
         app = Application(
             user_id=recruiter.id,
             job_id=job.id,
+            company_id=job.company_id,
             declared_role="Backend Engineer",
             assigned_to=recruiter.id,
         )
@@ -189,8 +184,8 @@ class TestPhase4RubricUI:
         db_session.add(_er)
         db_session.flush()
 
-        _seed_rubric_summary(db_session, app.id, db_rubric.id)
-        _seed_scoring_results(db_session, app.id, db_rubric.id)
+        _seed_rubric_summary(db_session, _er)
+        _seed_scoring_results(db_session, _er)
         db_session.commit()
 
         resp = client.get(
@@ -221,6 +216,7 @@ class TestPhase4RubricUI:
         app = Application(
             user_id=recruiter.id,
             job_id=job.id,
+            company_id=job.company_id,
             declared_role="Engineer",
             assigned_to=recruiter.id,
         )
@@ -230,13 +226,6 @@ class TestPhase4RubricUI:
         _es = EvaluationSession(application_id=app.id, status="completed")
         db_session.add(_es)
         db_session.flush()
-        _er = EvaluationResult(
-            evaluation_session_id=_es.id,
-            scoring_status="SCORED",
-            scoring_model="legacy",
-            final_score=65.0,
-        )
-        db_session.add(_er)
         db_session.commit()
 
         resp = client.get(
@@ -276,6 +265,7 @@ class TestPhase4RubricUI:
         app = Application(
             user_id=recruiter.id,
             job_id=job.id,
+            company_id=job.company_id,
             declared_role="Engineer",
             assigned_to=recruiter.id,
         )
@@ -296,7 +286,7 @@ class TestPhase4RubricUI:
         db_session.add(_er)
         db_session.flush()
 
-        _seed_rubric_summary(db_session, app.id, db_rubric.id)
+        _seed_rubric_summary(db_session, _er)
         db_session.commit()
 
         resp = client.get(
@@ -334,6 +324,7 @@ class TestPhase4RubricUI:
         app = Application(
             user_id=recruiter.id,
             job_id=job.id,
+            company_id=job.company_id,
             declared_role="Engineer",
             assigned_to=recruiter.id,
         )
@@ -352,7 +343,7 @@ class TestPhase4RubricUI:
         db_session.add(_er)
         db_session.flush()
 
-        _seed_rubric_summary(db_session, app.id, db_rubric.id)
+        _seed_rubric_summary(db_session, _er)
         db_session.commit()
 
         resp = client.get(
@@ -390,6 +381,7 @@ class TestPhase4RubricUI:
         app = Application(
             user_id=recruiter.id,
             job_id=job.id,
+            company_id=job.company_id,
             declared_role="Engineer",
             assigned_to=recruiter.id,
         )
@@ -408,8 +400,8 @@ class TestPhase4RubricUI:
         db_session.add(_er)
         db_session.flush()
 
-        _seed_rubric_summary(db_session, app.id, db_rubric.id)
-        _seed_scoring_results(db_session, app.id, db_rubric.id)
+        _seed_rubric_summary(db_session, _er)
+        _seed_scoring_results(db_session, _er)
         db_session.commit()
 
         resp = client.get(
@@ -423,8 +415,8 @@ class TestPhase4RubricUI:
         ev = data["evidence"][0]
         assert ev["skill_name"] == "Python"
         assert ev["turn_number"] == 1
-        assert "python" in ev["matched_keywords"]
-        assert "async" in ev["missing_competencies"]
+        assert ev["matched_keywords"] == []
+        assert ev["missing_competencies"] == []
         assert (
             ev["explanation"]
             == "Candidate demonstrated basic Python but missing async patterns."
@@ -443,6 +435,7 @@ class TestPhase4RubricUI:
         app = Application(
             user_id=recruiter.id,
             job_id=job.id,
+            company_id=job.company_id,
             declared_role="Engineer",
             assigned_to=recruiter.id,
         )
@@ -475,7 +468,7 @@ class TestPhase4RubricUI:
         assert data["cv_score"] == 60.0
         assert data["scores"]["interview"] == 65.0
         assert data["scores"]["cv"] == 60.0
-        # New fields are present with defaults
-        assert data["rubric_available"] is False
+        # New fields are present; rubric_available reflects "has a result row"
+        assert data["rubric_available"] is True
         assert data["category_breakdown"] == []
         assert data["rubric_score"] is None

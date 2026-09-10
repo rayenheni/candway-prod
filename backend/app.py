@@ -667,6 +667,15 @@ def create_app() -> FastAPI:
             file_stream(), media_type=content_type, headers=headers
         )
 
+    # P0-10 FIX: Prometheus /metrics and /breakers are exposed at
+    # the ROOT (not under /api/v1) so the standard Prometheus
+    # scrape config (which targets /metrics by default) Just Works
+    # without a path rewrite.
+    #
+    # Registered BEFORE the SPA catch-all below so /metrics and
+    # /breakers reach the monitoring router instead of the SPA fallback.
+    app.include_router(monitoring_router.router)
+
     # ── React SPA Catch-All ───────────────────────────────────────
     # Any route that is NOT matched by an API router or static mount
     # returns the React SPA index.html so that client-side routing
@@ -765,12 +774,6 @@ def create_app() -> FastAPI:
                 "hint": "For development, start the Vite dev server: cd frontend && npm run dev",
             },
         )
-
-    # P0-10 FIX: Prometheus /metrics and /breakers are exposed at
-    # the ROOT (not under /api/v1) so the standard Prometheus
-    # scrape config (which targets /metrics by default) Just Works
-    # without a path rewrite.
-    app.include_router(monitoring_router.router)
 
     # 9. WebSocket Endpoint (Secured with JWT or Interview HMAC)
     @app.websocket("/ws/{client_id}")

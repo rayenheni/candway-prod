@@ -266,13 +266,19 @@ async def shutdown_event():
         logger.error(f"Error closing Redis: {e}")
 
     # Close DB connection pool
-    try:
-        from backend.database import engine
+    # TESTING=true means the shared in-memory SQLite is owned by the test
+    # session; disposing the StaticPool engine here would erase it for every
+    # later test module. Production behavior is unchanged.
+    if os.getenv("TESTING", "").strip().lower() == "true":
+        logger.info("TESTING=true — skipping DB engine dispose")
+    else:
+        try:
+            from backend.database import engine
 
-        engine.dispose()
-        logger.info("Database connections closed")
-    except Exception as e:
-        logger.error(f"Error closing DB: {e}")
+            engine.dispose()
+            logger.info("Database connections closed")
+        except Exception as e:
+            logger.error(f"Error closing DB: {e}")
 
     # Clean up WebSocket connections
     try:

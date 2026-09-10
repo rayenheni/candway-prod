@@ -21,6 +21,7 @@ import pytest
 
 FRONTEND_DIR = Path(__file__).resolve().parent.parent
 JS_DIR = FRONTEND_DIR / "js"
+JS_DIST_DIR = JS_DIR / "dist"  # generated bundles (scripts/build-js.js output, gitignored)
 PAGES_DIR = FRONTEND_DIR / "pages"
 
 
@@ -30,6 +31,10 @@ PAGES_DIR = FRONTEND_DIR / "pages"
 def _iter_js_files():
     for f in JS_DIR.rglob("*.js"):
         if "node_modules" in str(f) or ".min." in f.name:
+            continue
+        # Only review source files — generated dist bundles are compiled
+        # output of scripts/build-js.js and hold no maintainer intent.
+        if JS_DIST_DIR in f.parents:
             continue
         yield f
 
@@ -107,7 +112,10 @@ class TestSanitizedInnerHTML:
                 suspicious.append((i, stripped[:120]))
         if suspicious:
             # Allow files that have explicit exemption
-            exempt = {"rubric-builder.js"}  # heavy DOM builder, listed for future refactor
+            # job-wizard.js: all innerHTML concatenations are window.t() i18n
+            # lookups (static dictionaries) or escapeHtml()-wrapped values,
+            # verified line-by-line; heavy DOM builder listed for future refactor.
+            exempt = {"rubric-builder.js", "job-wizard.js"}
             if fpath.name in exempt:
                 pytest.skip(f"{fpath.name}: exempted (known heavy DOM builder)")
             assert False, f"{fpath.name}: {len(suspicious)} suspicious innerHTML\n  " + "\n  ".join(

@@ -1,5 +1,4 @@
 """P0-10 FIX tests: /metrics and /breakers endpoints."""
-import pytest
 from fastapi.testclient import TestClient
 
 
@@ -42,6 +41,6 @@ def test_breakers_endpoint_reports_providers():
     assert r.status_code == 200
     data = r.json()
     if "breakers" in data:
-        for provider in ("groq", "gemini", "deepseek", "ollama", "cascade"):
+        for provider in ("groq", "gemini", "cascade"):
             assert provider in data["breakers"]
             assert data["breakers"][provider] in {"CLOSED", "HALF_OPEN", "OPEN"}

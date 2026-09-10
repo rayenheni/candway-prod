@@ -113,9 +113,18 @@ class TestRecruiterSSR:
     ]
 
     @pytest.mark.parametrize("page", _RECRUITER_PAGES)
-    def test_recruiter_ssr_pages_require_auth(self, non_recruiter_client, page):
+    def test_recruiter_pages_serve_spa_shell_without_auth(self, non_recruiter_client, page):
+        # /recruiter/* is a client-side-routed SPA (legacy SSR HTML removed).
+        # The server serves the same shell (200 + index.html) to every caller;
+        # authorization is enforced in the SPA (RoleGuard) and on the
+        # /api/v1/recruiter/* data endpoints (require_recruiter -> 403) — not
+        # by a server-side page guard.
         resp = non_recruiter_client.get(page, follow_redirects=False)
-        assert resp.status_code == 403, f"{page} returned {resp.status_code}"
+        assert resp.status_code == 200, f"{page} returned {resp.status_code}"
+        assert resp.headers["content-type"].startswith("text/html")
+        assert (
+            "Candway Intelligence Platform" in resp.text
+        ), f"{page} did not return the SPA index.html"
 
     @pytest.mark.parametrize("page", _RECRUITER_PAGES)
     def test_recruiter_ssr_pages_accessible(self, recruiter_client, page):
