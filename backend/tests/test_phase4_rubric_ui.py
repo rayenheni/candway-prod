@@ -138,11 +138,15 @@ class TestPhase4RubricUI:
     """Phase 4: Rubric breakdown in scores API response."""
 
     def test_scores_api_returns_category_breakdown(
-        self, db_session, client, recruiter_headers
-    , test_company):
+        self, db_session, client, recruiter_headers, test_company
+    ):
         """API returns category_breakdown when InterviewRubricSummary exists."""
         recruiter = db_session.query(User).filter_by(role="recruiter").first()
-        job = Job(recruiter_id=recruiter.id, company_id=test_company.id, title="Backend Engineer")
+        job = Job(
+            recruiter_id=recruiter.id,
+            company_id=test_company.id,
+            title="Backend Engineer",
+        )
         db_session.add(job)
         db_session.flush()
 
@@ -205,11 +209,13 @@ class TestPhase4RubricUI:
         assert data["rubric_version"] == 2
 
     def test_scores_api_returns_empty_arrays_when_no_rubric_summary(
-        self, db_session, client, recruiter_headers
-    , test_company):
+        self, db_session, client, recruiter_headers, test_company
+    ):
         """API returns empty arrays (not null) when no rubric summary exists."""
         recruiter = db_session.query(User).filter_by(role="recruiter").first()
-        job = Job(recruiter_id=recruiter.id, company_id=test_company.id, title="Engineer")
+        job = Job(
+            recruiter_id=recruiter.id, company_id=test_company.id, title="Engineer"
+        )
         db_session.add(job)
         db_session.flush()
 
@@ -242,11 +248,13 @@ class TestPhase4RubricUI:
         assert data["rubric_score"] is None
 
     def test_scores_api_returns_skill_breakdown(
-        self, db_session, client, recruiter_headers
-    , test_company):
+        self, db_session, client, recruiter_headers, test_company
+    ):
         """API returns skill_breakdown when rubric summary has skill_scores."""
         recruiter = db_session.query(User).filter_by(role="recruiter").first()
-        job = Job(recruiter_id=recruiter.id, company_id=test_company.id, title="Engineer")
+        job = Job(
+            recruiter_id=recruiter.id, company_id=test_company.id, title="Engineer"
+        )
         db_session.add(job)
         db_session.flush()
 
@@ -302,10 +310,14 @@ class TestPhase4RubricUI:
         assert sk["score"] == 72
         assert sk["assessed"] is True
 
-    def test_scores_api_returns_gaps(self, db_session, client, recruiter_headers, test_company):
+    def test_scores_api_returns_gaps(
+        self, db_session, client, recruiter_headers, test_company
+    ):
         """API returns gaps from InterviewRubricSummary."""
         recruiter = db_session.query(User).filter_by(role="recruiter").first()
-        job = Job(recruiter_id=recruiter.id, company_id=test_company.id, title="Engineer")
+        job = Job(
+            recruiter_id=recruiter.id, company_id=test_company.id, title="Engineer"
+        )
         db_session.add(job)
         db_session.flush()
 
@@ -359,10 +371,14 @@ class TestPhase4RubricUI:
         assert gap["severity"] == "critical"
         assert gap["gap_pct"] == 45
 
-    def test_scores_api_returns_evidence(self, db_session, client, recruiter_headers, test_company):
+    def test_scores_api_returns_evidence(
+        self, db_session, client, recruiter_headers, test_company
+    ):
         """API returns evidence from RubricScoringResult rows."""
         recruiter = db_session.query(User).filter_by(role="recruiter").first()
-        job = Job(recruiter_id=recruiter.id, company_id=test_company.id, title="Engineer")
+        job = Job(
+            recruiter_id=recruiter.id, company_id=test_company.id, title="Engineer"
+        )
         db_session.add(job)
         db_session.flush()
 
@@ -424,11 +440,13 @@ class TestPhase4RubricUI:
         assert ev["final_score"] == 70
 
     def test_scores_api_legacy_backward_compat(
-        self, db_session, client, recruiter_headers
-    , test_company):
+        self, db_session, client, recruiter_headers, test_company
+    ):
         """Existing fields remain unchanged when rubric fields are added."""
         recruiter = db_session.query(User).filter_by(role="recruiter").first()
-        job = Job(recruiter_id=recruiter.id, company_id=test_company.id, title="Engineer")
+        job = Job(
+            recruiter_id=recruiter.id, company_id=test_company.id, title="Engineer"
+        )
         db_session.add(job)
         db_session.flush()
 

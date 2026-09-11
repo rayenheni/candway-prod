@@ -254,7 +254,9 @@ class TestCandidateAnalysisRubricDriven:
 class TestCandidateAnalysisLegacyFallback:
     """GET /api/v1/candidate/interviews/{app_id}/analysis without rubric."""
 
-    def test_returns_legacy_when_no_rubric(self, db_session, client, auth_headers, test_company):
+    def test_returns_legacy_when_no_rubric(
+        self, db_session, client, auth_headers, test_company
+    ):
         user = db_session.query(User).filter_by(role="candidate").first()
         job = Job(recruiter_id=user.id, company_id=test_company.id, title="Engineer")
         db_session.add(job)
@@ -285,8 +287,8 @@ class TestCandidateAnalysisLegacyFallback:
         assert data["gaps"] == []
 
     def test_no_fabricated_dimensions_when_no_rubric(
-        self, db_session, client, auth_headers
-    , test_company):
+        self, db_session, client, auth_headers, test_company
+    ):
         user = db_session.query(User).filter_by(role="candidate").first()
         job = Job(recruiter_id=user.id, company_id=test_company.id, title="Engineer")
         db_session.add(job)
@@ -322,8 +324,8 @@ class TestCandidateAnalysisLegacyFallback:
         assert overview == []
 
     def test_is_rubric_driven_false_when_no_rubric(
-        self, db_session, client, auth_headers
-    , test_company):
+        self, db_session, client, auth_headers, test_company
+    ):
         user = db_session.query(User).filter_by(role="candidate").first()
         job = Job(recruiter_id=user.id, company_id=test_company.id, title="Engineer")
         db_session.add(job)
@@ -358,7 +360,9 @@ class TestRecruiterAllInterviewsRubricDriven:
 
     def _setup_rubric_app(self, db_session, client, recruiter_headers, test_company):
         recruiter = db_session.query(User).filter_by(role="recruiter").first()
-        job = Job(recruiter_id=recruiter.id, company_id=test_company.id, title="Engineer")
+        job = Job(
+            recruiter_id=recruiter.id, company_id=test_company.id, title="Engineer"
+        )
         db_session.add(job)
         db_session.flush()
 
@@ -406,7 +410,9 @@ class TestRecruiterAllInterviewsRubricDriven:
     def test_performance_overview_uses_rubric_categories(
         self, db_session, client, recruiter_headers, test_company
     ):
-        app = self._setup_rubric_app(db_session, client, recruiter_headers, test_company)
+        app = self._setup_rubric_app(
+            db_session, client, recruiter_headers, test_company
+        )
         resp = client.get(
             f"/api/v1/recruiter/applications/{app.id}/all-interviews",
             headers=recruiter_headers,
@@ -431,7 +437,9 @@ class TestRecruiterAllInterviewsRubricDriven:
     def test_rubric_gaps_in_response(
         self, db_session, client, recruiter_headers, test_company
     ):
-        app = self._setup_rubric_app(db_session, client, recruiter_headers, test_company)
+        app = self._setup_rubric_app(
+            db_session, client, recruiter_headers, test_company
+        )
         resp = client.get(
             f"/api/v1/recruiter/applications/{app.id}/all-interviews",
             headers=recruiter_headers,
@@ -447,7 +455,9 @@ class TestRecruiterAllInterviewsRubricDriven:
     def test_performance_overview_no_fabricated_dims_when_rubric(
         self, db_session, client, recruiter_headers, test_company
     ):
-        app = self._setup_rubric_app(db_session, client, recruiter_headers, test_company)
+        app = self._setup_rubric_app(
+            db_session, client, recruiter_headers, test_company
+        )
         resp = client.get(
             f"/api/v1/recruiter/applications/{app.id}/all-interviews",
             headers=recruiter_headers,
@@ -472,10 +482,12 @@ class TestRecruiterAllInterviewsLegacyFallback:
     """GET /api/v1/recruiter/applications/{app_id}/all-interviews without rubric."""
 
     def test_fabricated_dims_when_no_rubric(
-        self, db_session, client, recruiter_headers
-    , test_company):
+        self, db_session, client, recruiter_headers, test_company
+    ):
         recruiter = db_session.query(User).filter_by(role="recruiter").first()
-        job = Job(recruiter_id=recruiter.id, company_id=test_company.id, title="Engineer")
+        job = Job(
+            recruiter_id=recruiter.id, company_id=test_company.id, title="Engineer"
+        )
         db_session.add(job)
         db_session.flush()
 
@@ -513,10 +525,12 @@ class TestRecruiterAllInterviewsLegacyFallback:
         assert isinstance(iv["performance_overview"], list)
 
     def test_rubric_gaps_empty_when_no_rubric(
-        self, db_session, client, recruiter_headers
-    , test_company):
+        self, db_session, client, recruiter_headers, test_company
+    ):
         recruiter = db_session.query(User).filter_by(role="recruiter").first()
-        job = Job(recruiter_id=recruiter.id, company_id=test_company.id, title="Engineer")
+        job = Job(
+            recruiter_id=recruiter.id, company_id=test_company.id, title="Engineer"
+        )
         db_session.add(job)
         db_session.flush()
 

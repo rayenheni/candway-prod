@@ -472,8 +472,8 @@ def create_app() -> FastAPI:
         }
 
         # Public marketing images — no auth required
-        is_public_image = (
-            filename.startswith("blog/") or filename.startswith("company_logo/")
+        is_public_image = filename.startswith("blog/") or filename.startswith(
+            "company_logo/"
         )
         if filename.startswith("company_"):
             # Legacy company logos written as company_<userid>_<ts>.<ext>
