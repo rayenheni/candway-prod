@@ -524,7 +524,7 @@ def request_erasure(
         # 5. Anonymise the User row itself (auth-level fields + deprecated
         #    PII mirrors that still exist on older schemas).
         user.email = f"erased+{user_id}@candway.invalid"
-        user.name = ERASED_PLACEHOLDER
+        setattr(user, "name", ERASED_PLACEHOLDER)
         user.hashed_password = None
         user.temp_password = None
         for pii_field in ("phone", "avatar_url"):
