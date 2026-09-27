@@ -168,10 +168,11 @@ class InterviewEngine:
             logger.info(
                 f"[ENGINE] App {app_id} transitioning: {from_enum} -> {to_state} ({reason})"
             )
-            sync_ai_interview_session(self.db, app, interview_state=to_state.value)
+            # Single write so state + timestamp land on the same session.
             sync_ai_interview_session(
                 self.db,
                 app,
+                interview_state=to_state.value,
                 interview_last_saved=datetime.now(UTC).replace(tzinfo=None),
             )
 

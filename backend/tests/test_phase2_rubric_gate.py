@@ -23,6 +23,23 @@ from backend.rubric.rubric_schema import (
 )
 
 
+def _details_for_app(db, app_id: int):
+    """RubricScoringDetail rows for an application (via result -> session)."""
+    return (
+        db.query(RubricScoringDetail)
+        .join(
+            EvaluationResult,
+            RubricScoringDetail.evaluation_result_id == EvaluationResult.id,
+        )
+        .join(
+            EvaluationSession,
+            EvaluationResult.evaluation_session_id == EvaluationSession.id,
+        )
+        .filter(EvaluationSession.application_id == app_id)
+        .all()
+    )
+
+
 def _make_rubric(job_id: int) -> JobRubric:
     return JobRubric(
         job_id=job_id,
@@ -64,7 +81,7 @@ class TestPhase2RubricGate:
     """Phase 2: rubric gate uses job_rubric presence, not scoring_model."""
 
     def test_first_answer_rubric_scored_when_rubric_pinned(
-        self, monkeypatch, db_session
+        self, monkeypatch, db_session, test_company
     ):
         """Turn 1 uses rubric path when rubric is pinned on session."""
 
@@ -89,7 +106,11 @@ class TestPhase2RubricGate:
         db_session.add(recruiter)
         db_session.flush()
 
-        job = Job(recruiter_id=recruiter.id, company_id=test_company.id, title="Backend Engineer")  # noqa: F821
+        job = Job(
+            recruiter_id=recruiter.id,
+            company_id=test_company.id,
+            title="Backend Engineer",
+        )
         db_session.add(job)
         db_session.flush()
 
@@ -127,7 +148,6 @@ class TestPhase2RubricGate:
             evaluation_session_id=session.id,
             scoring_status="SCORED",
             scoring_model="legacy",
-            rubric_seniority="mid",
             rubric_version=1,
             final_score=0,
         )
@@ -150,19 +170,23 @@ class TestPhase2RubricGate:
 
         assert result["score"] > 0, f"Expected rubric score > 0, got {result['score']}"
 
-        rows = (
-            db_session.query(RubricScoringDetail).filter_by(application_id=app.id).all()
-        )
+        rows = _details_for_app(db_session, app.id)
         assert len(rows) == 1, "Expected 1 RubricScoringDetail row for turn 1"
-        assert rows[0].answer_id == 1
-        assert rows[0].rubric_id == db_rubric.id
+        # RubricScoringDetail no longer carries answer_id/rubric_id; it hangs
+        # off the EvaluationResult that pins the rubric version.
+        assert rows[0].criterion_name.lower() == "python"
+        assert rows[0].source == "interview"
+        assert rows[0].evaluation_result_id == _er.id
 
         db_session.refresh(_er)
-        assert _er.scoring_model == "rubric", (
-            f"scoring_model should be 'rubric' after rubric evaluation, got '{_er.scoring_model}'"
-        )
+        # Per-turn scoring must not mutate the canonical result; only final
+        # aggregation (score_all_answers -> compute_final_score) may.
+        assert _er.scoring_model == "legacy"
+        assert _er.scoring_status == "SCORED"
 
-    def test_first_answer_heuristic_when_no_rubric(self, monkeypatch, db_session):
+    def test_first_answer_heuristic_when_no_rubric(
+        self, monkeypatch, db_session, test_company
+    ):
         """Turn 1 falls back to heuristic when no rubric for job."""
 
         async def fake_call_groq_cascade(*args, **kwargs):
@@ -186,7 +210,9 @@ class TestPhase2RubricGate:
         db_session.add(user)
         db_session.flush()
 
-        job = Job(recruiter_id=user.id, company_id=test_company.id, title="Backend Engineer")  # noqa: F821
+        job = Job(
+            recruiter_id=user.id, company_id=test_company.id, title="Backend Engineer"
+        )
         db_session.add(job)
         db_session.flush()
 
@@ -226,15 +252,15 @@ class TestPhase2RubricGate:
 
         assert "score" in result
 
-        rows = (
-            db_session.query(RubricScoringDetail).filter_by(application_id=app.id).all()
-        )
+        rows = _details_for_app(db_session, app.id)
         assert len(rows) == 0, "Expected no RubricScoringDetail when no rubric"
 
-    def test_rubric_scoring_model_written_after_evaluation(
-        self, monkeypatch, db_session
+    def test_turn_scoring_does_not_rewrite_canonical_result(
+        self, monkeypatch, db_session, test_company
     ):
-        """scoring_model on EvaluationResult is 'rubric' after rubric scoring."""
+        """Per-turn rubric scoring records evidence but leaves the canonical
+        EvaluationResult (scoring_model/status) to the final aggregation path
+        (see ScoringService.ensure_pending_score)."""
 
         async def fake_call_groq_cascade(*args, **kwargs):
             return {
@@ -257,7 +283,11 @@ class TestPhase2RubricGate:
         db_session.add(recruiter)
         db_session.flush()
 
-        job = Job(recruiter_id=recruiter.id, company_id=test_company.id, title="Backend Engineer")  # noqa: F821
+        job = Job(
+            recruiter_id=recruiter.id,
+            company_id=test_company.id,
+            title="Backend Engineer",
+        )
         db_session.add(job)
         db_session.flush()
 
@@ -288,7 +318,6 @@ class TestPhase2RubricGate:
             evaluation_session_id=_es.id,
             scoring_status="SCORED",
             scoring_model="legacy",
-            rubric_seniority="mid",
             final_score=0,
         )
         db_session.add(_er)
@@ -309,11 +338,15 @@ class TestPhase2RubricGate:
         )
 
         db_session.refresh(_er)
-        assert _er.scoring_model == "rubric", (
-            f"Expected scoring_model='rubric', got '{_er.scoring_model}'"
+        assert _er.scoring_model == "legacy", (
+            "evaluate_answer() must not rewrite the canonical EvaluationResult; "
+            "scoring_model is owned by the final aggregation path"
         )
+        assert len(_details_for_app(db_session, app.id)) == 1
 
-    def test_no_scoring_result_when_no_rubric(self, monkeypatch, db_session):
+    def test_no_scoring_result_when_no_rubric(
+        self, monkeypatch, db_session, test_company
+    ):
         """No RubricScoringDetail rows written when job_rubric is None."""
 
         async def fake_call_groq_cascade(*args, **kwargs):
@@ -337,7 +370,9 @@ class TestPhase2RubricGate:
         db_session.add(user)
         db_session.flush()
 
-        job = Job(recruiter_id=user.id, company_id=test_company.id, title="Backend Engineer")  # noqa: F821
+        job = Job(
+            recruiter_id=user.id, company_id=test_company.id, title="Backend Engineer"
+        )
         db_session.add(job)
         db_session.flush()
 
@@ -375,7 +410,5 @@ class TestPhase2RubricGate:
             )
         )
 
-        rows = (
-            db_session.query(RubricScoringDetail).filter_by(application_id=app.id).all()
-        )
+        rows = _details_for_app(db_session, app.id)
         assert len(rows) == 0, f"Expected 0 RubricScoringDetail, got {len(rows)}"

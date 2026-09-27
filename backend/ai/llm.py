@@ -39,9 +39,7 @@ current_company_id_var: ContextVar[Optional[int]] = ContextVar(
 current_user_id_var: ContextVar[Optional[int]] = ContextVar(
     "current_user_id", default=None
 )
-current_ip_var: ContextVar[Optional[str]] = ContextVar(
-    "current_ip", default=None
-)
+current_ip_var: ContextVar[Optional[str]] = ContextVar("current_ip", default=None)
 
 
 def set_ai_company_id(company_id: Optional[int]) -> None:
@@ -274,7 +272,7 @@ async def _check_ai_security_rate_limit(company_id=None) -> tuple[bool, str]:
         # into an unlimited AI request in production.
         logger.exception("[AI SECURITY] Rate-limit check failed: %s", e)
 
-        if settings.is_prod:  # noqa: F821
+        if get_settings().is_prod:
             return False, "AI security check unavailable. Please try again later."
 
         return True, ""
@@ -325,9 +323,7 @@ async def call_groq_cascade(
 
     # Token budget enforcement (90% safety margin on context window)
     try:
-        primary_model = (
-            GEMINI_MODELS[0] if provider == "gemini" else MODELS_CASCADE[0]
-        )
+        primary_model = GEMINI_MODELS[0] if provider == "gemini" else MODELS_CASCADE[0]
         context_window = get_model_context_window(primary_model)
         budget = int(context_window * 0.9)
         total_tokens = count_tokens_in_messages(messages, primary_model)
@@ -370,9 +366,7 @@ async def call_groq_cascade(
                 application_id,
             )
         except Exception as gemini_error:
-            logger.warning(
-                f"[AI FALLBACK] Gemini failed, trying Groq: {gemini_error}"
-            )
+            logger.warning(f"[AI FALLBACK] Gemini failed, trying Groq: {gemini_error}")
             try:
                 result = await get_breaker("groq").call(
                     _call_groq_cascade_impl,
@@ -397,9 +391,7 @@ async def call_groq_cascade(
                 application_id,
             )
         except Exception as groq_error:
-            logger.warning(
-                f"[AI FALLBACK] Groq failed, trying Gemini: {groq_error}"
-            )
+            logger.warning(f"[AI FALLBACK] Groq failed, trying Gemini: {groq_error}")
             try:
                 result = await get_breaker("gemini").call(
                     _call_gemini_ai_impl,
@@ -483,9 +475,7 @@ async def call_groq_cascade(
 # NOTE: Bare-string entries are NOT part of the supported message contract
 # (see call_groq_cascade's handling of non-dict entries). They are left
 # untouched here — no coercion is invented for them.
-_TRAILING_USER_INSTRUCTION = (
-    "Please respond based on the context provided above."
-)
+_TRAILING_USER_INSTRUCTION = "Please respond based on the context provided above."
 
 
 def _normalize_trailing_user(messages):
@@ -570,7 +560,12 @@ async def _call_groq_cascade_impl(
     if settings_map.get("use_local_llm") == "true":
         try:
             local_messages = [
-                {"role": m["role"], "content": PIIMasker.mask_pii(m.get("content", "")) if m.get("role") != "system" else m.get("content", "")}
+                {
+                    "role": m["role"],
+                    "content": PIIMasker.mask_pii(m.get("content", ""))
+                    if m.get("role") != "system"
+                    else m.get("content", ""),
+                }
                 for m in messages
                 if isinstance(m, dict)
             ]
@@ -1002,9 +997,7 @@ async def _call_gemini_cascade_impl(
                 msg["content"] = masked
                 pii_detected += count
     if pii_detected:
-        logger.info(
-            f"[PII-GUARD] Masked PII in {pii_detected} Gemini message(s)"
-        )
+        logger.info(f"[PII-GUARD] Masked PII in {pii_detected} Gemini message(s)")
 
     settings = get_settings()
     settings_map = await _get_cached_system_config()
@@ -1042,7 +1035,9 @@ async def _call_gemini_cascade_impl(
         for attempt in range(max_retries):
             if attempt > 0:
                 delay = base_delay * (2 ** (attempt - 1))
-                logger.info(f"[AI] Gemini retry {attempt}/{max_retries} for {model} after {delay}s")
+                logger.info(
+                    f"[AI] Gemini retry {attempt}/{max_retries} for {model} after {delay}s"
+                )
                 await asyncio.sleep(delay)
 
             payload = {
@@ -1058,10 +1053,14 @@ async def _call_gemini_cascade_impl(
                 payload["generationConfig"]["responseMimeType"] = "application/json"
 
             url = f"{base_url}/models/{model}:generateContent"
-            logger.info(f"[AI CASCADE] Trying Gemini model: {model} (attempt {attempt + 1})")
+            logger.info(
+                f"[AI CASCADE] Trying Gemini model: {model} (attempt {attempt + 1})"
+            )
 
             try:
-                response = await client.post(url, headers=headers, json=payload, timeout=60.0)
+                response = await client.post(
+                    url, headers=headers, json=payload, timeout=60.0
+                )
                 if response.status_code == 200:
                     result = response.json()
                     if "candidates" in result and len(result["candidates"]) > 0:
@@ -1074,10 +1073,16 @@ async def _call_gemini_cascade_impl(
                                 text_chunks.append(part["text"])
                             elif "inlineData" in part:
                                 continue  # skip non-text parts
-                        content = _validate_output_size("".join(text_chunks)) if text_chunks else ""
+                        content = (
+                            _validate_output_size("".join(text_chunks))
+                            if text_chunks
+                            else ""
+                        )
 
                         if not content:
-                            logger.warning(f"[AI] Gemini {model} returned empty text content")
+                            logger.warning(
+                                f"[AI] Gemini {model} returned empty text content"
+                            )
                             break
 
                         logger.info(f"[AI] SUCCESS: Gemini {model} succeeded")
@@ -1087,20 +1092,28 @@ async def _call_gemini_cascade_impl(
                             try:
                                 return json.loads(content)
                             except Exception:
-                                match = re.search(r"(\{.*\})", content[:10000], re.DOTALL)
+                                match = re.search(
+                                    r"(\{.*\})", content[:10000], re.DOTALL
+                                )
                                 if match:
                                     try:
                                         return json.loads(match.group())
                                     except Exception:
                                         pass
-                                logger.warning(f"[AI] Gemini {model} JSON parse failed, trying next model")
+                                logger.warning(
+                                    f"[AI] Gemini {model} JSON parse failed, trying next model"
+                                )
                                 break  # move to next model
                         return content
                     else:
                         logger.warning(f"[AI] Gemini {model} returned empty candidates")
                 else:
-                    error_detail = response.text[:200] if hasattr(response, "text") else "Unknown"
-                    logger.warning(f"[AI] Gemini {model} returned {response.status_code}: {error_detail}")
+                    error_detail = (
+                        response.text[:200] if hasattr(response, "text") else "Unknown"
+                    )
+                    logger.warning(
+                        f"[AI] Gemini {model} returned {response.status_code}: {error_detail}"
+                    )
                     if response.status_code == 429:
                         continue
                     elif response.status_code >= 500:
@@ -1309,7 +1322,9 @@ async def _call_gemini_ai_impl(
                 candidate = result["candidates"][0]
                 parts = candidate.get("content", {}).get("parts", [])
                 text_chunks = [p["text"] for p in parts if "text" in p]
-                content = _validate_output_size("".join(text_chunks)) if text_chunks else ""
+                content = (
+                    _validate_output_size("".join(text_chunks)) if text_chunks else ""
+                )
 
                 # Log success to Trakin
                 duration_ms = int((datetime.now() - start_time).total_seconds() * 1000)

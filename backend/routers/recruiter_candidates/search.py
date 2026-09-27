@@ -1024,6 +1024,17 @@ def get_candidates_list(
     db: Session = Depends(get_db),
 ):
     company_id = getattr(recruiter, "_company_id", None)
+    if company_id is None:
+        # No company -> no tenant data. applications.company_id is NOT NULL,
+        # so the scoped query could only ever match nothing; say so
+        # explicitly instead of querying with "company_id IS NULL".
+        return {
+            "items": [],
+            "pagination": {
+                **get_pagination_meta(0, page, per_page),
+                "total_applications": 0,
+            },
+        }
     repo = MetricsRepository(db)
     apps, total_count = repo.get_paginated_candidates(
         company_id=company_id,
@@ -1115,7 +1126,15 @@ def get_candidates_list(
             "source": app.source or "direct",
             "skills": _candidate_skills(app, user),
             "best_score": max(
-                [n for n in (current_score, score_entity.get("cv_score") if score_entity else None) if n is not None] or [0]
+                [
+                    n
+                    for n in (
+                        current_score,
+                        score_entity.get("cv_score") if score_entity else None,
+                    )
+                    if n is not None
+                ]
+                or [0]
             ),
             "last_activity": _candidate_last_activity(app, interview_map),
             "interview_state": app.interview_state,
@@ -1183,7 +1202,18 @@ def get_candidate_profile(
             return _er.cv_score
         return None
 
-    best_app = max(apps, key=lambda a: (_score_for(a) is not None, _score_for(a) or 0, a.created_at or date.min)) if apps else None
+    best_app = (
+        max(
+            apps,
+            key=lambda a: (
+                _score_for(a) is not None,
+                _score_for(a) or 0,
+                a.created_at or date.min,
+            ),
+        )
+        if apps
+        else None
+    )
 
     applications = [
         {

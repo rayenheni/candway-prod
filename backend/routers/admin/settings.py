@@ -3,7 +3,7 @@ from typing import Optional
 
 from fastapi import APIRouter, Depends, HTTPException, Request
 from pydantic import BaseModel, SecretStr
-from sqlalchemy import func
+from sqlalchemy import case, func
 from sqlalchemy.orm import Session
 
 from backend.config import get_settings as _get_cfg_settings
@@ -83,9 +83,13 @@ def get_system_settings(
         "ab_test_bucket_size": safe_int(settings_dict.get("ab_test_bucket_size"), 10),
         "automations_enabled": settings_dict.get("automations_enabled") == "true",
         "google_client_id": settings_dict.get("google_client_id", ""),
-        "google_client_secret": mask_value(settings_dict.get("google_client_secret", "")),
+        "google_client_secret": mask_value(
+            settings_dict.get("google_client_secret", "")
+        ),
         "google_enabled": settings_dict.get("google_enabled") == "true",
-        "ai_credit_gating_enabled": settings_dict.get("ai_credit_gating_enabled", "true")
+        "ai_credit_gating_enabled": settings_dict.get(
+            "ai_credit_gating_enabled", "true"
+        )
         != "false",
         "ai_credit_costs": get_all_credit_pricing(db),
     }
@@ -267,11 +271,7 @@ async def test_ai_model(
     env_key_name = f"{provider}_api_key"
 
     if not api_key or api_key.startswith("*"):
-        db_key = (
-            db.query(SystemConfig)
-            .filter(SystemConfig.key == db_key_name)
-            .first()
-        )
+        db_key = db.query(SystemConfig).filter(SystemConfig.key == db_key_name).first()
         if db_key and db_key.value:
             try:
                 api_key = decrypt_value(db_key.value, _get_cfg_settings().secret_key)
@@ -281,7 +281,9 @@ async def test_ai_model(
         api_key = getattr(_get_cfg_settings(), env_key_name, None)
 
     if not api_key:
-        raise HTTPException(status_code=400, detail=f"No {provider.title()} API key configured")
+        raise HTTPException(
+            status_code=400, detail=f"No {provider.title()} API key configured"
+        )
 
     try:
         async with _httpx.AsyncClient(timeout=30.0) as client:
@@ -290,39 +292,94 @@ async def test_ai_model(
                 url = f"https://generativelanguage.googleapis.com/v1beta/models/{payload.model}:generateContent"
                 resp = await client.post(
                     url,
-                    headers={"X-Goog-Api-Key": api_key, "Content-Type": "application/json"},
+                    headers={
+                        "X-Goog-Api-Key": api_key,
+                        "Content-Type": "application/json",
+                    },
                     json={
-                        "contents": [{"role": "user", "parts": [{"text": "Respond with exactly this JSON: {\"status\": \"ok\", \"model\": \"" + payload.model + "\"}"}]}],
-                        "generationConfig": {"temperature": 0.1, "maxOutputTokens": 64, "responseMimeType": "application/json"},
+                        "contents": [
+                            {
+                                "role": "user",
+                                "parts": [
+                                    {
+                                        "text": 'Respond with exactly this JSON: {"status": "ok", "model": "'
+                                        + payload.model
+                                        + '"}'
+                                    }
+                                ],
+                            }
+                        ],
+                        "generationConfig": {
+                            "temperature": 0.1,
+                            "maxOutputTokens": 64,
+                            "responseMimeType": "application/json",
+                        },
                     },
                 )
                 if resp.status_code == 200:
                     data = resp.json()
                     candidates = data.get("candidates", [])
-                    content = candidates[0]["content"]["parts"][0]["text"] if candidates else ""
-                    return {"success": True, "model": payload.model, "response": content[:200]}
+                    content = (
+                        candidates[0]["content"]["parts"][0]["text"]
+                        if candidates
+                        else ""
+                    )
+                    return {
+                        "success": True,
+                        "model": payload.model,
+                        "response": content[:200],
+                    }
                 else:
                     error = resp.json().get("error", {})
-                    return {"success": False, "model": payload.model, "error": error.get("message", f"HTTP {resp.status_code}"), "code": error.get("code", "unknown")}
+                    return {
+                        "success": False,
+                        "model": payload.model,
+                        "error": error.get("message", f"HTTP {resp.status_code}"),
+                        "code": error.get("code", "unknown"),
+                    }
             else:
                 # Groq API call
                 resp = await client.post(
                     "https://api.groq.com/openai/v1/chat/completions",
-                    headers={"Authorization": f"Bearer {api_key}", "Content-Type": "application/json"},
+                    headers={
+                        "Authorization": f"Bearer {api_key}",
+                        "Content-Type": "application/json",
+                    },
                     json={
                         "model": payload.model,
-                        "messages": [{"role": "user", "content": "Respond with exactly this JSON and nothing else: {\"status\": \"ok\", \"model\": \"" + payload.model + "\"}"}],
+                        "messages": [
+                            {
+                                "role": "user",
+                                "content": 'Respond with exactly this JSON and nothing else: {"status": "ok", "model": "'
+                                + payload.model
+                                + '"}',
+                            }
+                        ],
                         "temperature": 0.1,
                         "max_tokens": 64,
                     },
                 )
                 if resp.status_code == 200:
                     data = resp.json()
-                    content = data.get("choices", [{}])[0].get("message", {}).get("content", "")
-                    return {"success": True, "model": payload.model, "response": content[:200], "usage": data.get("usage", {})}
+                    content = (
+                        data.get("choices", [{}])[0]
+                        .get("message", {})
+                        .get("content", "")
+                    )
+                    return {
+                        "success": True,
+                        "model": payload.model,
+                        "response": content[:200],
+                        "usage": data.get("usage", {}),
+                    }
                 else:
                     error = resp.json().get("error", {})
-                    return {"success": False, "model": payload.model, "error": error.get("message", f"HTTP {resp.status_code}"), "code": error.get("code", "unknown")}
+                    return {
+                        "success": False,
+                        "model": payload.model,
+                        "error": error.get("message", f"HTTP {resp.status_code}"),
+                        "code": error.get("code", "unknown"),
+                    }
     except Exception as e:
         logger.error(f"AI model test failed: {e}")
         return {
@@ -423,7 +480,7 @@ def get_ab_test_stats(
             DBTestResult.version,
             DBTestResult.variant,
             func.count(DBTestResult.id).label("total"),
-            func.sum(func.case((DBTestResult.status == "success", 1), else_=0)).label(
+            func.sum(case((DBTestResult.status == "success", 1), else_=0)).label(
                 "successes"
             ),
             func.avg(DBTestResult.response_time_ms).label("avg_latency"),

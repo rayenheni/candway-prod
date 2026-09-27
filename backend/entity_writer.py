@@ -124,21 +124,27 @@ def sync_ai_interview_session(
         # EvaluationSession.id DESC, so iteration already starts
         # with the newest session. Do NOT use reversed() here:
         # that would prefer historical sessions.
+        #
+        # "initializing" and "evaluating" are in-flight states of the
+        # *current* attempt (see ai/state_machine.py); they must stay
+        # reusable, otherwise the next write right after
+        # transition_to(EVALUATING) spawns a blank session that becomes
+        # "latest" and orphans the real transcript. "completed"/"failed"/
+        # "expired" are terminal: a retry correctly starts a new session.
         for s in app.evaluation_sessions:
-            if (
-                s.interview_state in (
-                    "not_started",
-                    "in_progress",
-                    "paused",
-                    "flagged",
-                )
-                and s.status in (
-                    "pending",
-                    "created",
-                    "in_progress",
-                    "paused",
-                    "flagged",
-                )
+            if s.interview_state in (
+                "not_started",
+                "initializing",
+                "in_progress",
+                "paused",
+                "flagged",
+                "evaluating",
+            ) and s.status in (
+                "pending",
+                "created",
+                "in_progress",
+                "paused",
+                "flagged",
             ):
                 eval_session = s
                 break

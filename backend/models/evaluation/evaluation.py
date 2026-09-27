@@ -39,7 +39,9 @@ class EvaluationSession(Base):
             name="ck_eval_session_status",
         ),
         CheckConstraint(
-            "interview_state IS NULL OR interview_state IN ('not_started', 'in_progress', 'completed', 'expired', 'flagged', 'paused')",
+            # Must cover every interview_state production code persists (see
+            # backend/ai/state_machine.py and alembic revision m80).
+            "interview_state IS NULL OR interview_state IN ('not_started', 'in_progress', 'completed', 'expired', 'flagged', 'paused', 'initializing', 'evaluating', 'failed', 'transcription_failed')",
             name="ck_eval_session_interview_state",
         ),
         {"extend_existing": True},

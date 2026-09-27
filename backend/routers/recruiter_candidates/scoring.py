@@ -1448,9 +1448,7 @@ def get_application_scores(
                 "is_required": details.get("is_required", False)
                 if isinstance(details, dict)
                 else False,
-                "assessed": (
-                    details.get("final_score", details.get("score", 0)) or 0
-                )
+                "assessed": (details.get("final_score", details.get("score", 0)) or 0)
                 > 0
                 if isinstance(details, dict)
                 else False,
@@ -1469,10 +1467,10 @@ def get_application_scores(
                 "normalized_weight": details.get("normalized_weight")
                 if isinstance(details, dict)
                 else None,
-                "level": details.get("level")
-                if isinstance(details, dict)
-                else None,
-                "evidence_quality": details.get("evidence_quality", details.get("quality", "strong"))
+                "level": details.get("level") if isinstance(details, dict) else None,
+                "evidence_quality": details.get(
+                    "evidence_quality", details.get("quality", "strong")
+                )
                 if isinstance(details, dict)
                 else "strong",
             }
@@ -1586,9 +1584,7 @@ def get_application_scores(
             else 0,
             "weight": details.get("weight") if isinstance(details, dict) else None,
             "normalized_weight": (
-                details.get("normalized_weight")
-                if isinstance(details, dict)
-                else None
+                details.get("normalized_weight") if isinstance(details, dict) else None
             ),
             "level": details.get("level") if isinstance(details, dict) else None,
             "feedback": details.get("feedback") if isinstance(details, dict) else None,
@@ -1859,7 +1855,8 @@ def get_ranked_candidates(
             .filter(EvaluationSession.application_id == app.id)
             .first()
         )
-        _app_sc = scores_map.get(es.id) if es else None  # noqa: F821
+        # evaluation_result is eager-loaded by the page query above.
+        _app_sc = getattr(es, "evaluation_result", None) if es else None
 
         canonical = _app_sc
         if not canonical:
@@ -1884,7 +1881,9 @@ def get_ranked_candidates(
         time_in_stage = 0
         if app.updated_at:
             if app.updated_at.tzinfo is None:
-                time_in_stage = (datetime.now(UTC).replace(tzinfo=None) - app.updated_at).days
+                time_in_stage = (
+                    datetime.now(UTC).replace(tzinfo=None) - app.updated_at
+                ).days
             else:
                 time_in_stage = (datetime.now(UTC) - app.updated_at).days
 

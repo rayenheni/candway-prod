@@ -65,7 +65,6 @@ def _utcnow():
 
 
 class PaginatedCampaignCandidates(BaseModel):
-
     items: List[CampaignCandidate]
     total: int
     page: int
@@ -113,8 +112,10 @@ def get_campaign_candidates(
     is_desc = (sort_dir or "desc").lower() == "desc"
 
     if sort_by == "cv_score":
-        # Canonical CV score: EvaluationResult.cv_score.
-        # Application.analysis_score is legacy and must not be used for sorting.
+        # Canonical CV score: EvaluationResult.cv_score. The response below
+        # displays Application.analysis_score (legacy) when no canonical score
+        # exists, so the sort key must use the same fallback — otherwise the
+        # list is visibly out of order for legacy rows.
         latest_session_id = (
             db.query(func.max(EvaluationSession.id))
             .filter(EvaluationSession.application_id == Application.id)
@@ -129,6 +130,7 @@ def get_campaign_candidates(
 
         score_col = func.coalesce(
             EvaluationResult.cv_score,
+            Application.analysis_score,
             -1.0 if is_desc else 9999.0,
         )
         order_clause = desc(score_col) if is_desc else asc(score_col)
@@ -299,9 +301,7 @@ def get_campaign_candidates(
                 "can_invite": bool(
                     app.email and not app.email.endswith("@import.local")
                 ),
-                "recommendation": (
-                    score_entity.verdict if score_entity else None
-                ),
+                "recommendation": (score_entity.verdict if score_entity else None),
                 "cv_rubric_weighted": cv_rubric_weighted,
                 "cv_scoring_method": _cv_bd.get("scoring_method"),
                 "cv_coverage_pct": _cv_bd.get("coverage_pct"),
@@ -384,7 +384,9 @@ async def invite_candidate(
 
     token_data = generate_interview_token(app_id)
     token = token_data["token"]
-    access_url = f"{settings.frontend_url}/auth/interview-access?app_id={app_id}&token={token}"
+    access_url = (
+        f"{settings.frontend_url}/auth/interview-access?app_id={app_id}&token={token}"
+    )
 
     candidate_user, plain_password = ensure_candidate_account(
         db, app.email, app.full_name or "Candidate"
@@ -591,17 +593,21 @@ async def invite_all_candidates(
             app = get_application_for_recruiter(app_id, recruiter, db)
 
             if app.batch_id != batch_id:
-                failed.append({
-                    "app_id": app_id,
-                    "error": "Candidate not found in this campaign",
-                })
+                failed.append(
+                    {
+                        "app_id": app_id,
+                        "error": "Candidate not found in this campaign",
+                    }
+                )
                 continue
 
             if app.email and app.email.endswith("@import.local"):
-                failed.append({
-                    "app_id": app_id,
-                    "error": "Candidate has a placeholder email",
-                })
+                failed.append(
+                    {
+                        "app_id": app_id,
+                        "error": "Candidate has a placeholder email",
+                    }
+                )
                 continue
 
             # Consume quota BEFORE sending the email.
@@ -613,10 +619,12 @@ async def invite_all_candidates(
                 db,
                 commit=False,
             ):
-                failed.append({
-                    "app_id": app_id,
-                    "error": "Interview quota reached",
-                })
+                failed.append(
+                    {
+                        "app_id": app_id,
+                        "error": "Interview quota reached",
+                    }
+                )
                 continue
 
             try:
@@ -644,19 +652,23 @@ async def invite_all_candidates(
                         compensation_error,
                     )
 
-                failed.append({
-                    "app_id": app_id,
-                    "error": str(email_error),
-                })
+                failed.append(
+                    {
+                        "app_id": app_id,
+                        "error": str(email_error),
+                    }
+                )
                 continue
 
             sent += 1
 
         except HTTPException as exc:
-            failed.append({
-                "app_id": app_id,
-                "error": exc.detail,
-            })
+            failed.append(
+                {
+                    "app_id": app_id,
+                    "error": exc.detail,
+                }
+            )
             db.rollback()
             continue
 
@@ -668,10 +680,12 @@ async def invite_all_candidates(
                 exc,
                 exc_info=True,
             )
-            failed.append({
-                "app_id": app_id,
-                "error": "Unexpected error while inviting candidate",
-            })
+            failed.append(
+                {
+                    "app_id": app_id,
+                    "error": "Unexpected error while inviting candidate",
+                }
+            )
             continue
 
     # Calculate remaining quota from the database rather than from the
@@ -697,9 +711,7 @@ async def invite_all_candidates(
 
     total_attempted = len(candidates_to_process)
     success_rate = (
-        f"{(sent / total_attempted * 100):.1f}%"
-        if total_attempted
-        else "100.0%"
+        f"{(sent / total_attempted * 100):.1f}%" if total_attempted else "100.0%"
     )
 
     if len(app_ids) > len(candidates_to_process):
@@ -708,7 +720,7 @@ async def invite_all_candidates(
                 "app_id": app_id,
                 "error": "Skipped because interview quota was exhausted",
             }
-            for app_id in app_ids[len(candidates_to_process):]
+            for app_id in app_ids[len(candidates_to_process) :]
         )
 
     return {
@@ -722,9 +734,6 @@ async def invite_all_candidates(
         "message": (
             f"Successfully invited {sent} candidate(s)."
             if not failed
-            else (
-                f"Successfully invited {sent} of {len(app_ids)} "
-                "candidate(s)."
-            )
+            else (f"Successfully invited {sent} of {len(app_ids)} candidate(s).")
         ),
     }

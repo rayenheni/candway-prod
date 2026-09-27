@@ -220,24 +220,28 @@ class TestServerSideInterviewTimeout:
 
 
 class TestProfilePageAuthGuards:
-    """Verify profile pages require candidate auth."""
+    """Profile pages are SPA routes now (frontend/src/app/router.tsx guards
+    them client-side); the server-side guarantee lives on the profile data
+    APIs they call, which must reject unauthenticated requests.
 
-    def test_profile_routes_use_require_candidate(self):
-        import inspect
+    Note: these APIs depend on ``get_current_user`` (role-neutral), not
+    ``require_candidate``: every handler reads only the caller's own profile,
+    so a recruiter token just sees the recruiter's own (empty) profile. No
+    role test is asserted here because none is enforced; adding
+    ``require_candidate`` would be a behaviour change, not a test fix."""
 
-        from backend.routers import pages
-
-        for name in [
-            "candidate_profile",
-            "candidate_profile_full",
-            "candidate_profile_view",
-        ]:
-            func = getattr(pages, name, None)
-            assert func is not None, f"{name} not found"
-            source = inspect.getsource(func)
-            assert "require_candidate" in source, (
-                f"{name} missing require_candidate guard"
-            )
+    @pytest.mark.parametrize(
+        "path",
+        [
+            "/api/v1/candidate/profile",
+            "/api/v1/candidate/profile-data",
+            "/api/v1/candidate/profile/comprehensive",
+            "/api/v1/candidate/profile-visitors",
+        ],
+    )
+    def test_profile_apis_require_auth(self, client, path):
+        resp = client.get(path)
+        assert resp.status_code in (401, 403), (path, resp.status_code)
 
 
 class TestApplicationsRoute:
@@ -269,10 +273,10 @@ class TestTopCompaniesForRole:
 
         mock_db = MagicMock()
         mock_job_1 = MagicMock()
-        mock_job_1.company = "Acme Corp"
+        mock_job_1.company_name = "Acme Corp"
         mock_job_1.title = "Software Engineer"
         mock_job_2 = MagicMock()
-        mock_job_2.company = "Beta Inc"
+        mock_job_2.company_name = "Beta Inc"
         mock_job_2.title = "Senior Software Engineer"
         mock_query = MagicMock()
         mock_query.filter.return_value = mock_query
@@ -292,9 +296,9 @@ class TestTopCompaniesForRole:
 
         mock_db = MagicMock()
         mock_job_1 = MagicMock()
-        mock_job_1.company = "Acme Corp"
+        mock_job_1.company_name = "Acme Corp"
         mock_job_2 = MagicMock()
-        mock_job_2.company = "Acme Corp"
+        mock_job_2.company_name = "Acme Corp"
         mock_query = MagicMock()
         mock_query.filter.return_value = mock_query
         mock_query.order_by.return_value = mock_query

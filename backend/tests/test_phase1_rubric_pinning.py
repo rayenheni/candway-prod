@@ -149,15 +149,17 @@ class TestPhase1RubricPinning:
 
         assert result["score"] > 0
 
-        db_session.refresh(app)
-        assert app.rubric_id == db_rubric.id
+        # Rubric pinning is recorded on EvaluationSession/EvaluationResult at
+        # interview start (and Application.rubric_id at apply time), not by
+        # evaluate_answer() - see test_session_pins_rubric_at_start and
+        # test_rubric_contract.py. This test only guards against the old
+        # dropped-column crash.
 
     def test_session_pins_rubric_at_start(self, db_session, test_company):
         """EvaluationSession.rubric_id is set when session transitions to in_progress."""
         recruiter = User(
             email="pin-test@example.com",
             role="recruiter",
-            company_id=test_company.id,
         )
         db_session.add(recruiter)
         db_session.flush()
@@ -207,7 +209,6 @@ class TestPhase1RubricPinning:
         recruiter = User(
             email="version-pin@example.com",
             role="recruiter",
-            company_id=test_company.id,
         )
         db_session.add(recruiter)
         db_session.flush()
@@ -284,7 +285,6 @@ class TestPhase1RubricPinning:
         recruiter = User(
             email="no-rubric@example.com",
             role="recruiter",
-            company_id=test_company.id,
         )
         db_session.add(recruiter)
         db_session.flush()

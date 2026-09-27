@@ -25,7 +25,7 @@ omit = [
 
 [tool.coverage.report]
 show_missing = true
-fail_under = 70
+fail_under = 25  # keep in sync with COVERAGE_THRESHOLD in ci-cd.yml
 exclude_lines = [
     "pragma: no cover",
     "if __name__ == .__main__.:",

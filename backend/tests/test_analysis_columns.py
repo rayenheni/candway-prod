@@ -190,7 +190,8 @@ def test_mirror_to_bag_keeps_legacy_readers_happy(db_session):
     )
     db_session.commit()
 
-    bag = json.loads(app.cv_document.analysis_json)
+    raw = app.cv_document.analysis_json  # JSON column -> dict
+    bag = raw if isinstance(raw, dict) else json.loads(raw)
     assert bag["strengths"] == ["Mirrored"]
     assert bag["final_score_breakdown"] == {"cv": 60}
     assert bag["score"] == 60.0

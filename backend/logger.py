@@ -21,10 +21,23 @@ os.makedirs(LOG_DIR, exist_ok=True)
 PII_PATTERNS = [
     # Email addresses
     (re.compile(r"[a-zA-Z0-9._%+-]+@[a-zA-Z0-9.-]+\.[a-zA-Z]{2,}"), "[EMAIL]"),
-    # Phone numbers (various formats)
+    # Phone numbers. Deliberately strict: the previous catch-all pattern
+    # matched any 4+ digit run (ports, line numbers, durations, IDs, dates),
+    # which destroyed debugging information in every log line.
+    # 1) International, explicit + or 00 prefix: +216 98 123 456, 0021698123456
+    (
+        re.compile(r"(?<![\w+])(?:\+|00)\d{1,3}(?:[\s.-]?\(?\d\)?){7,12}(?![\w])"),
+        "[PHONE]",
+    ),
+    # 2) Tunisian local, grouped 2-3-3: 98 123 456, 98-123-456
+    (
+        re.compile(r"(?<![\w.:-])\d{2}[\s-]\d{3}[\s-]\d{3}(?![\w.:-])"),
+        "[PHONE]",
+    ),
+    # 3) North-American style: (555) 555-0100, 555-555-0100
     (
         re.compile(
-            r"\+?[0-9]{1,3}[-.\s]?\(?[0-9]{1,4}\)?[-.\s]?[0-9]{1,4}[-.\s]?[0-9]{1,9}"
+            r"(?<![\w.:-])(?:\(\d{3}\)\s?|\d{3}[\s.-])\d{3}[\s.-]\d{4}(?![\w.:-])"
         ),
         "[PHONE]",
     ),
@@ -77,14 +90,79 @@ def _mask_pii(message: str) -> str:
     return message
 
 
+# Sentry scrubbing. Sentry's LoggingIntegration captures records before any
+# handler filter runs, so PIIFilter never sees them; mask events explicitly.
+_SENTRY_STRUCTURAL_KEYS = frozenset(
+    {
+        "event_id",
+        "timestamp",
+        "level",
+        "logger",
+        "platform",
+        "release",
+        "environment",
+        "server_name",
+        "sdk",
+        "type",
+        "module",
+        "function",
+        "filename",
+        "abs_path",
+        "lineno",
+        "colno",
+        "in_app",
+        "context_line",
+        "pre_context",
+        "post_context",
+        "modules",
+    }
+)
+
+
+def _scrub_value(value, key=None):
+    if key in _SENTRY_STRUCTURAL_KEYS:
+        return value
+    if isinstance(value, str):
+        return _mask_pii(value)
+    if isinstance(value, dict):
+        return {k: _scrub_value(v, k) for k, v in value.items()}
+    if isinstance(value, (list, tuple)):
+        return [_scrub_value(v) for v in value]
+    return value
+
+
+def scrub_sentry_event(event, hint=None):
+    """Sentry ``before_send``: mask PII in every free-text field of an event
+    (messages, exception values, breadcrumbs, frame locals, request data)."""
+    return _scrub_value(event)
+
+
+def scrub_sentry_breadcrumb(crumb, hint=None):
+    """Sentry ``before_breadcrumb``: same masking for breadcrumbs."""
+    return _scrub_value(crumb)
+
+
 # Custom filter to mask PII
 class PIIFilter(logging.Filter):
+    """Mask PII in the *rendered* log message.
+
+    The message is interpolated first (``record.getMessage()``) and the final
+    string is masked; ``args`` are then cleared. Masking each arg via
+    ``str(arg)`` (the previous behaviour) broke every ``%d`` / ``%.2f``
+    format in the codebase ("%d format: a real number is required, not str"),
+    which made logging drop the record, and a non-string ``msg`` crashed the
+    caller because handler filters run outside logging's error handling.
+    """
+
     def filter(self, record):
-        record.msg = _mask_pii(record.msg)
-        if record.args:
-            # Convert args to string and mask
-            masked_args = tuple(_mask_pii(str(arg)) for arg in record.args)
-            record.args = masked_args
+        try:
+            message = record.getMessage()
+        except (TypeError, ValueError, KeyError):
+            # Malformed format/args (e.g. "%d" with a str, unknown format
+            # char, missing mapping key): keep the raw text instead of losing it.
+            message = f"{record.msg} {record.args!r}" if record.args else record.msg
+        record.msg = _mask_pii(str(message))
+        record.args = None
         return True
 
 

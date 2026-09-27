@@ -27,15 +27,41 @@ from backend.rubric.rubric_schema import JobRubric
 def test_morphological_matching_positive_and_negative():
     # Positive morphological variants
     assert _keyword_matches_in_text("redesign", "We redesigned the signup flow") is True
-    assert _keyword_matches_in_text("analyze", "I analyzed the customer behavior metrics") is True
-    assert _keyword_matches_in_text("lead", "I am leading cross-functional alignment sessions") is True
-    assert _keyword_matches_in_text("manage", "I managed the product roadmap effectively") is True
-    assert _keyword_matches_in_text("develop", "We developed a microservices platform") is True
-    assert _keyword_matches_in_text("improve", "I improved API performance by 40%") is True
-    assert _keyword_matches_in_text("communicate", "Effective communication with executives") is True
+    assert (
+        _keyword_matches_in_text("analyze", "I analyzed the customer behavior metrics")
+        is True
+    )
+    assert (
+        _keyword_matches_in_text(
+            "lead", "I am leading cross-functional alignment sessions"
+        )
+        is True
+    )
+    assert (
+        _keyword_matches_in_text("manage", "I managed the product roadmap effectively")
+        is True
+    )
+    assert (
+        _keyword_matches_in_text("develop", "We developed a microservices platform")
+        is True
+    )
+    assert (
+        _keyword_matches_in_text("improve", "I improved API performance by 40%") is True
+    )
+    assert (
+        _keyword_matches_in_text(
+            "communicate", "Effective communication with executives"
+        )
+        is True
+    )
 
     # Negative morphological case: design vs designation MUST NOT match
-    assert _keyword_matches_in_text("design", "Candidate holds the official designation of lead") is False
+    assert (
+        _keyword_matches_in_text(
+            "design", "Candidate holds the official designation of lead"
+        )
+        is False
+    )
 
 
 # -------------------------------------------------------------------------
@@ -60,15 +86,24 @@ RUBRIC_DICT = {
                             "keywords": ["churn", "redesign", "onboarding", "metric"],
                             "levels": {
                                 "senior": [
-                                    {"score_threshold": 90, "keywords": ["churn", "redesign", "onboarding", "metric"], "description": "Solves root cause with proxy metrics"}
+                                    {
+                                        "score_threshold": 90,
+                                        "keywords": [
+                                            "churn",
+                                            "redesign",
+                                            "onboarding",
+                                            "metric",
+                                        ],
+                                        "description": "Solves root cause with proxy metrics",
+                                    }
                                 ]
-                            }
+                            },
                         }
-                    ]
+                    ],
                 }
-            ]
+            ],
         }
-    ]
+    ],
 }
 
 job_rubric = JobRubric(**RUBRIC_DICT)
@@ -78,12 +113,14 @@ parsed_rubric = ParsedRubric(
     categories=RUBRIC_DICT["categories"],
     skills=["Problem Solving"],
     seniority="senior",
-    raw_json=RUBRIC_DICT
+    raw_json=RUBRIC_DICT,
 )
 
 mock_eval_res = type("EvalResult", (), {"rubric_seniority": "senior"})()
 mock_eval_sess = type("EvalSession", (), {"evaluation_result": mock_eval_res})()
-mock_app = type("MockApp", (), {"id": 1, "company_id": 1, "evaluation_sessions": [mock_eval_sess]})()
+mock_app = type(
+    "MockApp", (), {"id": 1, "company_id": 1, "evaluation_sessions": [mock_eval_sess]}
+)()
 
 
 # -------------------------------------------------------------------------
@@ -102,13 +139,17 @@ async def test_concise_strong_evidence_no_cheat_penalty():
         "extracted_skills": [
             {
                 "skill_name": "Problem Solving",
-                "evidence_sentences": ["Reduced churn 32% by redesigning onboarding."]
+                "evidence_sentences": ["Reduced churn 32% by redesigning onboarding."],
             }
         ],
-        "feedback": "Concise evidence-backed answer."
+        "feedback": "Concise evidence-backed answer.",
     }
 
-    with patch("backend.ai.interview.call_groq_cascade", new_callable=AsyncMock, return_value=mock_llm_res):
+    with patch(
+        "backend.ai.interview.call_groq_cascade",
+        new_callable=AsyncMock,
+        return_value=mock_llm_res,
+    ):
         res = await evaluate_answer(
             question="How do you handle churn?",
             answer=answer,
@@ -119,7 +160,9 @@ async def test_concise_strong_evidence_no_cheat_penalty():
             job_rubric=job_rubric,
         )
 
-    assert res["score"] >= 70, f"Expected high score for concise evidence, got {res['score']}"
+    assert res["score"] >= 70, (
+        f"Expected high score for concise evidence, got {res['score']}"
+    )
     assert "Problem Solving" in res["skills"] or "problem solving" in res["skills"]
 
 
@@ -129,12 +172,13 @@ async def test_concise_strong_evidence_no_cheat_penalty():
 @pytest.mark.asyncio
 async def test_empty_answer_scores_zero():
     answer = "I don't know."
-    mock_llm_res = {
-        "extracted_skills": [],
-        "feedback": "No evidence."
-    }
+    mock_llm_res = {"extracted_skills": [], "feedback": "No evidence."}
 
-    with patch("backend.ai.interview.call_groq_cascade", new_callable=AsyncMock, return_value=mock_llm_res):
+    with patch(
+        "backend.ai.interview.call_groq_cascade",
+        new_callable=AsyncMock,
+        return_value=mock_llm_res,
+    ):
         res = await evaluate_answer(
             question="Tell me about problem solving",
             answer=answer,
@@ -154,12 +198,13 @@ async def test_empty_answer_scores_zero():
 @pytest.mark.asyncio
 async def test_keyword_stuffing_resistance():
     answer = "communication communication communication leadership leadership problem solving"
-    mock_llm_res = {
-        "extracted_skills": [],
-        "feedback": "Keyword repetition detected."
-    }
+    mock_llm_res = {"extracted_skills": [], "feedback": "Keyword repetition detected."}
 
-    with patch("backend.ai.interview.call_groq_cascade", new_callable=AsyncMock, return_value=mock_llm_res):
+    with patch(
+        "backend.ai.interview.call_groq_cascade",
+        new_callable=AsyncMock,
+        return_value=mock_llm_res,
+    ):
         res = await evaluate_answer(
             question="Tell me about your leadership",
             answer=answer,
@@ -170,7 +215,9 @@ async def test_keyword_stuffing_resistance():
             job_rubric=job_rubric,
         )
 
-    assert res["score"] == 0, f"Expected score 0 for keyword stuffing, got {res['score']}"
+    assert res["score"] == 0, (
+        f"Expected score 0 for keyword stuffing, got {res['score']}"
+    )
 
 
 # -------------------------------------------------------------------------
@@ -179,12 +226,13 @@ async def test_keyword_stuffing_resistance():
 @pytest.mark.asyncio
 async def test_long_irrelevant_answer_not_high_scoring():
     answer = "I love playing open-world video games on my computer. " * 10
-    mock_llm_res = {
-        "extracted_skills": [],
-        "feedback": "Irrelevant content."
-    }
+    mock_llm_res = {"extracted_skills": [], "feedback": "Irrelevant content."}
 
-    with patch("backend.ai.interview.call_groq_cascade", new_callable=AsyncMock, return_value=mock_llm_res):
+    with patch(
+        "backend.ai.interview.call_groq_cascade",
+        new_callable=AsyncMock,
+        return_value=mock_llm_res,
+    ):
         res = await evaluate_answer(
             question="Tell me about problem solving",
             answer=answer,
@@ -195,7 +243,9 @@ async def test_long_irrelevant_answer_not_high_scoring():
             job_rubric=job_rubric,
         )
 
-    assert res["score"] <= 20, f"Expected low score for long irrelevant answer, got {res['score']}"
+    assert res["score"] <= 20, (
+        f"Expected low score for long irrelevant answer, got {res['score']}"
+    )
 
 
 # -------------------------------------------------------------------------
@@ -209,13 +259,19 @@ async def test_strong_concise_answer_with_morphological_keywords():
         "extracted_skills": [
             {
                 "skill_name": "Problem Solving",
-                "evidence_sentences": ["We redesigned our onboarding funnel and reduced user churn by 25%."]
+                "evidence_sentences": [
+                    "We redesigned our onboarding funnel and reduced user churn by 25%."
+                ],
             }
         ],
-        "feedback": "Clear outcome and action."
+        "feedback": "Clear outcome and action.",
     }
 
-    with patch("backend.ai.interview.call_groq_cascade", new_callable=AsyncMock, return_value=mock_llm_res):
+    with patch(
+        "backend.ai.interview.call_groq_cascade",
+        new_callable=AsyncMock,
+        return_value=mock_llm_res,
+    ):
         res = await evaluate_answer(
             question="How did you fix onboarding drop-off?",
             answer=answer,

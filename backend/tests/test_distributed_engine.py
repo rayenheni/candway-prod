@@ -94,9 +94,14 @@ async def test_event_logging(db):
     # Bug B-26: the event log writer now encrypts the ``data`` payload
     # so a leaked file is unreadable without the Fernet key. Tests
     # that need to read the payload must decrypt it explicitly.
+    # Without a PII key encrypt_text() degrades to plaintext, so decode based
+    # on the writer's ``data_encrypted`` flag (decrypt_text passes plaintext
+    # through) rather than sniffing the ciphertext prefix.
     raw_data = events[2]["data"]
-    if isinstance(raw_data, str) and is_encrypted(raw_data):
+    if events[2].get("data_encrypted"):
         raw_data = json.loads(decrypt_text(raw_data))
+    if is_encrypted(events[2]["data"]):
+        assert "Question" not in events[2]["data"]
     assert raw_data["score"] == 85
 
 

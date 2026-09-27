@@ -243,43 +243,29 @@ def load_current_rubric_record(
 
         # 2. Current active rubric for the job
         if not rubric_record and job_id:
-            query = (
-                db.query(RubricDB)
-                .filter(
-                    RubricDB.job_id == job_id,
-                    RubricDB.is_active == 1,
-                )
+            query = db.query(RubricDB).filter(
+                RubricDB.job_id == job_id,
+                RubricDB.is_active == 1,
             )
 
             if company_id is not None:
                 query = query.filter(RubricDB.company_id == company_id)
 
-            rubric_record = (
-                query
-                .order_by(RubricDB.version.desc())
-                .first()
-            )
+            rubric_record = query.order_by(RubricDB.version.desc()).first()
 
         # 3. Create default rubric if none exists
         if not rubric_record:
             rubric = _create_default_rubric(job_id, db)
 
-            query = (
-                db.query(RubricDB)
-                .filter(
-                    RubricDB.job_id == job_id,
-                    RubricDB.is_active == 1,
-                )
+            query = db.query(RubricDB).filter(
+                RubricDB.job_id == job_id,
+                RubricDB.is_active == 1,
             )
 
             if company_id is not None:
                 query = query.filter(RubricDB.company_id == company_id)
 
-            rubric_record = (
-                query
-                .order_by(RubricDB.version.desc())
-                .first()
-            )
+            rubric_record = query.order_by(RubricDB.version.desc()).first()
 
             rubric_company_id = (
                 getattr(rubric_record, "company_id", None)
@@ -291,9 +277,7 @@ def load_current_rubric_record(
             rubric_dict = json.loads(rubric_record.criteria_json)
 
             if "job_id" not in rubric_dict:
-                rubric_dict["job_id"] = (
-                    getattr(rubric_record, "job_id", None) or job_id
-                )
+                rubric_dict["job_id"] = getattr(rubric_record, "job_id", None) or job_id
 
             rubric = JobRubric(**rubric_dict)
             rubric_company_id = getattr(rubric_record, "company_id", None)
@@ -365,6 +349,7 @@ def load_rubric_by_id(
         if close_db:
             db.close()
 
+
 def _create_default_rubric(job_id: int, db):
     from backend.database import Rubric as RubricDB
     from backend.rubric.rubric_schema import JobRubric
@@ -374,11 +359,23 @@ def _create_default_rubric(job_id: int, db):
     if job_id == 0:
         return rubric
 
+    # rubrics.company_id is NOT NULL (TenantMixin): the default rubric is
+    # owned by the job's company. If the job (or its company) cannot be
+    # resolved, return the in-memory default without persisting rather than
+    # failing the whole request with an IntegrityError.
+    from backend.database import Job
+
+    job_company_id = db.query(Job.company_id).filter(Job.id == job_id).scalar()
+    if job_company_id is None:
+        logger.warning(f"Job {job_id} has no company; returning unsaved default rubric")
+        return rubric
+
     db_record = RubricDB(
         job_id=job_id,
         version=1,
         is_active=1,
         criteria_json=rubric.model_dump_json(),
+        company_id=job_company_id,
     )
     db.add(db_record)
     db.flush()

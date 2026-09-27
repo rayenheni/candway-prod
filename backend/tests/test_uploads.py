@@ -14,7 +14,6 @@ import os
 
 import pytest
 
-os.environ["DATABASE_URL"] = "sqlite:///:memory:"
 os.environ["SECRET_KEY"] = "test_secret_key_for_jwt_encoding_12345"
 os.environ["ALGORITHM"] = "HS256"
 os.environ["ACCESS_TOKEN_EXPIRE_MINUTES"] = "30"
@@ -35,22 +34,11 @@ from backend.database import (  # noqa: E402
 from backend.dependencies import pwd_context  # noqa: E402
 from backend.main import app  # noqa: E402
 
+# Use the shared test engine that backend/tests/conftest.py installs on
+# backend.database. Do NOT swap in a private engine here: this module is
+# imported at collection time, so rebinding backend.database.engine /
+# SessionLocal would leak into every other test module in the run.
 test_engine = backend.database.engine
-if test_engine.url.database != ":memory:":
-    from sqlalchemy import create_engine
-    from sqlalchemy.orm import sessionmaker
-    from sqlalchemy.pool import StaticPool
-
-    test_engine = create_engine(
-        "sqlite:///:memory:",
-        connect_args={"check_same_thread": False},
-        poolclass=StaticPool,
-    )
-    backend.database.engine = test_engine
-    backend.database.SessionLocal = sessionmaker(
-        autocommit=False, autoflush=False, bind=test_engine
-    )
-    backend.dependencies.SessionLocal = backend.database.SessionLocal
 
 
 def _login(client, email, password):
