@@ -48,6 +48,7 @@ def _user_company_id(
             CompanyMember.user_id == user_id,
             CompanyMember.is_active,
         )
+        .order_by(CompanyMember.id.asc())  # deterministic (see dependencies)
         .first()
     )
     return membership.company_id if membership else None

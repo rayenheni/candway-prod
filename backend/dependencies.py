@@ -347,6 +347,10 @@ async def get_current_user(
                 CompanyMember.user_id == user.id,
                 CompanyMember.is_active,
             )
+            # Deterministic for multi-company users: the earliest active
+            # membership (same rule as tenant._resolve_company_id and
+            # authz._user_company_id), never an arbitrary row.
+            .order_by(CompanyMember.id.asc())
             .first()
         )
         if membership:
@@ -375,8 +379,7 @@ async def get_current_user(
     except Exception:
         # Do not break authentication if optional AI context propagation fails.
         logger.exception(
-            "[AI SECURITY] Failed to propagate request security context "
-            "for user %s",
+            "[AI SECURITY] Failed to propagate request security context for user %s",
             user.id,
         )
 

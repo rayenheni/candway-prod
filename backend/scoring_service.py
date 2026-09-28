@@ -21,6 +21,7 @@ import logging
 from datetime import datetime, timezone
 from typing import Any, Dict, Optional
 
+from sqlalchemy import or_
 from sqlalchemy.orm import Session
 from sqlalchemy.orm.exc import StaleDataError
 
@@ -134,7 +135,12 @@ class ScoringService:
         elif existing_record is not None and existing_record.cv_score is not None:
             cv_score = float(existing_record.cv_score)
         else:
-            cv_score = 0.0
+            # A new evaluation session (e.g. the AI interview started after the
+            # CV analysis) has no CV score of its own. Carry the application's
+            # most recent real CV score forward instead of silently scoring
+            # the CV component as 0.
+            prior_cv = ScoringService._latest_prior_cv_score(app, db, es.id)
+            cv_score = prior_cv if prior_cv is not None else 0.0
 
         # Determine rubric existence from the evaluation configuration,
         # NOT from rubric_score presence.
@@ -165,7 +171,10 @@ class ScoringService:
             rubric_coverage_pct = max(
                 0.0, min(100.0, float(override_rubric_coverage_pct))
             )
-        elif existing_record is not None and existing_record.rubric_coverage_pct is not None:
+        elif (
+            existing_record is not None
+            and existing_record.rubric_coverage_pct is not None
+        ):
             rubric_coverage_pct = float(existing_record.rubric_coverage_pct)
         elif extra_breakdown and extra_breakdown.get("coverage_pct") is not None:
             # CV/rubric analysis stores its canonical coverage in the breakdown.
@@ -187,9 +196,7 @@ class ScoringService:
             cov_w = CANONICAL_WEIGHTS["coverage"]  # 0.25
 
         final_score = (
-            cv_score * cv_w
-            + rubric_score * rubric_w
-            + rubric_coverage_pct * cov_w
+            cv_score * cv_w + rubric_score * rubric_w + rubric_coverage_pct * cov_w
         )
         final_score = max(0.0, min(100.0, final_score))
 
@@ -260,19 +267,62 @@ class ScoringService:
                 db.refresh(app)
 
     @staticmethod
+    def _latest_prior_cv_score(
+        app: Application, db: Session, exclude_session_id: int
+    ) -> Optional[float]:
+        """Most recent non-null CV score recorded on an earlier session."""
+        row = (
+            db.query(EvaluationResult.cv_score)
+            .join(
+                EvaluationSession,
+                EvaluationResult.evaluation_session_id == EvaluationSession.id,
+            )
+            .filter(
+                EvaluationSession.application_id == app.id,
+                EvaluationSession.id != exclude_session_id,
+                EvaluationResult.cv_score.isnot(None),
+            )
+            .order_by(EvaluationSession.id.desc())
+            .first()
+        )
+        return float(row[0]) if row is not None else None
+
+    @staticmethod
     def get_canonical_score(app_id: int, db: Session) -> Optional[EvaluationResult]:
-        """Read the canonical score. Returns None if not yet computed."""
-        er = (
+        """Read the canonical score. Returns None if not yet computed.
+
+        The latest session's result, except that an UNFINISHED interview
+        result (scoring_status PENDING with no final score yet — it only
+        collects per-turn rubric evidence, see ensure_pending_score) does not
+        hide the previous computed score. An in-progress, abandoned or
+        not-yet-evaluated interview therefore keeps showing the prior score
+        (e.g. the CV score) until its final evaluation lands.
+        """
+        base = (
             db.query(EvaluationResult)
             .join(
                 EvaluationSession,
                 EvaluationResult.evaluation_session_id == EvaluationSession.id,
             )
             .filter(EvaluationSession.application_id == app_id)
+        )
+        er = (
+            base.filter(ScoringService.computed_result_clause())
             .order_by(EvaluationSession.id.desc())
             .first()
         )
-        return er
+        if er is not None:
+            return er
+        return base.order_by(EvaluationSession.id.desc()).first()
+
+    @staticmethod
+    def computed_result_clause():
+        """SQL clause: the EvaluationResult is not an unfinished PENDING one."""
+        return or_(
+            EvaluationResult.scoring_status.is_(None),
+            EvaluationResult.scoring_status != "PENDING",
+            EvaluationResult.final_score.isnot(None),
+        )
 
     @staticmethod
     def ensure_score(app: Application, db: Session) -> EvaluationResult:
@@ -300,11 +350,19 @@ class ScoringService:
         Final scoring remains exclusively the responsibility of the final
         aggregation path (e.g. score_all_answers -> compute_final_score).
         """
-        existing = ScoringService.get_canonical_score(app.id, db)
+        # Attach to the CURRENT (latest) evaluation session — the interview
+        # session that pins the rubric snapshot — not to "the latest session
+        # that happens to have a result" (get_canonical_score). Otherwise the
+        # interview evidence lands on the earlier CV-analysis session's result
+        # and cannot be told apart from another interview attempt.
+        es = ScoringService._ensure_session(app, db)
+        existing = (
+            db.query(EvaluationResult)
+            .filter(EvaluationResult.evaluation_session_id == es.id)
+            .first()
+        )
         if existing:
             return existing
-
-        es = ScoringService._ensure_session(app, db)
 
         score_record = EvaluationResult(
             evaluation_session_id=es.id,
@@ -483,18 +541,15 @@ class ScoringService:
         # canonical final-score computation remains centralized in
         # compute_final_score().
         effective_rubric_score = (
-            float(rubric_score)
-            if rubric_score is not None
-            else float(eval_score)
+            float(rubric_score) if rubric_score is not None else float(eval_score)
         )
 
-        # Fallback / legacy evaluation has no rubric coverage metric.
-        # Preserve the historical contract: the available evaluation score
-        # represents the complete evaluated result, so coverage is 100%.
+        # Coverage is only ever the measured rubric coverage. When no coverage
+        # was measured (LLM-fallback path without a rubric), do NOT fabricate
+        # 100%: pass None so compute_final_score keeps the record's existing
+        # measured coverage, or 0 when there is none.
         effective_coverage = (
-            float(rubric_coverage_pct)
-            if rubric_coverage_pct is not None
-            else 100.0
+            float(rubric_coverage_pct) if rubric_coverage_pct is not None else None
         )
 
         record = ScoringService.compute_final_score(

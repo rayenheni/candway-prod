@@ -30,6 +30,7 @@ from backend.database import (
 from backend.models.evaluation.config_snapshot import EvaluationConfigSnapshot
 from backend.rubric.config_reader import EvaluationConfigReader
 from backend.rubric.interview_starter import InterviewStarter
+from backend.rubric.rubric_schema import JobRubric
 from backend.scoring_service import ScoringService
 
 SENIOR_PM_RUBRIC_JSON = json.dumps(
@@ -46,7 +47,12 @@ SENIOR_PM_RUBRIC_JSON = json.dumps(
                             {
                                 "name": "Communication",
                                 "description": "Ability to clearly communicate and align stakeholders across technical and business domains.",
-                                "keywords": ["communication", "stakeholder", "alignment", "presentation"],
+                                "keywords": [
+                                    "communication",
+                                    "stakeholder",
+                                    "alignment",
+                                    "presentation",
+                                ],
                                 "is_required": True,
                             }
                         ],
@@ -63,7 +69,12 @@ SENIOR_PM_RUBRIC_JSON = json.dumps(
                             {
                                 "name": "Problem Solving",
                                 "description": "Ability to dissect complex product issues and make data-informed decisions under uncertainty.",
-                                "keywords": ["problem solving", "root cause", "analysis", "data"],
+                                "keywords": [
+                                    "problem solving",
+                                    "root cause",
+                                    "analysis",
+                                    "data",
+                                ],
                                 "is_required": True,
                             }
                         ],
@@ -80,14 +91,19 @@ SENIOR_PM_RUBRIC_JSON = json.dumps(
                             {
                                 "name": "Leadership",
                                 "description": "Demonstrated ability to lead cross-functional teams and resolve conflict.",
-                                "keywords": ["leadership", "team", "conflict resolution", "mentorship"],
+                                "keywords": [
+                                    "leadership",
+                                    "team",
+                                    "conflict resolution",
+                                    "mentorship",
+                                ],
                                 "is_required": True,
                             }
                         ],
                     }
                 ],
             },
-        ]
+        ],
     }
 )
 
@@ -244,7 +260,9 @@ async def test_e2e_rubric_interview(db_session, setup_e2e_entities):
 
     reader = EvaluationConfigReader(session)
     parsed_rubric = reader.get_rubric()
-    cats_from_snap = {c["name"]: c["weight"] for c in parsed_rubric.raw_json.get("categories", [])}
+    cats_from_snap = {
+        c["name"]: c["weight"] for c in parsed_rubric.raw_json.get("categories", [])
+    }
 
     immutability_pass = (
         cats_from_snap.get("Communication") == 40
@@ -302,7 +320,11 @@ async def test_e2e_rubric_interview(db_session, setup_e2e_entities):
         prompt_text = messages[0]["content"] if messages else ""
         prompts_captured.append(prompt_text)
 
-        if "SCENARIO-BASED" in prompt_text or "GENERATOR RULES" in prompt_text or "Senior Technical Evaluator" in prompt_text:
+        if (
+            "SCENARIO-BASED" in prompt_text
+            or "GENERATOR RULES" in prompt_text
+            or "Senior Technical Evaluator" in prompt_text
+        ):
             current_f = "Communication"
             for f in required_rubric_skills:
                 if f in prompt_text:
@@ -326,7 +348,9 @@ async def test_e2e_rubric_interview(db_session, setup_e2e_entities):
         "current_focus": "General",
     }
 
-    with patch("backend.ai.interview.call_groq_cascade", side_effect=mock_call_groq_cascade):
+    with patch(
+        "backend.ai.interview.call_groq_cascade", side_effect=mock_call_groq_cascade
+    ):
         for q_idx in range(5):
             generation_state["turn"] = q_idx
 
@@ -357,10 +381,12 @@ async def test_e2e_rubric_interview(db_session, setup_e2e_entities):
             generation_state["covered_skills"].append(q_focus.lower())
 
     prompt_has_rubric_context = any(
-        ("SKILL:" in p or "rubric_context" in p or "RUBRIC" in p) for p in prompts_captured
+        ("SKILL:" in p or "rubric_context" in p or "RUBRIC" in p)
+        for p in prompts_captured
     )
     prompt_has_custom_prompt = any(
-        (CONFIGURED_CUSTOM_PROMPT in p or "custom_generation_prompt" in p) for p in prompts_captured
+        (CONFIGURED_CUSTOM_PROMPT in p or "custom_generation_prompt" in p)
+        for p in prompts_captured
     )
 
     test_results["Question generation"] = "PASS" if len(question_trace) == 5 else "FAIL"
@@ -375,11 +401,31 @@ async def test_e2e_rubric_interview(db_session, setup_e2e_entities):
     # 5. Answer Evaluation & RubricScoringDetail (Sections 6 & 7)
     # =========================================================================
     candidate_turns = [
-        {"focus": "Communication", "ans": "I organized weekly cross-functional alignment sessions between engineering and product leads.", "score": 85.0},
-        {"focus": "Problem Solving", "ans": "When analytics data was incomplete, I conducted customer interviews and built a proxy funnel metric.", "score": 65.0},
-        {"focus": "Leadership", "ans": "I resolved team disagreements by bringing stakeholders together for a structured trade-off debate.", "score": 45.0},
-        {"focus": "Communication", "ans": "I presented our quarterly strategy to C-level executives using simplified architecture diagrams.", "score": 90.0},
-        {"focus": "Problem Solving", "ans": "I prioritized product backlog items using a weighted RICE framework backed by user feedback.", "score": 75.0},
+        {
+            "focus": "Communication",
+            "ans": "I organized weekly cross-functional alignment sessions between engineering and product leads.",
+            "score": 85.0,
+        },
+        {
+            "focus": "Problem Solving",
+            "ans": "When analytics data was incomplete, I conducted customer interviews and built a proxy funnel metric.",
+            "score": 65.0,
+        },
+        {
+            "focus": "Leadership",
+            "ans": "I resolved team disagreements by bringing stakeholders together for a structured trade-off debate.",
+            "score": 45.0,
+        },
+        {
+            "focus": "Communication",
+            "ans": "I presented our quarterly strategy to C-level executives using simplified architecture diagrams.",
+            "score": 90.0,
+        },
+        {
+            "focus": "Problem Solving",
+            "ans": "I prioritized product backlog items using a weighted RICE framework backed by user feedback.",
+            "score": 75.0,
+        },
     ]
 
     # evaluate_answer returns a score dict — the router is responsible for persisting
@@ -419,13 +465,17 @@ async def test_e2e_rubric_interview(db_session, setup_e2e_entities):
                 declared_role="Senior Product Manager",
                 language="English",
                 app=app,
-                job_rubric=parsed_rubric,
+                # Same type the production caller passes (chat.py builds a
+                # JobRubric from the snapshot's ParsedRubric.raw_json).
+                job_rubric=JobRubric(**parsed_rubric.raw_json),
                 job_rubric_db_id=rubric.id,
             )
 
         # Accumulate per-criterion scores (mimicking router aggregation)
         crit_key = f_name
-        eval_responses.setdefault(crit_key, []).append(mock_eval_response["overall_score"])
+        eval_responses.setdefault(crit_key, []).append(
+            mock_eval_response["overall_score"]
+        )
 
     test_results["Answer evaluation"] = "PASS"
 
@@ -433,13 +483,19 @@ async def test_e2e_rubric_interview(db_session, setup_e2e_entities):
     # 6. Weighted Rubric Aggregation (Section 8)
     # =========================================================================
     # Compute expected averages per criterion from mock scores
-    comm_scores_raw = [t["score"] for t in candidate_turns if t["focus"] == "Communication"]
-    ps_scores_raw = [t["score"] for t in candidate_turns if t["focus"] == "Problem Solving"]
-    lead_scores_raw = [t["score"] for t in candidate_turns if t["focus"] == "Leadership"]
+    comm_scores_raw = [
+        t["score"] for t in candidate_turns if t["focus"] == "Communication"
+    ]
+    ps_scores_raw = [
+        t["score"] for t in candidate_turns if t["focus"] == "Problem Solving"
+    ]
+    lead_scores_raw = [
+        t["score"] for t in candidate_turns if t["focus"] == "Leadership"
+    ]
 
-    comm_avg = sum(comm_scores_raw) / len(comm_scores_raw)       # (85+90)/2 = 87.5
-    ps_avg = sum(ps_scores_raw) / len(ps_scores_raw)             # (65+75)/2 = 70.0
-    lead_avg = sum(lead_scores_raw) / len(lead_scores_raw)       # 45.0
+    comm_avg = sum(comm_scores_raw) / len(comm_scores_raw)  # (85+90)/2 = 87.5
+    ps_avg = sum(ps_scores_raw) / len(ps_scores_raw)  # (65+75)/2 = 70.0
+    lead_avg = sum(lead_scores_raw) / len(lead_scores_raw)  # 45.0
 
     # Weights: Communication (40%), Problem Solving (35%), Leadership (25%)
     expected_weighted_score = (comm_avg * 0.40) + (ps_avg * 0.35) + (lead_avg * 0.25)
@@ -475,14 +531,16 @@ async def test_e2e_rubric_interview(db_session, setup_e2e_entities):
         ("Problem Solving", 75.0, "Prioritized using RICE framework."),
     ]
     for crit_name, score_val, fb in turn_details:
-        db.add(RubricScoringDetail(
-            evaluation_result_id=eval_result.id,
-            company_id=eval_result.company_id,
-            criterion_name=crit_name,
-            score=score_val,
-            feedback=fb,
-            source="interview",
-        ))
+        db.add(
+            RubricScoringDetail(
+                evaluation_result_id=eval_result.id,
+                company_id=eval_result.company_id,
+                criterion_name=crit_name,
+                score=score_val,
+                feedback=fb,
+                source="interview",
+            )
+        )
     db.flush()
 
     # Query the detail rows back via evaluation_result_id (the only FK available)
@@ -499,12 +557,18 @@ async def test_e2e_rubric_interview(db_session, setup_e2e_entities):
     eval_pass = len(scoring_details) >= 5
     detail_pass = all(crit in details_by_criterion for crit in required_rubric_skills)
 
-    test_results["RubricScoringDetail"] = "PASS" if (eval_pass and detail_pass) else "FAIL"
+    test_results["RubricScoringDetail"] = (
+        "PASS" if (eval_pass and detail_pass) else "FAIL"
+    )
     assert eval_pass, f"Scoring details missing: got {len(scoring_details)} rows"
-    assert detail_pass, f"Missing criteria in details: {list(details_by_criterion.keys())}"
+    assert detail_pass, (
+        f"Missing criteria in details: {list(details_by_criterion.keys())}"
+    )
 
     comm_scores = details_by_criterion.get("Communication", [])
-    assert 85.0 in comm_scores or 90.0 in comm_scores, f"Communication score wrong: {comm_scores}"
+    assert 85.0 in comm_scores or 90.0 in comm_scores, (
+        f"Communication score wrong: {comm_scores}"
+    )
 
     # Verify weighted score differs from naïve average (proves weights matter)
     weighted_agg_pass = (
@@ -529,7 +593,8 @@ async def test_e2e_rubric_interview(db_session, setup_e2e_entities):
 
     no_fallback = (
         persisted_result is not None
-        and persisted_result.score_breakdown.get("scoring_method") == "deterministic_rubric_weighted"
+        and persisted_result.score_breakdown.get("scoring_method")
+        == "deterministic_rubric_weighted"
         and persisted_result.final_score is not None
         and persisted_result.rubric_score is not None
     )
@@ -544,7 +609,9 @@ async def test_e2e_rubric_interview(db_session, setup_e2e_entities):
     test_results["Question limit"] = "PASS" if question_limit_pass else "FAIL"
     assert question_limit_pass, "Question limit exceeded or not equal to 5"
 
-    time_limit_pass = session.interview_time_left == 1800 and snapshot.time_limit_seconds == 1800
+    time_limit_pass = (
+        session.interview_time_left == 1800 and snapshot.time_limit_seconds == 1800
+    )
     test_results["Time limit"] = "PASS" if time_limit_pass else "FAIL"
     assert time_limit_pass, "Time limit not propagated to session"
 
@@ -558,7 +625,9 @@ async def test_e2e_rubric_interview(db_session, setup_e2e_entities):
         and session.application_id == app.id
         and session.evaluation_config_snapshot_id == snapshot.id
         and persisted_result.evaluation_session_id == session.id
-        and all(sd.evaluation_result_id == persisted_result.id for sd in scoring_details)
+        and all(
+            sd.evaluation_result_id == persisted_result.id for sd in scoring_details
+        )
     )
     test_results["Database integrity"] = "PASS" if db_integrity_pass else "FAIL"
     assert db_integrity_pass, "Database relationships broken"
@@ -566,7 +635,9 @@ async def test_e2e_rubric_interview(db_session, setup_e2e_entities):
     # =========================================================================
     # 10. Print Structured E2E Audit Report (Sections 15 & 17)
     # =========================================================================
-    overall_status = "[PASS]" if all(v == "PASS" for v in test_results.values()) else "[FAIL]"
+    overall_status = (
+        "[PASS]" if all(v == "PASS" for v in test_results.values()) else "[FAIL]"
+    )
 
     print("\n" + "=" * 50)
     print("CANDWAY E2E RUBRIC INTERVIEW TEST")
@@ -589,12 +660,20 @@ async def test_e2e_rubric_interview(db_session, setup_e2e_entities):
     print("\n" + "=" * 50)
     print("SCORING TRACE")
     print("=" * 50)
-    print(f"Communication:\n  Score: {comm_avg:.1f}\n  Weight: 40%\n  Contribution: {comm_avg * 0.40:.2f}")
-    print(f"Problem Solving:\n  Score: {ps_avg:.1f}\n  Weight: 35%\n  Contribution: {ps_avg * 0.35:.2f}")
-    print(f"Leadership:\n  Score: {lead_avg:.1f}\n  Weight: 25%\n  Contribution: {lead_avg * 0.25:.2f}")
+    print(
+        f"Communication:\n  Score: {comm_avg:.1f}\n  Weight: 40%\n  Contribution: {comm_avg * 0.40:.2f}"
+    )
+    print(
+        f"Problem Solving:\n  Score: {ps_avg:.1f}\n  Weight: 35%\n  Contribution: {ps_avg * 0.35:.2f}"
+    )
+    print(
+        f"Leadership:\n  Score: {lead_avg:.1f}\n  Weight: 25%\n  Contribution: {lead_avg * 0.25:.2f}"
+    )
 
     print(f"\nExpected weighted rubric score: {expected_weighted_score:.2f}")
     print(f"Actual rubric score: {eval_result.rubric_score:.2f}")
     print(f"Unweighted average score: {unweighted_average_score:.2f}")
     print(f"Final score: {eval_result.final_score:.2f}\n")
-    print("WARNING: time_limit is configured and stored (1800s); enforced via frontend timer & session time_left.")
+    print(
+        "WARNING: time_limit is configured and stored (1800s); enforced via frontend timer & session time_left."
+    )

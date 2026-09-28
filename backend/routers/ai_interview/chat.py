@@ -304,6 +304,27 @@ async def practice_interview(
     return ai_response
 
 
+def _caller_may_access_application(
+    current_user: Optional[User], app: Application, db: Session
+) -> bool:
+    """Ownership check for an application resolved from a client-supplied id.
+
+    - Anonymous callers: never (guest access is token-bound upstream).
+    - Recruiters/admins: the same company-aware check used everywhere else
+      (get_application_for_recruiter).
+    - Any other role: only the application's owner.
+    """
+    if current_user is None:
+        return False
+    if safe_user_role(current_user) in ["recruiter", "admin"]:
+        try:
+            get_application_for_recruiter(app.id, current_user, db)
+        except HTTPException:
+            return False
+        return True
+    return app.user_id is not None and app.user_id == current_user.id
+
+
 async def _interview_chat_core(
     req: ChatRequest,
     db: Session,
@@ -368,13 +389,19 @@ async def _interview_chat_core(
             app = query.first()
 
     if not app and req.session_id:
+        # SECURITY: session_id is a client-supplied sequential integer and is
+        # NOT a credential. The application it points to is only used when
+        # the caller would be allowed to access that application directly.
+        # Guest interview access never reaches this branch: every guest path
+        # in get_interview_access (signed HMAC link / guest JWT) resolves the
+        # token-bound application upstream and passes it in as `application`.
         es = (
             db.query(EvaluationSession)
             .filter(EvaluationSession.id == req.session_id)
             .first()
         )
         if es:
-            app = (
+            session_app = (
                 db.query(Application)
                 .options(
                     selectinload(Application.cv_document),
@@ -388,6 +415,17 @@ async def _interview_chat_core(
                 .filter(Application.id == es.application_id)
                 .first()
             )
+            if session_app is not None and _caller_may_access_application(
+                current_user, session_app, db
+            ):
+                app = session_app
+            elif session_app is not None:
+                logger.warning(
+                    "AUTH: session_id %s (app %s) rejected for non-owner user %s",
+                    req.session_id,
+                    session_app.id,
+                    safe_user_id(current_user) if current_user else None,
+                )
 
     if not app:
         db.commit()
@@ -409,8 +447,7 @@ async def _interview_chat_core(
     # interview can start. Self-assessments (no job_id, no batch_id) remain
     # auto-start so the existing audit/onboarding flow is preserved.
     if (
-        app.job_id is not None
-        or app.batch_id is not None
+        app.job_id is not None or app.batch_id is not None
     ) and app.status not in _ALLOWED_INTERVIEW_START_STATUSES:
         raise HTTPException(
             status_code=403,
@@ -433,15 +470,13 @@ async def _interview_chat_core(
             _legacy_history = []
 
     _legacy_progress = (
-        getattr(_es, "interview_progress", None)
-        if _es is not None
-        else None
-    ) or getattr(app, "interview_progress", None) or 0
+        (getattr(_es, "interview_progress", None) if _es is not None else None)
+        or getattr(app, "interview_progress", None)
+        or 0
+    )
 
     _legacy_state = (
-        getattr(_es, "interview_state", None)
-        if _es is not None
-        else None
+        getattr(_es, "interview_state", None) if _es is not None else None
     ) or getattr(app, "interview_state", None)
 
     _legacy_expires_at = getattr(_es, "expires_at", None) if _es is not None else None
@@ -456,18 +491,17 @@ async def _interview_chat_core(
         from datetime import timedelta
 
         _legacy_duration = (
-            getattr(_es, "interview_time_left", None)
-            if _es is not None
-            else None
-        ) or getattr(app, "interview_time_left", None) or 1800
-
-        _legacy_expires_at = app.opened_at + timedelta(
-            seconds=int(_legacy_duration)
+            (getattr(_es, "interview_time_left", None) if _es is not None else None)
+            or getattr(app, "interview_time_left", None)
+            or 1800
         )
 
-    if _legacy_expires_at is not None and _compute_remaining_seconds(
-        _legacy_expires_at
-    ) <= 0:
+        _legacy_expires_at = app.opened_at + timedelta(seconds=int(_legacy_duration))
+
+    if (
+        _legacy_expires_at is not None
+        and _compute_remaining_seconds(_legacy_expires_at) <= 0
+    ):
         _already_expired = _legacy_state in ("completed", "expired")
 
         if not _already_expired:
@@ -490,9 +524,7 @@ async def _interview_chat_core(
             # into an artificial zero.
             _legacy_result = (
                 db.query(EvaluationResult)
-                .filter(
-                    EvaluationResult.evaluation_session_id == _es.id
-                )
+                .filter(EvaluationResult.evaluation_session_id == _es.id)
                 .order_by(EvaluationResult.id.desc())
                 .first()
                 if _es is not None
@@ -541,14 +573,10 @@ async def _interview_chat_core(
                 except Exception:
                     _start_history = []
             _start_progress = (
-                getattr(_es, "interview_progress", None)
-                if _es is not None
-                else None
+                getattr(_es, "interview_progress", None) if _es is not None else None
             ) or 0
             _start_state = (
-                getattr(_es, "interview_state", None)
-                if _es is not None
-                else None
+                getattr(_es, "interview_state", None) if _es is not None else None
             ) or app.interview_state
 
             if (
@@ -655,6 +683,7 @@ async def _interview_chat_core(
             or 1800
         )
         from datetime import timedelta
+
         _expires_at = app.opened_at + timedelta(seconds=_duration or 1800)
 
     iv_state = getattr(_es, "interview_state", None) or app.interview_state
@@ -668,15 +697,11 @@ async def _interview_chat_core(
         except Exception:
             _pre_history = []
     _pre_progress = (
-        getattr(_es, "interview_progress", None)
-        if _es is not None
-        else None
+        getattr(_es, "interview_progress", None) if _es is not None else None
     ) or 0
 
     _fresh_lifecycle = (
-        iv_state == "not_started"
-        and not _pre_history
-        and int(_pre_progress) == 0
+        iv_state == "not_started" and not _pre_history and int(_pre_progress) == 0
     )
 
     if _fresh_lifecycle:
@@ -762,7 +787,11 @@ async def _interview_chat_core(
         logger.info(
             f"[IDEMPOTENCY] Turn sequence {current_seq} is ODD (Processing). Rejecting concurrent request for app {app.id}"
         )
-        _log_len = len(_interview_log_chat) if isinstance(_interview_log_chat, list) else len(json.loads(_interview_log_chat or "[]"))
+        _log_len = (
+            len(_interview_log_chat)
+            if isinstance(_interview_log_chat, list)
+            else len(json.loads(_interview_log_chat or "[]"))
+        )
         return {
             "reply": "I'm currently thinking about your last answer. Please wait a moment...",
             "type": "wait",
@@ -816,10 +845,7 @@ async def _interview_chat_core(
         # short ISO values ("fr"/"en"/"ar") depending on how it was created.
         # Normalize both representations before passing the language to the AI.
         if _snap_language:
-            language_context = (
-                normalize_interview_language(_snap_language)
-                or "English"
-            )
+            language_context = normalize_interview_language(_snap_language) or "English"
         else:
             language_context = (
                 normalize_interview_language(req.language)
@@ -895,7 +921,12 @@ async def _interview_chat_core(
                 },
             }
 
-        base_time = _snap_time_limit or (_es.interview_time_left if _es else None) or app.interview_time_left or 1800
+        base_time = (
+            _snap_time_limit
+            or (_es.interview_time_left if _es else None)
+            or app.interview_time_left
+            or 1800
+        )
         has_history = bool(history)
         fresh_interview = not has_history
 
@@ -909,9 +940,11 @@ async def _interview_chat_core(
                 # to the same representation used by the application.
                 app.opened_at = _now.replace(tzinfo=None)
             from datetime import timedelta
+
             _expires = (app.opened_at or _now) + timedelta(seconds=base_time)
             sync_ai_interview_session(
-                db, app,
+                db,
+                app,
                 interview_time_left=base_time,
                 expires_at=_expires,
             )
@@ -926,10 +959,10 @@ async def _interview_chat_core(
         if _remaining <= 0 and not fresh_interview:
             # Terminal timeout: finalize + lock (Invariant 3).
             _es_final = app.evaluation_sessions[0] if app.evaluation_sessions else None
-            _already_terminal = (
-                getattr(_es_final, "interview_state", None) in ("completed", "expired")
-                or app.interview_state in ("completed", "expired")
-            )
+            _already_terminal = getattr(_es_final, "interview_state", None) in (
+                "completed",
+                "expired",
+            ) or app.interview_state in ("completed", "expired")
             if not _already_terminal:
                 sync_ai_interview_session(db, app, interview_state="expired")
                 sync_evaluation_state(db, app, evaluation_state="pending")
@@ -1172,9 +1205,9 @@ async def _interview_chat_core(
                 )
                 logger.info(
                     f"[EVAL-RESULT] App {app.id} score={last_eval.get('score')} "
-                    f"skills={last_eval.get('skills',{})!r} "
+                    f"skills={last_eval.get('skills', {})!r} "
                     f"quality={last_eval.get('quality')} "
-                    f"reasoning={str(last_eval.get('reasoning',''))[:200]}"
+                    f"reasoning={str(last_eval.get('reasoning', ''))[:200]}"
                 )
             except Exception as eval_err:
                 logger.warning(
@@ -1224,35 +1257,46 @@ async def _interview_chat_core(
 
             _cat_scores = last_eval.get("skills")
             _debug_info = {
-                "app_id": app.id, "turn": engine_state.get("turn", 0),
-                "last_focus": last_focus, "eval_score": last_eval["score"],
+                "app_id": app.id,
+                "turn": engine_state.get("turn", 0),
+                "last_focus": last_focus,
+                "eval_score": last_eval["score"],
                 "category_scores": _cat_scores,
                 "pre_live_skills": dict(engine_state.get("live_skill_metrics", {})),
-                "pre_skill_scores_keys": list(engine_state.get("skill_scores", {}).keys()),
+                "pre_skill_scores_keys": list(
+                    engine_state.get("skill_scores", {}).keys()
+                ),
                 "is_handshake": is_handshake,
-                "sanitized_message_len": len(sanitized_message) if sanitized_message else 0,
+                "sanitized_message_len": len(sanitized_message)
+                if sanitized_message
+                else 0,
             }
             logger.info(
-                f"[SCORING-DEBUG] App {app.id} turn={engine_state.get('turn',0)} "
+                f"[SCORING-DEBUG] App {app.id} turn={engine_state.get('turn', 0)} "
                 f"last_focus={last_focus} eval_score={last_eval['score']} "
                 f"category_scores={_cat_scores!r} "
-                f"covered_skills={engine_state.get('covered_skills',[])} "
-                f"pre_live_skills={engine_state.get('live_skill_metrics',{})!r}"
+                f"covered_skills={engine_state.get('covered_skills', [])} "
+                f"pre_live_skills={engine_state.get('live_skill_metrics', {})!r}"
             )
             engine_state = update_engine_state(
                 engine_state, last_focus, last_eval["score"], _cat_scores
             )
-            _debug_info["post_live_skills"] = dict(engine_state.get("live_skill_metrics", {}))
+            _debug_info["post_live_skills"] = dict(
+                engine_state.get("live_skill_metrics", {})
+            )
             logger.info(
                 f"[SCORING-DEBUG-POST] App {app.id} "
-                f"post_live_skills={engine_state.get('live_skill_metrics',{})!r} "
-                f"post_skill_scores={engine_state.get('skill_scores',{})!r}"
+                f"post_live_skills={engine_state.get('live_skill_metrics', {})!r} "
+                f"post_skill_scores={engine_state.get('skill_scores', {})!r}"
             )
             try:
                 import json as _dj
                 import os as _os
                 import tempfile
-                with open(_os.path.join(tempfile.gettempdir(), "scoring_debug.json"), "w") as _f:
+
+                with open(
+                    _os.path.join(tempfile.gettempdir(), "scoring_debug.json"), "w"
+                ) as _f:
                     _dj.dump(_debug_info, _f, indent=2, default=str)
             except Exception:
                 pass
@@ -1363,7 +1407,11 @@ async def _interview_chat_core(
                 logger.info(
                     "[SCORING-DATA] live_metrics=%s skill_scores=%s q_scores=%s",
                     {k: v for k, v in live_metrics.items() if v > 0},
-                    {k: v for k, v in engine_state.get("skill_scores", {}).items() if v},
+                    {
+                        k: v
+                        for k, v in engine_state.get("skill_scores", {}).items()
+                        if v
+                    },
                     q_scores,
                 )
             else:
@@ -1550,7 +1598,9 @@ async def _interview_chat_core(
                 s.lower() for s in engine_state["covered_skills"]
             ]:
                 engine_state["covered_skills"].append(selected_focus)
-            logger.info(f"[FOCUS] App {app.id} covered_after={engine_state['covered_skills']}")
+            logger.info(
+                f"[FOCUS] App {app.id} covered_after={engine_state['covered_skills']}"
+            )
 
         question_sent_at = _utcnow().timestamp()
         history.append(
@@ -1629,10 +1679,7 @@ async def _interview_chat_core(
                 result = db.execute(
                     update(EvaluationSession)
                     .where(EvaluationSession.id == _es_id_turn)
-                    .where(
-                        EvaluationSession.interview_turn_seq
-                        == expected_seq + 1
-                    )
+                    .where(EvaluationSession.interview_turn_seq == expected_seq + 1)
                     .values(interview_turn_seq=expected_seq + 2)
                 )
                 db.commit()
@@ -1656,10 +1703,7 @@ async def _interview_chat_core(
                     result_retry = db.execute(
                         update(EvaluationSession)
                         .where(EvaluationSession.id == _es_id_turn)
-                        .where(
-                            EvaluationSession.interview_turn_seq
-                            == expected_seq + 1
-                        )
+                        .where(EvaluationSession.interview_turn_seq == expected_seq + 1)
                         .values(interview_turn_seq=expected_seq + 2)
                     )
                     db.commit()
@@ -1670,12 +1714,12 @@ async def _interview_chat_core(
                             f"for app {app.id}: expected seq {expected_seq + 1}"
                         )
                 except Exception:
-                    logger.error(f"[IDEMPOTENCY] CRITICAL: Could not release lock for app {app.id} even after retry")
+                    logger.error(
+                        f"[IDEMPOTENCY] CRITICAL: Could not release lock for app {app.id} even after retry"
+                    )
             try:
                 _remaining_final = _compute_remaining_seconds(_expires_at)
-                sync_ai_interview_session(
-                    db, app, interview_time_left=_remaining_final
-                )
+                sync_ai_interview_session(db, app, interview_time_left=_remaining_final)
                 db.commit()
             except Exception as e:
                 logger.error(

@@ -636,7 +636,7 @@ def apply_to_job(
         # discards the application, the wallet change and the charge
         # together, so an unfundable job never leaves a JOB application
         # behind. Exactly one company charge per accepted application
-        # (idempotency key consume:cv_analysis:{app_id}).
+        # (idempotent per company wallet + application id).
         try:
             funding_tx = consume_credits_in_transaction(
                 db,

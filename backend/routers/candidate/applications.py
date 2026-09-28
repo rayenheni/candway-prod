@@ -113,22 +113,29 @@ def _refund_application_cv_analysis(db: Session, app_id: int) -> bool:
     """Refund the apply-time company funding for a failed recruiter-side CV
     analysis.
 
-    Uses the exact idempotency key that funded the analysis
-    (``consume:cv_analysis:{app_id}``) so a refund is never issued more than
-    once per charge and never issued when no charge exists (manual /
-    CV-builder uploads have no company funding). rollback_credits_in_transaction()
-    is itself idempotent (no-op on an already-reversed transaction) and never
-    commits on its own — the refund persists together with the app's failure
-    state in the caller's single commit.
+    Targets exactly the apply-time company charge for this application
+    (resource ``cv_analysis``, reference_type ``application``, reference_id
+    ``app_id``) — never the candidate's own CV-review charges, which use
+    reference_type ``cv_review``/``cv_review_enriched`` and live in the
+    candidate's wallet. A refund is never issued more than once per charge
+    (only a live ``succeeded`` charge is reversed) and never issued when no
+    charge exists (manual / CV-builder uploads have no company funding).
+    rollback_credits_in_transaction() never commits on its own — the refund
+    persists together with the app's failure state in the caller's commit.
     """
     from backend.credit_service import rollback_credits_in_transaction
     from backend.database import CreditTransaction
 
-    key = f"consume:cv_analysis:{app_id}"
     tx = (
         db.query(CreditTransaction)
-        .filter(CreditTransaction.idempotency_key == key)
-        .order_by(CreditTransaction.id.asc())
+        .filter(
+            CreditTransaction.type == "consume",
+            CreditTransaction.resource == "cv_analysis",
+            CreditTransaction.reference_type == "application",
+            CreditTransaction.reference_id == app_id,
+            CreditTransaction.status == "succeeded",
+        )
+        .order_by(CreditTransaction.id.desc())
         .first()
     )
     if tx is None:
@@ -1261,15 +1268,12 @@ def _is_candidate_onboarding_completed(current_user: User, db: Session) -> bool:
 
     # CV/application data can also complete the candidate's setup.
     has_cv_or_application = (
-        db.query(Application)
-        .filter(Application.user_id == current_user.id)
-        .first()
+        db.query(Application).filter(Application.user_id == current_user.id).first()
         is not None
     )
 
     return bool(
-        (has_identity and (has_skills or has_preferences))
-        or has_cv_or_application
+        (has_identity and (has_skills or has_preferences)) or has_cv_or_application
     )
 
 
@@ -1311,9 +1315,7 @@ def _get_my_application_summary_impl(current_user: User, db: Session):
         )
         skills_list, skill_metrics = _resolve_dashboard_skills(current_user, profile)
         achs = _resolve_dashboard_achievements(current_user, db, score=_profile_score)
-        onboarding_completed = _is_candidate_onboarding_completed(
-            current_user, db
-        )
+        onboarding_completed = _is_candidate_onboarding_completed(current_user, db)
         return {
             "status": "ok",
             "score": _profile_score,
@@ -1554,9 +1556,7 @@ def _get_my_application_summary_impl(current_user: User, db: Session):
     if not dash_skill_metrics:
         dash_skill_metrics = skill_metrics
 
-    onboarding_completed = _is_candidate_onboarding_completed(
-        current_user, db
-    )
+    onboarding_completed = _is_candidate_onboarding_completed(current_user, db)
 
     return {
         "id": app.id,
@@ -1565,22 +1565,14 @@ def _get_my_application_summary_impl(current_user: User, db: Session):
         # This is a candidate-level CV/profile score, NOT the final score
         # of the latest job application/interview.
         "score": (
-            _sc.cv_score
-            if _sc is not None and _sc.cv_score is not None
-            else None
+            _sc.cv_score if _sc is not None and _sc.cv_score is not None else None
         ),
         "overall_score": (
-            _sc.cv_score
-            if _sc is not None and _sc.cv_score is not None
-            else None
+            _sc.cv_score if _sc is not None and _sc.cv_score is not None else None
         ),
         "verdict": (
             "High Potential"
-            if (
-                _sc is not None
-                and _sc.cv_score is not None
-                and _sc.cv_score >= 70
-            )
+            if (_sc is not None and _sc.cv_score is not None and _sc.cv_score >= 70)
             else "Developing"
         ),
         "fraud_score": _sc.fraud_score if _sc else 0,

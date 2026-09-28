@@ -1822,7 +1822,12 @@ def get_ranked_candidates(
             EvaluationResult,
             EvaluationResult.evaluation_session_id == EvaluationSession.id,
         )
-        .where(EvaluationSession.application_id == Application.id)
+        .where(
+            EvaluationSession.application_id == Application.id,
+            # Same resolution as ScoringService.get_canonical_score: an
+            # unfinished interview result does not hide the prior score.
+            ScoringService.computed_result_clause(),
+        )
         .order_by(EvaluationSession.id.desc())
         .limit(1)
         .correlate(Application)
@@ -1850,15 +1855,9 @@ def get_ranked_candidates(
         or recruiter.role == "admin"
     )
     for app in page_apps:
-        es = (
-            db.query(EvaluationSession)
-            .filter(EvaluationSession.application_id == app.id)
-            .first()
-        )
-        # evaluation_result is eager-loaded by the page query above.
-        _app_sc = getattr(es, "evaluation_result", None) if es else None
-
-        canonical = _app_sc
+        # Display the SAME result the page is sorted by (canonical score),
+        # not an arbitrary session's result (unordered .first()).
+        canonical = ScoringService.get_canonical_score(app.id, db)
         if not canonical:
             canonical = ScoringService.ensure_score(app, db)
         cv_score = canonical.cv_score or 0

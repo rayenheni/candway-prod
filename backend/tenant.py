@@ -63,6 +63,7 @@ def _resolve_company_id(user: User, db: Session) -> int | None:
             CompanyMember.user_id == user.id,
             CompanyMember.is_active,
         )
+        .order_by(CompanyMember.id.asc())  # deterministic (see dependencies)
         .first()
     )
     if not membership:

@@ -430,6 +430,14 @@ def get_question_type(turn: int) -> str:
     return types[turn % len(types)]
 
 
+class AnswerEvaluationUnavailable(RuntimeError):
+    """The answer could not be evaluated (provider/processing failure).
+
+    Distinct from a scored answer: callers must record a failed evaluation,
+    never a fabricated score.
+    """
+
+
 def _persist_turn_rubric_evidence(app, question, answer, skill_results) -> None:
     """Persist per-turn rubric evidence against the canonical EvaluationResult.
 
@@ -545,12 +553,20 @@ async def evaluate_answer(
             temperature=0.1,
             json_mode=True,
         )
+        if not isinstance(result, dict) or result.get("error"):
+            # Provider failure is NOT "the candidate showed no evidence":
+            # surface it so the caller records a distinguishable failed
+            # evaluation instead of a score.
+            raise AnswerEvaluationUnavailable(
+                f"answer evaluation provider failed: "
+                f"{(result or {}).get('error') if isinstance(result, dict) else type(result).__name__}"
+            )
 
         cheat_result = AntiCheatDetector.calculate_cheat_score(
             answer=answer, history=[], previous_answers=previous_answers or []
         )
 
-        extracted = result.get("extracted_skills", [])
+        extracted = _sanitize_extracted_skills(result.get("extracted_skills", []))
         avg_score = _compute_heuristic_score(extracted)
 
         skill_results = {}
@@ -596,23 +612,11 @@ async def evaluate_answer(
                         if focus_lower in m.get("skill_name", "").lower()
                         or m.get("skill_name", "").lower() in focus_lower
                     ]
-                if not focused_mapped and mapped:
-                    # Last resort: the LLM didn't extract the focused skill, but the answer
-                    # is about that skill — force-map the focused skill with the extracted evidence
-                    rubric_lookup = job_rubric.build_lookup()
-                    for rname, rskill in rubric_lookup.items():
-                        if focus_lower in rname or rname in focus_lower:
-                            best_evidence = []
-                            for m in mapped:
-                                best_evidence.extend(m.get("evidence_sentences", []))
-                            focused_mapped = [
-                                {
-                                    "skill_name": rname,
-                                    "evidence_sentences": best_evidence[:3],
-                                    "quality": "intermediate",
-                                }
-                            ]
-                            break
+                # SCORING POLICY: evidence for OTHER rubric skills is never
+                # re-attributed to the focused skill. An answer that does not
+                # evidence the skill being asked about gets no credit for it
+                # (off-skill answer -> 0); other evidenced rubric skills can
+                # still earn the breadth bonus at the ceiling.
                 mapped = focused_mapped
 
             if job_rubric is not None:
@@ -667,10 +671,11 @@ async def evaluate_answer(
                                 getattr(app, "id", "?"),
                                 persist_err,
                             )
-                elif not any(_has_evidence(m) for m in rubric_mapped):
+                elif not any(_has_evidence(m) for m in mapped):
                     # SCORING POLICY: a rubric exists and the answer carries no
-                    # evidence for any rubric skill ("I don't know", off-topic
-                    # text, skills outside the rubric) -> no credit.
+                    # evidence for the relevant rubric skill(s) — the focused
+                    # skill when one is asked ("I don't know", off-topic text,
+                    # off-skill answers, skills outside the rubric) -> no credit.
                     avg_score = NO_EVIDENCE_SCORE
                     logger.info(
                         "[SCORING] No rubric evidence for focus=%s -> score %d",
@@ -760,23 +765,15 @@ async def evaluate_answer(
             "cheat_reason": cheat_result.get("details", ""),
         }
     except Exception as e:
+        # Never fabricate a "neutral" 50 (and fake per-skill 50s) for an
+        # answer that could not be evaluated: that pretends the candidate
+        # demonstrated skills. Re-raise so the caller records its explicit,
+        # distinguishable failure state (chat: eval_failed=True, no skills,
+        # no rubric evidence persisted).
         logger.error(f"[EVALUATOR] Failed: {e}")
-        return {
-            "score": 50,
-            "quality": "adequate",
-            "feedback": "Analysis failed, using default evaluation.",
-            "reasoning": "Evaluation failed, using default values",
-            "skills": {
-                "Technical": 50,
-                "Communication": 50,
-                "Problem Solving": 50,
-                "Adaptability": 50,
-                "Confidence": 50,
-                "Consistency": 50,
-            },
-            "cheat_detected": False,
-            "cheat_reason": "",
-        }
+        if isinstance(e, AnswerEvaluationUnavailable):
+            raise
+        raise AnswerEvaluationUnavailable(str(e)) from e
 
 
 # SCORING POLICY (product decision):
@@ -815,6 +812,32 @@ def _breadth_bonus(
         )
         extra[name] = max(extra.get(name, 0), points)
     return max(0, min(100 - score, sum(extra.values())))
+
+
+def _sanitize_extracted_skills(raw) -> list:
+    """Keep only well-formed LLM skill extractions.
+
+    Entries without a usable ``skill_name`` (None, non-string, blank) or that
+    are not objects are malformed model output, not evidence: they are
+    dropped so the answer is scored on its valid evidence only (0 when none
+    remains) instead of crashing the evaluation. Well-formed entries are
+    returned unchanged apart from non-list/non-string evidence sentences.
+    """
+    if not isinstance(raw, list):
+        return []
+    clean = []
+    for item in raw:
+        if not isinstance(item, dict):
+            continue
+        name = item.get("skill_name")
+        if not isinstance(name, str) or not name.strip():
+            continue
+        sentences = item.get("evidence_sentences")
+        if not isinstance(sentences, list):
+            sentences = []
+        sentences = [x for x in sentences if isinstance(x, str) and x.strip()]
+        clean.append({**item, "evidence_sentences": sentences})
+    return clean
 
 
 def _compute_heuristic_score(extracted: list) -> int:

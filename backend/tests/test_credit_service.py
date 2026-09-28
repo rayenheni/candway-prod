@@ -142,7 +142,9 @@ def test_idempotency_key_unique_constraint(db_session, credit_user):
         amount=-2,
         type="consume",
         resource="ai_search",
-        idempotency_key="consume:ai_search:5",
+        idempotency_key=credit_service.consume_idempotency_key(
+            wallet.id, "ai_search", 5
+        ),
     )
     db_session.add(dup)
     with pytest.raises(IntegrityError):

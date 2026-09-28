@@ -709,7 +709,12 @@ def get_applications(
     if owned_batch_ids:
         conditions.append(Application.batch_id.in_(owned_batch_ids))
 
-    base = base.filter(or_(*conditions))
+    # TENANT ISOLATION: ownership (assigned / jobs / batches of company
+    # members) is only a narrowing within the ACTIVE company. A recruiter who
+    # belongs to several companies must not see company B applications while
+    # acting for company A (same scope as base_application_query, which the
+    # total count below already uses).
+    base = base.filter(Application.company_id == company_id, or_(*conditions))
 
     if job_id:
         base = base.filter(Application.job_id == job_id)
