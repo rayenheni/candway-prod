@@ -16,6 +16,7 @@ Canonical formula (scoring_service.CANONICAL_WEIGHTS, rubric present):
 """
 
 import uuid
+from typing import Any
 from unittest.mock import AsyncMock, patch
 
 import pytest
@@ -51,7 +52,7 @@ def _skill(name, basic, mid, top):
     }
 
 
-RUBRIC = {
+RUBRIC: dict[str, Any] = {
     "job_id": 1,
     "version": 3,
     "seniority": "mid",

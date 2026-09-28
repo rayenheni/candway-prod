@@ -5,7 +5,7 @@ row-lock), rollback, grant. All movements go through CreditTransaction
 (immutable ledger) with unique idempotency_key to prevent double-charge.
 """
 
-from typing import Optional
+from typing import Optional, cast
 
 from sqlalchemy import update
 from sqlalchemy.orm import Session
@@ -181,7 +181,7 @@ def _resolve_consume_key(
 
         return None, f"consume:w{wallet.id}:{resource}:{uuid.uuid4()}"
 
-    base = consume_idempotency_key(wallet.id, resource, reference_id)
+    base = consume_idempotency_key(cast(int, wallet.id), resource, reference_id)
     attempt = 0
     while True:
         key = base if attempt == 0 else f"{base}:retry{attempt}"
@@ -874,7 +874,7 @@ def consume_company_credits_in_transaction(
         with db.begin_nested():
             record_usage_event_in_transaction(
                 db,
-                user_id=user.id,
+                user_id=cast(int, user.id),
                 company_id=company_id,
                 resource=resource,
                 credits=int(abs(getattr(tx, "amount", 0) or 0)),

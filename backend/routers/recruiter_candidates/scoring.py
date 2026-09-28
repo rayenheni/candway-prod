@@ -2,7 +2,7 @@ import hashlib
 import json
 import re
 from datetime import UTC, datetime
-from typing import List, Optional
+from typing import Any, List, Optional, cast
 
 from fastapi import APIRouter, Depends, HTTPException, Request
 from pydantic import BaseModel
@@ -1849,7 +1849,7 @@ def get_ranked_candidates(
         .all()
     )
 
-    ranked = []
+    ranked: List[dict[str, Any]] = []
     is_pro_ranked = (
         get_user_tier(recruiter) in ("pro", "pro_plus", "enterprise")
         or recruiter.role == "admin"
@@ -1857,7 +1857,7 @@ def get_ranked_candidates(
     for app in page_apps:
         # Display the SAME result the page is sorted by (canonical score),
         # not an arbitrary session's result (unordered .first()).
-        canonical = ScoringService.get_canonical_score(app.id, db)
+        canonical = ScoringService.get_canonical_score(cast(int, app.id), db)
         if not canonical:
             canonical = ScoringService.ensure_score(app, db)
         cv_score = canonical.cv_score or 0

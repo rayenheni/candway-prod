@@ -19,7 +19,7 @@ Formula:
 
 import logging
 from datetime import datetime, timezone
-from typing import Any, Dict, Optional
+from typing import Any, Dict, Optional, cast
 
 from sqlalchemy import or_
 from sqlalchemy.orm import Session
@@ -139,7 +139,7 @@ class ScoringService:
             # CV analysis) has no CV score of its own. Carry the application's
             # most recent real CV score forward instead of silently scoring
             # the CV component as 0.
-            prior_cv = ScoringService._latest_prior_cv_score(app, db, es.id)
+            prior_cv = ScoringService._latest_prior_cv_score(app, db, cast(int, es.id))
             cv_score = prior_cv if prior_cv is not None else 0.0
 
         # Determine rubric existence from the evaluation configuration,

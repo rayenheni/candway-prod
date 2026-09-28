@@ -124,11 +124,13 @@ def _aggregate_interview_rubric_evidence(
         score = float(row.score or 0.0)
         all_turn_results.setdefault(row.id, {})[row.criterion_name] = SkillScoreResult(
             skill_name=row.criterion_name,
-            skill_id=row.criterion_key or "",
-            base_score=score,
+            skill_id=str(row.criterion_key or ""),
+            # SkillScoreResult annotates the scores as int, but rubric scores
+            # are fractional (0-100 floats) everywhere; keep the exact value.
+            base_score=score,  # type: ignore[arg-type]
             quality="medium",
             quality_multiplier=1.0,
-            final_score=score,
+            final_score=score,  # type: ignore[arg-type]
             confidence_lower=0,
             confidence_upper=0,
             evidence_sentences=[],

@@ -1,7 +1,7 @@
 import asyncio
 import html
 import json
-from typing import Optional, Tuple
+from typing import Optional, Tuple, cast
 
 from fastapi import APIRouter, BackgroundTasks, Depends, HTTPException
 from pydantic import BaseModel, Field
@@ -318,11 +318,11 @@ def _caller_may_access_application(
         return False
     if safe_user_role(current_user) in ["recruiter", "admin"]:
         try:
-            get_application_for_recruiter(app.id, current_user, db)
+            get_application_for_recruiter(cast(int, app.id), current_user, db)
         except HTTPException:
             return False
         return True
-    return app.user_id is not None and app.user_id == current_user.id
+    return bool(app.user_id is not None and app.user_id == current_user.id)
 
 
 async def _interview_chat_core(
