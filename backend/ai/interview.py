@@ -430,6 +430,79 @@ def get_question_type(turn: int) -> str:
     return types[turn % len(types)]
 
 
+class AnswerEvaluationUnavailable(RuntimeError):
+    """The answer could not be evaluated (provider/processing failure).
+
+    Distinct from a scored answer: callers must record a failed evaluation,
+    never a fabricated score.
+    """
+
+
+def _persist_turn_rubric_evidence(app, question, answer, skill_results) -> None:
+    """Persist per-turn rubric evidence against the canonical EvaluationResult.
+
+    evaluate_answer() is called directly by the AI interview engine, so relying
+    only on /rubric/interviews/.../score would leave these rows missing for
+    real interview turns. Writes happen inside a SAVEPOINT so a persistence
+    failure cannot poison the caller's session.
+    """
+    from sqlalchemy import inspect as sa_inspect
+
+    # evaluate_answer() is also called directly by tests and
+    # by the interview engine, so there is no explicit `db`
+    # argument here. Reuse the SQLAlchemy session that owns
+    # the Application object instead of creating a new one.
+    db = sa_inspect(app).session
+    if db is None:
+        raise RuntimeError("Application is not attached to a SQLAlchemy session")
+    with db.begin_nested():
+        _add_turn_rubric_rows(app, db, question, answer, skill_results)
+
+
+def _add_turn_rubric_rows(app, db, question, answer, skill_results) -> None:
+    from backend.models.evaluation.scoring import RubricScoringDetail
+    from backend.scoring_service import ScoringService
+
+    eval_result = ScoringService.ensure_pending_score(app, db)
+
+    # One detail row per rubric skill scored in this turn.
+    # Do not create rows when score_answer() produced no
+    # rubric result, and never create substantive rubric
+    # evidence for trivial/lazy answers (P1.3) — "ok",
+    # "yes", "go", ... must not inflate rubric aggregation.
+    if _is_trivial_answer(answer):
+        logger.info(
+            "[SCORING] Trivial answer — skipping RubricScoringDetail "
+            "rows (app_id=%s, answer=%r)",
+            getattr(app, "id", "?"),
+            str(answer)[:40],
+        )
+    else:
+        for skill_name, scoring_result in skill_results.items():
+            db.add(
+                RubricScoringDetail(
+                    evaluation_result_id=eval_result.id,
+                    company_id=getattr(eval_result, "company_id", None),
+                    criterion_name=skill_name,
+                    criterion_key=getattr(scoring_result, "skill_id", None),
+                    question=question,
+                    answer=answer,
+                    score=float(scoring_result.final_score),
+                    weight=float(
+                        getattr(
+                            scoring_result,
+                            "quality_multiplier",
+                            1.0,
+                        )
+                        or 1.0
+                    ),
+                    feedback=getattr(scoring_result, "explanation", None),
+                    source="interview",
+                )
+            )
+    db.flush()
+
+
 async def evaluate_answer(
     question: str,
     answer: str,
@@ -452,7 +525,12 @@ async def evaluate_answer(
     from backend.rubric.skill_mapper import map_extracted_skills
 
     prompt = get_answer_evaluation_prompt(
-        declared_role, question, answer, 0, history_summary, language=language,
+        declared_role,
+        question,
+        answer,
+        0,
+        history_summary,
+        language=language,
         rubric_skills=[
             sk.name if hasattr(sk, "name") else sk.get("name", "")
             for cat in (job_rubric.categories if job_rubric else [])
@@ -461,14 +539,12 @@ async def evaluate_answer(
                 if hasattr(cat, "subcategories")
                 else cat.get("subcategories", [])
             )
-            for sk in (
-                sub.skills
-                if hasattr(sub, "skills")
-                else sub.get("skills", [])
-            )
-            if (hasattr(sk, "name") and sk.name) or (isinstance(sk, dict) and sk.get("name"))
+            for sk in (sub.skills if hasattr(sub, "skills") else sub.get("skills", []))
+            if (hasattr(sk, "name") and sk.name)
+            or (isinstance(sk, dict) and sk.get("name"))
         ]
-        if job_rubric else None,
+        if job_rubric
+        else None,
     )
 
     try:
@@ -477,12 +553,20 @@ async def evaluate_answer(
             temperature=0.1,
             json_mode=True,
         )
+        if not isinstance(result, dict) or result.get("error"):
+            # Provider failure is NOT "the candidate showed no evidence":
+            # surface it so the caller records a distinguishable failed
+            # evaluation instead of a score.
+            raise AnswerEvaluationUnavailable(
+                f"answer evaluation provider failed: "
+                f"{(result or {}).get('error') if isinstance(result, dict) else type(result).__name__}"
+            )
 
         cheat_result = AntiCheatDetector.calculate_cheat_score(
             answer=answer, history=[], previous_answers=previous_answers or []
         )
 
-        extracted = result.get("extracted_skills", [])
+        extracted = _sanitize_extracted_skills(result.get("extracted_skills", []))
         avg_score = _compute_heuristic_score(extracted)
 
         skill_results = {}
@@ -507,35 +591,32 @@ async def evaluate_answer(
             )
             seniority = getattr(_er, "rubric_seniority", "mid")
 
+            # Every extracted item that maps to a rubric skill, before the
+            # focus filter below narrows scoring to the focused skill. Used
+            # for the no-evidence floor and the breadth bonus.
+            rubric_mapped = list(mapped)
+
             # Only score the focused skill to prevent cross-skill contamination
             if focus and mapped:
                 focus_lower = focus.lower().strip()
                 focused_mapped = [
-                    m for m in mapped
+                    m
+                    for m in mapped
                     if m.get("skill_name", "").lower().strip() == focus_lower
                 ]
                 if not focused_mapped:
                     # Fall back: try partial match (e.g. "SEO" vs "Search Engine Optimization (SEO)")
                     focused_mapped = [
-                        m for m in mapped
+                        m
+                        for m in mapped
                         if focus_lower in m.get("skill_name", "").lower()
                         or m.get("skill_name", "").lower() in focus_lower
                     ]
-                if not focused_mapped and mapped:
-                    # Last resort: the LLM didn't extract the focused skill, but the answer
-                    # is about that skill — force-map the focused skill with the extracted evidence
-                    rubric_lookup = job_rubric.build_lookup()
-                    for rname, rskill in rubric_lookup.items():
-                        if focus_lower in rname or rname in focus_lower:
-                            best_evidence = []
-                            for m in mapped:
-                                best_evidence.extend(m.get("evidence_sentences", []))
-                            focused_mapped = [{
-                                "skill_name": rname,
-                                "evidence_sentences": best_evidence[:3],
-                                "quality": "intermediate",
-                            }]
-                            break
+                # SCORING POLICY: evidence for OTHER rubric skills is never
+                # re-attributed to the focused skill. An answer that does not
+                # evidence the skill being asked about gets no credit for it
+                # (off-skill answer -> 0); other evidenced rubric skills can
+                # still earn the breadth bonus at the ceiling.
                 mapped = focused_mapped
 
             if job_rubric is not None:
@@ -551,10 +632,24 @@ async def evaluate_answer(
                         sum(r.final_score for r in skill_results.values())
                         / len(skill_results)
                     )
+                    bonus = _breadth_bonus(
+                        avg_score, answer, rubric_mapped, set(skill_results)
+                    )
+                    if bonus:
+                        logger.info(
+                            "[SCORING] Breadth bonus +%d (%d -> %d)",
+                            bonus,
+                            avg_score,
+                            avg_score + bonus,
+                        )
+                        avg_score += bonus
 
                     logger.info(
                         "[SCORING] focus=%s mapped=%s results=%s avg=%s scores=%s",
-                        focus, len(mapped), len(skill_results), avg_score,
+                        focus,
+                        len(mapped),
+                        len(skill_results),
+                        avg_score,
                         {n: r.final_score for n, r in skill_results.items()},
                     )
 
@@ -564,74 +659,44 @@ async def evaluate_answer(
                     # only on /rubric/interviews/.../score would leave these
                     # rows missing for real interview turns.
                     if app is not None:
-                        from sqlalchemy import inspect as sa_inspect
-
-                        from backend.models.evaluation.scoring import (
-                            RubricScoringDetail,
-                        )
-                        from backend.scoring_service import ScoringService
-
-                        # evaluate_answer() is also called directly by tests and
-                        # by the interview engine, so there is no explicit `db`
-                        # argument here. Reuse the SQLAlchemy session that owns
-                        # the Application object instead of creating a new one.
-                        db = sa_inspect(app).session
-                        if db is None:
-                            raise RuntimeError(
-                                "Application is not attached to a SQLAlchemy session"
+                        try:
+                            _persist_turn_rubric_evidence(
+                                app, question, answer, skill_results
                             )
-
-                        eval_result = ScoringService.ensure_pending_score(app, db)
-
-                        # One detail row per rubric skill scored in this turn.
-                        # Do not create rows when score_answer() produced no
-                        # rubric result, and never create substantive rubric
-                        # evidence for trivial/lazy answers (P1.3) — "ok",
-                        # "yes", "go", ... must not inflate rubric aggregation.
-                        if _is_trivial_answer(answer):
-                            logger.info(
-                                "[SCORING] Trivial answer — skipping RubricScoringDetail "
-                                "rows (app_id=%s, answer=%r)",
+                        except Exception as persist_err:
+                            # Never discard a computed score because evidence persistence
+                            # failed (detached Application, DB error, ...).
+                            logger.error(
+                                "[SCORING] Failed to persist rubric evidence for app %s: %s",
                                 getattr(app, "id", "?"),
-                                str(answer)[:40],
+                                persist_err,
                             )
-                        else:
-                            for skill_name, scoring_result in skill_results.items():
-                                db.add(
-                                    RubricScoringDetail(
-                                        evaluation_result_id=eval_result.id,
-                                        company_id=getattr(
-                                            eval_result, "company_id", None
-                                        ),
-                                        criterion_name=skill_name,
-                                        criterion_key=getattr(
-                                            scoring_result, "skill_id", None
-                                        ),
-                                        question=question,
-                                        answer=answer,
-                                        score=float(scoring_result.final_score),
-                                        weight=float(
-                                            getattr(
-                                                scoring_result,
-                                                "quality_multiplier",
-                                                1.0,
-                                            )
-                                            or 1.0
-                                        ),
-                                        feedback=getattr(
-                                            scoring_result, "explanation", None
-                                        ),
-                                        source="interview",
-                                    )
-                                )
-
-                        db.flush()
+                elif not any(_has_evidence(m) for m in mapped):
+                    # SCORING POLICY: a rubric exists and the answer carries no
+                    # evidence for the relevant rubric skill(s) — the focused
+                    # skill when one is asked ("I don't know", off-topic text,
+                    # off-skill answers, skills outside the rubric) -> no credit.
+                    avg_score = NO_EVIDENCE_SCORE
+                    logger.info(
+                        "[SCORING] No rubric evidence for focus=%s -> score %d",
+                        focus,
+                        avg_score,
+                    )
                 elif not avg_score:
+                    # Evidence maps to rubric skills but could not be scored
+                    # (e.g. the rubric has no level for this seniority): keep
+                    # the length heuristic rather than punishing a config gap.
                     answer_len = len(answer.strip().split())
-                    avg_score = min(60, max(20, answer_len * 2)) if answer_len > 20 else min(30, answer_len)
+                    avg_score = (
+                        min(60, max(20, answer_len * 2))
+                        if answer_len > 20
+                        else min(30, answer_len)
+                    )
                     logger.info(
                         "[SCORING] No rubric match for focus=%s, using length heuristic: %d (words=%d)",
-                        focus, avg_score, answer_len,
+                        focus,
+                        avg_score,
+                        answer_len,
                     )
 
         if cheat_result.get("cheat_detected"):
@@ -679,8 +744,12 @@ async def evaluate_answer(
 
         logger.info(
             "[EVALUATOR] focus=%s score=%s skills=%s extracted=%s rubric_matched=%s cheat=%s feedback=%s",
-            focus, score, list(skills.keys()), len(extracted or []),
-            len(skill_results), cheat_result.get("cheat_detected", False),
+            focus,
+            score,
+            list(skills.keys()),
+            len(extracted or []),
+            len(skill_results),
+            cheat_result.get("cheat_detected", False),
             (result.get("feedback", "") or "")[:80],
         )
 
@@ -696,23 +765,79 @@ async def evaluate_answer(
             "cheat_reason": cheat_result.get("details", ""),
         }
     except Exception as e:
+        # Never fabricate a "neutral" 50 (and fake per-skill 50s) for an
+        # answer that could not be evaluated: that pretends the candidate
+        # demonstrated skills. Re-raise so the caller records its explicit,
+        # distinguishable failure state (chat: eval_failed=True, no skills,
+        # no rubric evidence persisted).
         logger.error(f"[EVALUATOR] Failed: {e}")
-        return {
-            "score": 50,
-            "quality": "adequate",
-            "feedback": "Analysis failed, using default evaluation.",
-            "reasoning": "Evaluation failed, using default values",
-            "skills": {
-                "Technical": 50,
-                "Communication": 50,
-                "Problem Solving": 50,
-                "Adaptability": 50,
-                "Confidence": 50,
-                "Consistency": 50,
-            },
-            "cheat_detected": False,
-            "cheat_reason": "",
-        }
+        if isinstance(e, AnswerEvaluationUnavailable):
+            raise
+        raise AnswerEvaluationUnavailable(str(e)) from e
+
+
+# SCORING POLICY (product decision):
+# * With a rubric, an answer with no evidence for any rubric skill scores 0.
+# * Rubric skill levels top out at 90. When the focused skill is at that
+#   ceiling, each additional rubric skill evidenced in the same answer adds
+#   points (fewer for weak evidence), capped at 100, so broader excellent
+#   answers rank above narrower strong ones.
+NO_EVIDENCE_SCORE = 0
+BREADTH_BONUS_THRESHOLD = 90
+BREADTH_BONUS_PER_SKILL = 5
+BREADTH_BONUS_PER_WEAK_SKILL = 2
+
+
+def _has_evidence(item: dict) -> bool:
+    return any(str(s).strip() for s in (item.get("evidence_sentences") or []))
+
+
+def _breadth_bonus(
+    score: int, answer: str, rubric_mapped: list, scored_skills: set
+) -> int:
+    """Extra points for additional rubric skills evidenced at the ceiling."""
+    if score < BREADTH_BONUS_THRESHOLD or _is_trivial_answer(answer):
+        return 0
+    scored = {str(name).lower().strip() for name in scored_skills}
+    # One entry per extra skill; a skill counts at its best evidence quality.
+    extra: dict[str, int] = {}
+    for m in rubric_mapped:
+        name = str(m.get("skill_name", "")).lower().strip()
+        if not name or name in scored or not _has_evidence(m):
+            continue
+        points = (
+            BREADTH_BONUS_PER_WEAK_SKILL
+            if m.get("quality") == "weak"
+            else BREADTH_BONUS_PER_SKILL
+        )
+        extra[name] = max(extra.get(name, 0), points)
+    return max(0, min(100 - score, sum(extra.values())))
+
+
+def _sanitize_extracted_skills(raw) -> list:
+    """Keep only well-formed LLM skill extractions.
+
+    Entries without a usable ``skill_name`` (None, non-string, blank) or that
+    are not objects are malformed model output, not evidence: they are
+    dropped so the answer is scored on its valid evidence only (0 when none
+    remains) instead of crashing the evaluation. Well-formed entries are
+    returned unchanged apart from non-list/non-string evidence sentences.
+    """
+    if not isinstance(raw, list):
+        return []
+    clean = []
+    for item in raw:
+        if not isinstance(item, dict):
+            continue
+        name = item.get("skill_name")
+        if not isinstance(name, str) or not name.strip():
+            continue
+        sentences = item.get("evidence_sentences")
+        if not isinstance(sentences, list):
+            sentences = []
+        sentences = [x for x in sentences if isinstance(x, str) and x.strip()]
+        clean.append({**item, "evidence_sentences": sentences})
+    return clean
 
 
 def _compute_heuristic_score(extracted: list) -> int:
@@ -2251,7 +2376,10 @@ async def generate_dynamic_interview_turn(
 
 
 async def evaluate_complete_interview(
-    cv_text: str, declared_role: str, qa_pairs: list, violations: list = None,
+    cv_text: str,
+    declared_role: str,
+    qa_pairs: list,
+    violations: list = None,
     rubric_context: str = None,
 ):
     """
@@ -2299,7 +2427,10 @@ async def evaluate_complete_interview(
         )
 
     prompt = get_complete_interview_evaluation_prompt(
-        declared_role, cv_text, qa_formatted, proctoring_context,
+        declared_role,
+        cv_text,
+        qa_formatted,
+        proctoring_context,
         rubric_context=rubric_context,
     )
 

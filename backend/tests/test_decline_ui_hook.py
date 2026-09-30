@@ -55,6 +55,23 @@ def _make_user(db, id, email, name, role="candidate"):
     return u
 
 
+def _attach_company(db_session, recruiter):
+    """Tenant setup the recruiter list now requires (company + membership)."""
+    from backend.database import Company, CompanyMember
+
+    company = Company(name="Acme", slug="acme-decline-ui")
+    db_session.add(company)
+    db_session.flush()
+    db_session.add(
+        CompanyMember(
+            company_id=company.id, user_id=recruiter.id, role="admin", is_active=True
+        )
+    )
+    db_session.flush()
+    recruiter._company_id = company.id
+    return company
+
+
 def test_decline_columns_exist_on_model():
     cols = {c.name for c in Application.__table__.columns}
     for required in {"declined_at", "decline_reason", "decline_initiated_by"}:
@@ -91,6 +108,7 @@ def test_recruiter_list_exposes_decline_fields(db_session):
 
     recruiter = _make_user(db_session, 1, "r@example.com", "Recruiter", "recruiter")
     candidate = _make_user(db_session, 2, "c@example.com", "Cand")
+    company = _attach_company(db_session, recruiter)
 
     # A Job owned by this recruiter (the list filters by
     # job ownership).
@@ -100,7 +118,8 @@ def test_recruiter_list_exposes_decline_fields(db_session):
         id=1,
         recruiter_id=recruiter.id,
         title="Senior Engineer A",
-        company="Acme",
+        company_id=company.id,
+        company_name="Acme",
         type="full-time",
         location="Remote",
         is_active=True,
@@ -109,7 +128,8 @@ def test_recruiter_list_exposes_decline_fields(db_session):
         id=2,
         recruiter_id=recruiter.id,
         title="Senior Engineer B",
-        company="Acme",
+        company_id=company.id,
+        company_name="Acme",
         type="full-time",
         location="Remote",
         is_active=True,
@@ -123,6 +143,7 @@ def test_recruiter_list_exposes_decline_fields(db_session):
     declined_app = Application(
         user_id=candidate.id,
         job_id=job_a.id,
+        company_id=company.id,
         status="rejected",
         declared_role="Engineer",
         full_name="Cand",
@@ -134,6 +155,7 @@ def test_recruiter_list_exposes_decline_fields(db_session):
     active_app = Application(
         user_id=candidate.id,
         job_id=job_b.id,
+        company_id=company.id,
         status="pending",
         declared_role="Engineer",
         full_name="Cand",
@@ -164,13 +186,15 @@ def test_recruiter_list_inactive_status_no_decline_metadata(db_session):
 
     recruiter = _make_user(db_session, 1, "r@example.com", "Recruiter", "recruiter")
     candidate = _make_user(db_session, 2, "c@example.com", "Cand")
+    company = _attach_company(db_session, recruiter)
     from backend.database import Job
 
     job = Job(
         id=1,
         recruiter_id=recruiter.id,
         title="Senior Engineer",
-        company="Acme",
+        company_id=company.id,
+        company_name="Acme",
         type="full-time",
         location="Remote",
         is_active=True,
@@ -180,6 +204,7 @@ def test_recruiter_list_inactive_status_no_decline_metadata(db_session):
     active_app = Application(
         user_id=candidate.id,
         job_id=job.id,
+        company_id=company.id,
         status="pending",
         declared_role="Engineer",
         full_name="Cand",

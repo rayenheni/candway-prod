@@ -259,24 +259,38 @@ async def process_video_transcription(application_id: int, company_id: int = Non
             logger.error(f"Transcription exception: {e}")
             error_msg = str(e)
 
-        with db.begin():
-            app = db.query(Application).filter(Application.id == application_id).first()
-            if not app:
-                return
-
+        # The session already has an open transaction (the lookup above
+        # autobegins one), so `with db.begin()` raised and nothing was ever
+        # persisted. Write, then commit explicitly.
+        try:
             if transcript:
-                try:
-                    analysis = json.loads(app.analysis_json or "{}")
-                    analysis["video_verification"] = (
-                        "Transcription available for review."
-                    )
-                    sync_cv_document(db, app, analysis_json=analysis)
-                except Exception:
-                    pass
+                raw = app.analysis_json
+                # JSON column: normally a dict; tolerate legacy JSON text.
+                if isinstance(raw, dict):
+                    analysis = dict(raw)
+                else:
+                    analysis = json.loads(raw) if raw else {}
+                analysis["video_verification"] = "Transcription available for review."
+                sync_cv_document(db, app, analysis_json=analysis)
+                # The transcript itself was never stored; it is read back by
+                # entity_enricher and erased by gdpr_erasure.
+                sync_ai_interview_session(db, app, video_transcript=transcript)
             else:
+                logger.warning(
+                    "[STT] Transcription failed for app %s (status=%s)",
+                    application_id,
+                    status_code,
+                )
                 sync_ai_interview_session(
                     db, app, interview_state="transcription_failed"
                 )
+            db.commit()
+        except Exception:
+            db.rollback()
+            logger.exception(
+                "[STT] Failed to persist transcription result for app %s",
+                application_id,
+            )
     finally:
         db.close()
 

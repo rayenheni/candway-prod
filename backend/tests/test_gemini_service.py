@@ -74,7 +74,10 @@ class TestGeminiService:
     def test_init(self):
         service = GeminiService(api_key="test-key")
         assert service.api_key == "test-key"
-        assert service.model == "gemini-2.0-flash"
+        # Must track the primary Gemini model used by the LLM cascade.
+        from backend.ai.llm import GEMINI_MODELS
+
+        assert service.model == GEMINI_MODELS[0]
 
     @pytest.mark.asyncio
     async def test_generate_question_success(self, monkeypatch):

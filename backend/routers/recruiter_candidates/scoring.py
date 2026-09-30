@@ -2,7 +2,7 @@ import hashlib
 import json
 import re
 from datetime import UTC, datetime
-from typing import List, Optional
+from typing import Any, List, Optional, cast
 
 from fastapi import APIRouter, Depends, HTTPException, Request
 from pydantic import BaseModel
@@ -1448,9 +1448,7 @@ def get_application_scores(
                 "is_required": details.get("is_required", False)
                 if isinstance(details, dict)
                 else False,
-                "assessed": (
-                    details.get("final_score", details.get("score", 0)) or 0
-                )
+                "assessed": (details.get("final_score", details.get("score", 0)) or 0)
                 > 0
                 if isinstance(details, dict)
                 else False,
@@ -1469,10 +1467,10 @@ def get_application_scores(
                 "normalized_weight": details.get("normalized_weight")
                 if isinstance(details, dict)
                 else None,
-                "level": details.get("level")
-                if isinstance(details, dict)
-                else None,
-                "evidence_quality": details.get("evidence_quality", details.get("quality", "strong"))
+                "level": details.get("level") if isinstance(details, dict) else None,
+                "evidence_quality": details.get(
+                    "evidence_quality", details.get("quality", "strong")
+                )
                 if isinstance(details, dict)
                 else "strong",
             }
@@ -1586,9 +1584,7 @@ def get_application_scores(
             else 0,
             "weight": details.get("weight") if isinstance(details, dict) else None,
             "normalized_weight": (
-                details.get("normalized_weight")
-                if isinstance(details, dict)
-                else None
+                details.get("normalized_weight") if isinstance(details, dict) else None
             ),
             "level": details.get("level") if isinstance(details, dict) else None,
             "feedback": details.get("feedback") if isinstance(details, dict) else None,
@@ -1826,7 +1822,12 @@ def get_ranked_candidates(
             EvaluationResult,
             EvaluationResult.evaluation_session_id == EvaluationSession.id,
         )
-        .where(EvaluationSession.application_id == Application.id)
+        .where(
+            EvaluationSession.application_id == Application.id,
+            # Same resolution as ScoringService.get_canonical_score: an
+            # unfinished interview result does not hide the prior score.
+            ScoringService.computed_result_clause(),
+        )
         .order_by(EvaluationSession.id.desc())
         .limit(1)
         .correlate(Application)
@@ -1848,20 +1849,15 @@ def get_ranked_candidates(
         .all()
     )
 
-    ranked = []
+    ranked: List[dict[str, Any]] = []
     is_pro_ranked = (
         get_user_tier(recruiter) in ("pro", "pro_plus", "enterprise")
         or recruiter.role == "admin"
     )
     for app in page_apps:
-        es = (
-            db.query(EvaluationSession)
-            .filter(EvaluationSession.application_id == app.id)
-            .first()
-        )
-        _app_sc = scores_map.get(es.id) if es else None  # noqa: F821
-
-        canonical = _app_sc
+        # Display the SAME result the page is sorted by (canonical score),
+        # not an arbitrary session's result (unordered .first()).
+        canonical = ScoringService.get_canonical_score(cast(int, app.id), db)
         if not canonical:
             canonical = ScoringService.ensure_score(app, db)
         cv_score = canonical.cv_score or 0
@@ -1884,7 +1880,9 @@ def get_ranked_candidates(
         time_in_stage = 0
         if app.updated_at:
             if app.updated_at.tzinfo is None:
-                time_in_stage = (datetime.now(UTC).replace(tzinfo=None) - app.updated_at).days
+                time_in_stage = (
+                    datetime.now(UTC).replace(tzinfo=None) - app.updated_at
+                ).days
             else:
                 time_in_stage = (datetime.now(UTC) - app.updated_at).days
 

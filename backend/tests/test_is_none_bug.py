@@ -66,8 +66,18 @@ def _make_user(db, **kwargs):
     return u
 
 
+def _ensure_company(db, company_id=1):
+    from backend.database import Company
+
+    if db.get(Company, company_id) is None:
+        db.add(Company(id=company_id, name="Stage Co", slug=f"stage-co-{company_id}"))
+        db.flush()
+    return company_id
+
+
 def _make_stage(db, **kwargs):
     defaults = dict(
+        company_id=_ensure_company(db),
         recruiter_id=1,
         name="Applied",
         slug="applied",
@@ -214,6 +224,7 @@ def test_recruiter_stages_endpoint_returns_global_stage(db_session, monkeypatch)
     resp = stages_mod.get_pipeline_stages(
         batch_id=None,
         recruiter=recruiter,
+        company_id=1,
         db=db_session,
     )
     # The endpoint returns a list of dicts, not a {stages: ...}

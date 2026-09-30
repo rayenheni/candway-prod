@@ -124,11 +124,6 @@ async def recruiter_scoring_preview(request: Request):
     return _spa(request)
 
 
-@router.get("/test-pm-direct")
-async def test_pm_direct():
-    return JSONResponse({"status": "ok", "route": "test-pm-direct working"})
-
-
 @router.get("/{page_name}.html")
 async def read_html(page_name: str, request: Request):
     if not page_name or not all(c.isalnum() or c in "-_" for c in page_name):

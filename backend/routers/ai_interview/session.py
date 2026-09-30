@@ -22,6 +22,13 @@ from backend.scoring_transparent import VIOLATION_PENALTIES, normalize_violation
 
 router = APIRouter(tags=["ai-interview"])
 
+# Application statuses that allow a job/campaign interview to start or resume.
+# Keep in sync with the same set in routers/ai_interview/chat.py and
+# routers/candidate/interviews.py.
+_ALLOWED_INTERVIEW_START_STATUSES = frozenset(
+    {"invited", "interviewing", "shortlisted"}
+)
+
 
 def _resolve_app_for_candidate(
     db: Session, current_user: Optional[User], application_id: int
@@ -213,9 +220,8 @@ async def resume_interview(
             "progress": 0,
         }
     if (
-        app.job_id is not None
-        or app.batch_id is not None
-    ) and app.status not in _ALLOWED_INTERVIEW_START_STATUSES:  # noqa: F821
+        app.job_id is not None or app.batch_id is not None
+    ) and app.status not in _ALLOWED_INTERVIEW_START_STATUSES:
         return {
             "can_resume": False,
             "reason": "Interview has not been scheduled yet. Please wait for the recruiter to invite you.",
@@ -231,6 +237,7 @@ async def resume_interview(
     try:
         if _es_for_resume and getattr(_es_for_resume, "config_snapshot", None):
             from backend.rubric.config_reader import EvaluationConfigReader
+
             _snapshot_time_limit = EvaluationConfigReader(
                 _es_for_resume
             ).get_time_limit()
@@ -263,6 +270,7 @@ async def resume_interview(
     # --- Check if the deadline has already passed ---
     if _expires:
         from backend.routers.ai_interview.chat import _compute_remaining_seconds
+
         _rem = _compute_remaining_seconds(_expires)
         if _rem <= 0:
             sync_ai_interview_session(db, app, interview_state="expired")
@@ -326,6 +334,7 @@ async def resume_interview(
     _time_left_resume = 0
     if _expires:
         from backend.routers.ai_interview.chat import _compute_remaining_seconds
+
         _time_left_resume = _compute_remaining_seconds(_expires)
     else:
         _time_left_resume = max(
@@ -342,6 +351,7 @@ async def resume_interview(
     try:
         if _es_for_resume and getattr(_es_for_resume, "config_snapshot", None):
             from backend.rubric.config_reader import EvaluationConfigReader
+
             _resume_total_questions = EvaluationConfigReader(
                 _es_for_resume
             ).get_total_questions()
@@ -426,6 +436,7 @@ async def pause_interview(
         _pause_es = app._latest_eval_session() if app.evaluation_sessions else None
         if _pause_es and getattr(_pause_es, "config_snapshot", None):
             from backend.rubric.config_reader import EvaluationConfigReader
+
             _pause_total_questions = EvaluationConfigReader(
                 _pause_es
             ).get_total_questions()
@@ -446,9 +457,7 @@ async def pause_interview(
         "message": "Interview paused successfully. You can resume anytime from your dashboard.",
         "progress": app.interview_progress,
         "total_questions": _pause_total_questions,
-        "percentage": round(
-            (app.interview_progress / _pause_total_questions) * 100
-        )
+        "percentage": round((app.interview_progress / _pause_total_questions) * 100)
         if app.interview_progress
         else 0,
     }
@@ -474,12 +483,11 @@ async def get_interview_time(
 
     if expires_at:
         from backend.routers.ai_interview.chat import _compute_remaining_seconds
+
         time_left = _compute_remaining_seconds(expires_at)
     else:
         time_left = (
-            getattr(es, "interview_time_left", None)
-            or app.interview_time_left
-            or 1800
+            getattr(es, "interview_time_left", None) or app.interview_time_left or 1800
         )
 
     return {

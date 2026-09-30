@@ -128,9 +128,14 @@ def create_app() -> FastAPI:
         try:
             import sentry_sdk
 
+            from backend.logger import scrub_sentry_breadcrumb, scrub_sentry_event
+
             sentry_sdk.init(
                 dsn=settings.sentry_dsn,
                 environment=settings.environment,
+                send_default_pii=False,
+                before_send=scrub_sentry_event,
+                before_breadcrumb=scrub_sentry_breadcrumb,
                 traces_sample_rate=0.5 if settings.debug else 0.05,
                 profiles_sample_rate=0.5 if settings.debug else 0.05,
             )

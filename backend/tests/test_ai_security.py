@@ -363,13 +363,11 @@ class TestPIIAudit:
 
     def test_pii_masking_always_after_config_removal(self):
         """Verify that config no longer has ai_send_pii toggle."""
-        import sys
-
-        # Force reload config to catch stale imports
-        if "backend.config" in sys.modules:
-            del sys.modules["backend.config"]
-            del sys.modules["backend.ai.privacy"]
-
+        # NOTE: do not delete backend.config / backend.ai.privacy from
+        # sys.modules here. Doing so creates a second copy of those modules
+        # for every later import in the same pytest process (split
+        # get_settings() caches, duplicate Settings classes) and pollutes
+        # unrelated tests. Inspecting the class definition is sufficient.
         from backend.config import Settings
 
         assert not hasattr(Settings, "ai_send_pii"), (

@@ -8,7 +8,16 @@ import logging
 from datetime import datetime
 from typing import Any, Dict, List, Optional
 
-from fastapi import APIRouter, Depends, File, HTTPException, Query, Request, UploadFile
+from fastapi import (
+    APIRouter,
+    Depends,
+    File,
+    Form,
+    HTTPException,
+    Query,
+    Request,
+    UploadFile,
+)
 from sqlalchemy import func
 from sqlalchemy.orm import Session
 
@@ -18,6 +27,7 @@ from backend.database import (
     ABTestExperiment,
     Application,
     AuditLog,
+    Company,
     EvaluationResult,
     EvaluationSession,
     Job,
@@ -83,7 +93,9 @@ def _ensure_job_access(user: User, job_id: int, db: Session) -> Job:
 def _ensure_draft_access(user: User, draft: RubricDB, db: Session) -> None:
     if not _is_admin(user):
         if draft.created_by != user.id:
-            raise HTTPException(status_code=403, detail="Not authorized for this draft")
+            # 404, not 403: never reveal that another user's (or another
+            # company's) draft exists - same convention as backend.authz.
+            raise HTTPException(status_code=404, detail="Draft not found")
         _ensure_job_access(user, draft.job_id, db)
 
 
@@ -95,6 +107,18 @@ def _next_draft_version(db: Session, job_id: int) -> int:
         .scalar()
     )
     return 0 if min_version is None else min_version - 1
+
+
+def _criteria_to_text(value: Any) -> Optional[str]:
+    """Serialize rubric criteria for the ``Rubric.criteria_json`` Text column.
+
+    Callers sometimes hold a dict (``model_dump()``, request bodies). DB
+    drivers reject dict parameters (PyMySQL: "dict can not be used as
+    parameter"), so always persist a JSON string.
+    """
+    if value is None or isinstance(value, str):
+        return value
+    return json.dumps(value, default=str)
 
 
 def _rubric_json_to_dict(raw: Any) -> dict:
@@ -672,14 +696,37 @@ def get_taxonomy():
 def import_rubric_excel(
     request: Request,
     file: UploadFile = File(...),
+    company_id: Optional[int] = Form(None),
     current_user: User = Depends(get_current_user),
     db: Session = Depends(get_db),
 ):
-    """Import a rubric from an Excel template file."""
+    """Import a rubric from an Excel template file.
+
+    Platform admins have no company of their own, and every rubric row is
+    tenant-owned (rubrics.company_id is NOT NULL), so the caller must say
+    which company the imported template belongs to.
+    """
     check_permission(current_user, "manage_content")
 
-    if not file.filename.endswith((".xlsx", ".xls")):
+    if not file.filename or not file.filename.endswith((".xlsx", ".xls")):
         raise HTTPException(status_code=400, detail="Please upload an .xlsx file")
+
+    if company_id is None:
+        raise HTTPException(
+            status_code=400,
+            detail="company_id is required: imported rubrics belong to a company",
+        )
+    company = (
+        db.query(Company)
+        .filter(
+            Company.id == company_id,
+            Company.is_active.is_(True),
+            Company.deleted_at.is_(None),
+        )
+        .first()
+    )
+    if company is None:
+        raise HTTPException(status_code=404, detail="Company not found")
 
     try:
         import openpyxl
@@ -849,16 +896,21 @@ def import_rubric_excel(
 
         # Create draft
         draft = RubricDB(
-            job_id=0,  # 0 = standalone template
+            # Standalone template: no job. NULL, not 0 - rubrics.job_id is a
+            # foreign key to jobs.id, enforced by InnoDB.
+            job_id=None,
             version=0,
             is_active=0,
             created_by=current_user.id,
+            company_id=company.id,
             title=file.filename.replace(".xlsx", "").replace(".xls", ""),
-            criteria_json={
-                "version": 1,
-                "seniority": "mid",
-                "categories": categories,
-            },
+            criteria_json=_criteria_to_text(
+                {
+                    "version": 1,
+                    "seniority": "mid",
+                    "categories": categories,
+                }
+            ),
         )
         db.add(draft)
         db.commit()
@@ -866,7 +918,7 @@ def import_rubric_excel(
 
         audit = AuditLog(
             user_id=current_user.id,
-            company_id=getattr(current_user, "_company_id", None),
+            company_id=company.id,
             action="rubric_import",
             target_id=str(draft.id),
             details="Imported rubric from file '%s' (%d categories, %d skills)"
@@ -889,6 +941,7 @@ def import_rubric_excel(
         }
 
     except Exception as e:
+        db.rollback()
         logger.error(f"[RUBRIC-IMPORT] Failed: {e}", exc_info=True)
         raise HTTPException(
             status_code=400, detail=f"Failed to parse Excel file: {str(e)}"
@@ -945,7 +998,9 @@ def export_rubric_excel(
             .first()
         )
         if draft:
-            rubric_data = draft.criteria_json
+            # criteria_json is stored as JSON text; decode it so the draft
+            # is materialised as a JobRubric below.
+            rubric_data = _rubric_json_to_dict(draft.criteria_json)
         else:
             raise HTTPException(status_code=404, detail="No rubric found for this job")
 
@@ -1316,7 +1371,7 @@ def duplicate_rubric(
         is_active=0,
         created_by=recruiter.id,
         title=f"{job.title} (copy)",
-        criteria_json=current.model_dump(),
+        criteria_json=current.model_dump_json(),
         company_id=job.company_id,
     )
     db.add(draft)
@@ -1538,7 +1593,7 @@ def create_draft(
         is_active=0,
         created_by=recruiter.id,
         title=body.get("name", "Untitled Draft"),
-        criteria_json=rubric_json,
+        criteria_json=_criteria_to_text(rubric_json),
         company_id=job.company_id,
     )
     db.add(draft)
@@ -1583,7 +1638,9 @@ def save_draft(
     if not draft:
         raise HTTPException(status_code=404, detail="Draft not found")
     _ensure_draft_access(recruiter, draft, db)
-    draft.criteria_json = body.get("rubric_json", draft.criteria_json)
+    draft.criteria_json = _criteria_to_text(
+        body.get("rubric_json", draft.criteria_json)
+    )
     draft.title = body.get("name", draft.title)
     db.commit()
 

@@ -9,7 +9,9 @@ The redesigned upload/apply pipeline:
     ``analysis_status="pending_apply"``.
   - The recruiter-side ``run_cv_analysis()`` for accepted JOB applications is
     funded by the hiring company through an atomic, idempotent credit-charge
-    inside ``apply_to_job`` (idempotency key ``consume:cv_analysis:{app_id}``).
+    inside ``apply_to_job`` (resource ``cv_analysis``, reference
+    ``application``/``{app_id}``; the idempotency key is scoped to the
+    company billing wallet, see ``credit_service.consume_idempotency_key``).
     Insufficient company credits -> 409, no JOB application committed, no
     charge, no analysis.
   - Refunds only on a genuinely failed analysis (error payload or raised
@@ -210,12 +212,19 @@ def _make_candidate_and_login(client, db_session, email):
     return user, {"Authorization": f"Bearer {token}", "X-CSRF-Token": csrf}
 
 
-def _consume_tx(db_session, app_id):
+def _consume_filter(app_id):
+    # The apply-time company charge for this application (the idempotency key
+    # itself is wallet-scoped, see credit_service.consume_idempotency_key).
     return (
-        db_session.query(CreditTransaction)
-        .filter(CreditTransaction.idempotency_key == f"consume:cv_analysis:{app_id}")
-        .first()
+        CreditTransaction.type == "consume",
+        CreditTransaction.resource == "cv_analysis",
+        CreditTransaction.reference_type == "application",
+        CreditTransaction.reference_id == app_id,
     )
+
+
+def _consume_tx(db_session, app_id):
+    return db_session.query(CreditTransaction).filter(*_consume_filter(app_id)).first()
 
 
 def _jobs_for(db_session, user_id):
@@ -276,9 +285,7 @@ def test_apply_upload_returns_pending_apply_without_ai(
     assert manuals[0].cv_document is not None
 
 
-def test_apply_upload_quota_respected(
-    client, auth_headers, db_session, flow_setup
-):
+def test_apply_upload_quota_respected(client, auth_headers, db_session, flow_setup):
     user, profile, plan = flow_setup
     profile.candidate_cv_uploads_this_month = plan.candidate_cv_uploads_limit
     db_session.commit()
@@ -342,9 +349,7 @@ def test_apply_success_funds_company_exactly_once(
     assert tx.resource == "cv_analysis"
     assert tx.status == "succeeded"
     assert (
-        db_session.query(CreditTransaction)
-        .filter(CreditTransaction.idempotency_key == f"consume:cv_analysis:{app_id}")
-        .count()
+        db_session.query(CreditTransaction).filter(*_consume_filter(app_id)).count()
         == 1
     )
 
@@ -418,9 +423,7 @@ def test_apply_insufficient_company_credits_409_no_commit(
         return {"score": 70}
 
     monkeypatch.setattr(backend_ai, "analyze_cv", fake_analyze_cv)
-    monkeypatch.setattr(
-        backend_ai, "extract_cv_details", fake_extract_cv_details
-    )
+    monkeypatch.setattr(backend_ai, "extract_cv_details", fake_extract_cv_details)
 
     doc_id = _upload_apply(client, auth_headers).json()["cv_document_id"]
     resp = _apply_with_doc(client, auth_headers, test_job.id, doc_id)
@@ -530,7 +533,10 @@ def test_apply_ai_failure_refunds_company_funding(
     assert tx.status == "reversed"
     rollback = (
         db_session.query(CreditTransaction)
-        .filter(CreditTransaction.idempotency_key == f"rollback:consume:cv_analysis:{app_id}")
+        .filter(
+            CreditTransaction.idempotency_key
+            == f"rollback:{_consume_tx(db_session, app_id).idempotency_key}"
+        )
         .first()
     )
     assert rollback is not None
@@ -678,13 +684,13 @@ def test_funding_failure_transaction_boundary_zero_commits(
         assert _commit_counter["n"] == 0
         r2 = TestingSessionLocal()
         try:
-            assert r2.query(Application).filter(Application.id == app.id).first() is None
+            assert (
+                r2.query(Application).filter(Application.id == app.id).first() is None
+            )
             assert _consume_tx(r2, app.id) is None
             assert get_user_credit_balance(r2, owner) == 2.0
             wallet = (
-                r2.query(CreditWallet)
-                .filter(CreditWallet.user_id == owner.id)
-                .first()
+                r2.query(CreditWallet).filter(CreditWallet.user_id == owner.id).first()
             )
             assert wallet is not None
             assert wallet.balance == 2
@@ -743,7 +749,10 @@ def test_funding_success_transaction_boundary_single_commit(
 
         r_after = TestingSessionLocal()
         try:
-            assert r_after.query(Application).filter(Application.id == app.id).first() is not None
+            assert (
+                r_after.query(Application).filter(Application.id == app.id).first()
+                is not None
+            )
             assert get_user_credit_balance(r_after, owner) == 997.0
             tx = _consume_tx(r_after, app.id)
             assert tx is not None

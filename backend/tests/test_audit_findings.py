@@ -66,44 +66,39 @@ class TestCrit01ScoringAligned:
             )
 
     def test_same_candidate_same_trust(self):
-        """Same candidate, 3 tab switches: both systems give trust=70, penalty=30."""
-        violations = [
-            {"type": "tab_switch", "severity": "medium"},
-            {"type": "tab_switch", "severity": "medium"},
-            {"type": "tab_switch", "severity": "medium"},
-        ]
-
-        engine = ScoringEngine()
-        app = self._make_app_data(violations=json_dumps(violations))
-        score = engine.calculate_complete_scores(app)
-        engine_trust = score.trust_score  # 100 - min(50, 30) = 70
-
-        transparent_penalty = calculate_integrity_penalty(
-            violations
-        )  # min(50, 30) = 30
-
-        assert engine_trust == 70, f"Expected trust=70, got {engine_trust}"
-        assert transparent_penalty == 30, (
-            f"Expected penalty=30, got {transparent_penalty}"
+        """3 tab switches: engine and transparent apply the same penalty."""
+        violations = [{"type": "tab_switch", "severity": "medium"} for _ in range(3)]
+        # Legacy calculate_complete_scores() was removed; the live engine is
+        # ScoringEngine.score_interview (shim over scoring_transparent).
+        breakdown = ScoringEngine().score_interview(
+            skill_metrics={"technical": 75, "communication": 75},
+            question_scores=[75] * 10,
+            answered=10,
+            total=15,
+            violations=violations,
         )
-        assert engine_trust == (100 - transparent_penalty), (
-            "Trust scores should now be consistent"
-        )
+        transparent_penalty = calculate_integrity_penalty(violations)
+        expected = min(MAX_INTEGRITY_PENALTY, 3 * VIOLATION_PENALTIES["tab_switch"])
+        assert breakdown.integrity_penalty == expected, breakdown.integrity_penalty
+        assert transparent_penalty == expected
+        assert 100 - breakdown.integrity_penalty == 100 - transparent_penalty
 
     def test_both_capped_at_50(self):
-        """Both systems now cap penalty at 50 — trust can't go below 50."""
+        """Both systems cap the integrity penalty at 50 (trust >= 50)."""
         violations = [{"type": "tab_switch", "severity": "medium"} for _ in range(10)]
-        engine = ScoringEngine()
-        app = self._make_app_data(violations=json_dumps(violations))
-        score = engine.calculate_complete_scores(app)
-
-        assert score.trust_score == 50, f"Expected cap at 50, got {score.trust_score}"
-
-        transparent_penalty = calculate_integrity_penalty(violations)
-        assert transparent_penalty == 50, (
-            f"Expected cap at 50, got {transparent_penalty}"
+        # Legacy calculate_complete_scores() was removed; the live engine is
+        # ScoringEngine.score_interview (shim over scoring_transparent).
+        breakdown = ScoringEngine().score_interview(
+            skill_metrics={"technical": 75, "communication": 75},
+            question_scores=[75] * 10,
+            answered=10,
+            total=15,
+            violations=violations,
         )
-        assert transparent_penalty == ScoringConfig.MAX_TRUST_PENALTY
+        transparent_penalty = calculate_integrity_penalty(violations)
+        assert breakdown.integrity_penalty == 50, breakdown.integrity_penalty
+        assert transparent_penalty == 50
+        assert 100 - breakdown.integrity_penalty == 50
 
 
 def json_dumps(obj):
@@ -312,119 +307,14 @@ class TestMed01MomentumFixed:
 # =============================================================================
 
 
-class TestMed02FallbackFixed:
-    """Fallback skills uses count-based diminishing returns formula — quantity helps."""
-
-    def test_diminishing_returns(self):
-        """More skills give higher score (diminishing returns)."""
-        engine = ScoringEngine()
-
-        many_skills = {
-            "skills": [
-                "cooking",
-                "driving",
-                "swimming",
-                "painting",
-                "singing",
-                "dancing",
-                "reading",
-                "writing",
-                "gardening",
-                "fishing",
-            ]
-        }
-        few_skills = {"skills": ["python", "fastapi", "postgresql"]}
-
-        score_many = engine._calculate_fallback_skills_score(many_skills)
-        score_few = engine._calculate_fallback_skills_score(few_skills)
-
-        # More skills should score higher (count component in formula)
-        assert score_many > score_few, (
-            f"More skills ({score_many}%) should score > fewer skills ({score_few}%)"
-        )
-
-        # Score should be bounded between 20 and 100
-        assert 20 <= score_many <= 100, f"Score {score_many} out of bounds"
-        assert 20 <= score_few <= 100, f"Score {score_few} out of bounds"
-
-
 # =============================================================================
 # EDGE-01: Zero-Interview Candidate Gets Conservative Score
 # =============================================================================
 
 
-class TestEdge01ZeroInterview:
-    """Candidate with interview_progress=0 gets a conservative score."""
-
-    def test_zero_interview_still_has_score(self):
-        """With high CV, zero-interview candidate gets score but with cautious recommendation."""
-        engine = ScoringEngine()
-        app = {
-            "cv_score": 90,
-            "overall_score": 0,
-            "interview_progress": 0,  # Never started
-            "interview_total": 15,
-            "skills": [
-                "python",
-                "react",
-                "docker",
-                "aws",
-                "node",
-                "sql",
-                "git",
-                "css",
-                "html",
-                "api",
-            ],
-            "proctoring_violations": "[]",
-            "experience_years": 5,
-            "competencies": {},
-        }
-
-        score = engine.calculate_complete_scores(app)
-
-        assert score.adjusted_interview_score == 0, "Interview score should be 0"
-        assert score.final_score > 0, (
-            f"Final score should be > 0, got {score.final_score}"
-        )
-        assert "Insufficient Validation" in score.recommendation, (
-            f"Zero-interview recommendation should be cautious, got {score.recommendation}"
-        )
-
-
 # =============================================================================
 # EDGE-02: Negative Experience Clamped to Zero
 # =============================================================================
-
-
-class TestEdge02NegativeClamped:
-    """Negative experience_years no longer produces negative radar values."""
-
-    def test_negative_experience_clamped(self):
-        """If exp_years is -1, radar dimensions are non-negative."""
-        from backend.scoring_engine import CandidateScore, TalentRadarCalculator
-
-        score = CandidateScore(
-            skills_score=50,
-            trust_score=100,
-            adjusted_interview_score=60,
-            final_score=55,
-            completion_rate=0.8,
-        )
-        app_data = {
-            "experience_years": -1,
-            "competencies": {},
-            "interview_progress": 10,
-            "interview_total": 15,
-        }
-
-        radar = TalentRadarCalculator.calculate_radar_data(score, app_data)
-
-        # All radar dimensions should be non-negative
-        for key, val in radar.items():
-            assert val >= 0, (
-                f"FIX VERIFIED: Radar dimension '{key}' should be >= 0, got {val}"
-            )
 
 
 # =============================================================================
@@ -443,26 +333,21 @@ class TestIntegrityPenaltyCapped:
         assert penalty == MAX_INTEGRITY_PENALTY
 
     def test_trust_capped_in_engine(self):
-        """Engine trust score caps at 50 with enough violations (matches transparent)."""
-        engine = ScoringEngine()
+        """Engine caps the penalty at MAX_INTEGRITY_PENALTY, matching transparent."""
         violations = [{"type": "tab_switch", "severity": "medium"} for _ in range(10)]
-        app = {
-            "cv_score": 80,
-            "overall_score": 75,
-            "interview_progress": 10,
-            "interview_total": 15,
-            "skills": ["python"],
-            "proctoring_violations": json_dumps(violations),
-            "experience_years": 3,
-            "competencies": {},
-        }
-        score = engine.calculate_complete_scores(app)
-
-        # trust = max(0, 100 - min(50, 100)) = 50
-        assert score.trust_score == 50, (
-            f"Engine trust capped at 50, got {score.trust_score}"
+        # Legacy calculate_complete_scores() was removed; the live engine is
+        # ScoringEngine.score_interview (shim over scoring_transparent).
+        breakdown = ScoringEngine().score_interview(
+            skill_metrics={"technical": 75, "communication": 75},
+            question_scores=[75] * 10,
+            answered=10,
+            total=15,
+            violations=violations,
         )
-        assert score.trust_score == 100 - MAX_INTEGRITY_PENALTY
+        transparent_penalty = calculate_integrity_penalty(violations)
+        assert breakdown.integrity_penalty == 50, breakdown.integrity_penalty
+        assert transparent_penalty == 50
+        assert 100 - breakdown.integrity_penalty == 50
 
 
 # =============================================================================

@@ -121,7 +121,14 @@ class MetricsRepository:
                 case(
                     (
                         Application.status.in_(
-                            ["screening", "screened", "shortlisted", "analyzed", "analyzing", "analysis_failed"]
+                            [
+                                "screening",
+                                "screened",
+                                "shortlisted",
+                                "analyzed",
+                                "analyzing",
+                                "analysis_failed",
+                            ]
                         ),
                         1,
                     ),
@@ -1295,7 +1302,7 @@ class MetricsRepository:
             self.db.query(
                 func.coalesce(Application.source, "Direct").label("source"),
                 func.count(Application.id).label("total"),
-                func.sum(func.case((Application.status == "hired", 1), else_=0)).label(
+                func.sum(case((Application.status == "hired", 1), else_=0)).label(
                     "hired"
                 ),
             )
@@ -1450,9 +1457,9 @@ class MetricsRepository:
                 ),
                 func.count(RubricScoringDetail.id).label("occurrences"),
                 func.avg(RubricScoringDetail.score).label("avg_score"),
-                func.sum(
-                    func.case((RubricScoringDetail.score >= 60, 1), else_=0)
-                ).label("passed_count"),
+                func.sum(case((RubricScoringDetail.score >= 60, 1), else_=0)).label(
+                    "passed_count"
+                ),
                 func.min(RubricScoringDetail.score).label("min_score"),
                 func.max(RubricScoringDetail.score).label("max_score"),
             )
@@ -1506,10 +1513,10 @@ class MetricsRepository:
                 ),
                 func.count(RubricScoringDetail.id).label("occurrences"),
                 func.avg(RubricScoringDetail.score).label("avg_score"),
-                func.sum(
-                    func.case((RubricScoringDetail.score >= 60, 1), else_=0)
-                ).label("high_scores"),
-                func.sum(func.case((RubricScoringDetail.score < 60, 1), else_=0)).label(
+                func.sum(case((RubricScoringDetail.score >= 60, 1), else_=0)).label(
+                    "high_scores"
+                ),
+                func.sum(case((RubricScoringDetail.score < 60, 1), else_=0)).label(
                     "low_scores"
                 ),
             )

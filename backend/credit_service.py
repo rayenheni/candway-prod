@@ -5,7 +5,7 @@ row-lock), rollback, grant. All movements go through CreditTransaction
 (immutable ledger) with unique idempotency_key to prevent double-charge.
 """
 
-from typing import Optional
+from typing import Optional, cast
 
 from sqlalchemy import update
 from sqlalchemy.orm import Session
@@ -155,6 +155,51 @@ def get_or_create_wallet_in_transaction(db: Session, user: User) -> CreditWallet
     return wallet
 
 
+def consume_idempotency_key(wallet_id: int, resource: str, reference_id) -> str:
+    """Idempotency key of the FIRST consume of (resource, reference) on a wallet.
+
+    Scoped to the debited wallet: the same reference charged to two different
+    wallets (e.g. a candidate's CV review and the company's apply-time CV
+    analysis for the same application id) never share a ledger row.
+    """
+    return f"consume:w{wallet_id}:{resource}:{reference_id}"
+
+
+def _resolve_consume_key(
+    db: Session, wallet: CreditWallet, resource: str, reference_id
+) -> "tuple[Optional[CreditTransaction], str]":
+    """Return (existing live transaction or None, key to charge under).
+
+    - No stable reference: a unique key per call (every call charges).
+    - Same wallet + same (resource, reference) with a live (non-reversed)
+      charge: that charge is returned (duplicate-request idempotency).
+    - The previous charge was refunded (status "reversed"): the retry is a
+      new operation and is charged again under the next ``:retryN`` key.
+    """
+    if reference_id is None:
+        import uuid
+
+        return None, f"consume:w{wallet.id}:{resource}:{uuid.uuid4()}"
+
+    base = consume_idempotency_key(cast(int, wallet.id), resource, reference_id)
+    attempt = 0
+    while True:
+        key = base if attempt == 0 else f"{base}:retry{attempt}"
+        existing = (
+            db.query(CreditTransaction)
+            .filter(
+                CreditTransaction.idempotency_key == key,
+                CreditTransaction.wallet_id == wallet.id,
+            )
+            .first()
+        )
+        if existing is None:
+            return None, key
+        if existing.status != "reversed":
+            return existing, key
+        attempt += 1
+
+
 def consume_credits(
     db: Session,
     user: User,
@@ -208,22 +253,10 @@ def consume_credits(
 
     wallet = get_or_create_wallet(db, user)
 
-    idem = f"consume:{resource}"
-    if reference_id is not None:
-        idem += f":{reference_id}"
-    else:
-        # No stable reference → one unique idempotency key per request so
-        # sequential calls both consume. Retry-dedup only applies when a
-        # stable reference (e.g. application id) is supplied.
-        import uuid
-
-        idem += f":{uuid.uuid4()}"
-
-    existing = (
-        db.query(CreditTransaction)
-        .filter(CreditTransaction.idempotency_key == idem)
-        .first()
-    )
+    # Wallet-scoped idempotency (see _resolve_consume_key): duplicate requests
+    # from the SAME wallet reuse the live charge; other wallets and refunded
+    # charges never do.
+    existing, idem = _resolve_consume_key(db, wallet, resource, reference_id)
     if existing:
         return existing
 
@@ -321,19 +354,7 @@ def consume_credits_in_transaction(
 
     wallet = get_or_create_wallet_in_transaction(db, user)
 
-    idem = f"consume:{resource}"
-    if reference_id is not None:
-        idem += f":{reference_id}"
-    else:
-        import uuid
-
-        idem += f":{uuid.uuid4()}"
-
-    existing = (
-        db.query(CreditTransaction)
-        .filter(CreditTransaction.idempotency_key == idem)
-        .first()
-    )
+    existing, idem = _resolve_consume_key(db, wallet, resource, reference_id)
     if existing:
         return existing
 
@@ -805,6 +826,61 @@ def consume_company_credits(
             reference_type=reference_type,
             reference_id=reference_id,
         )
+    except Exception:
+        pass
+    return tx
+
+
+def consume_company_credits_in_transaction(
+    db: Session,
+    company_id: Optional[int],
+    credits: int,
+    resource: str,
+    reference_type: Optional[str] = None,
+    reference_id: Optional[int] = None,
+    fallback_user: Optional[User] = None,
+) -> Optional[CreditTransaction]:
+    """Like consume_company_credits but NEVER commits or rolls back the
+    caller's transaction.
+
+    The charge (and its usage metering) is staged inside a SAVEPOINT of the
+    caller's transaction and persists with the caller's single final commit.
+    When the charge cannot be made (insufficient credits -> ValueError, or any
+    database error such as a concurrent duplicate idempotency key), only the
+    SAVEPOINT is rolled back: work the caller already staged in the enclosing
+    transaction (e.g. a computed evaluation result) is never discarded.
+    Returns None when nothing was charged. Same billing-user resolution,
+    idempotency key and credit checks as consume_company_credits.
+    """
+    user = resolve_company_billing_user(db, company_id) or fallback_user
+    if user is None:
+        return None
+    try:
+        with db.begin_nested():
+            tx = consume_credits_in_transaction(
+                db,
+                user,
+                credits,
+                resource,
+                reference_type=reference_type,
+                reference_id=reference_id,
+            )
+    except ValueError:
+        return None
+    # Meter the company's AI usage (same contract as consume_company_credits:
+    # recorded even for a free no-op consume). Best-effort, isolated in its
+    # own SAVEPOINT so a metering failure cannot affect the charge.
+    try:
+        with db.begin_nested():
+            record_usage_event_in_transaction(
+                db,
+                user_id=cast(int, user.id),
+                company_id=company_id,
+                resource=resource,
+                credits=int(abs(getattr(tx, "amount", 0) or 0)),
+                reference_type=reference_type,
+                reference_id=reference_id,
+            )
     except Exception:
         pass
     return tx

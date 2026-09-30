@@ -127,8 +127,12 @@ class TestSetEvaluationResult:
 
     def test_idempotent_upsert(self, db_session, test_app, eval_session):
         """Calling twice updates the same row (no duplicate)."""
-        ScoringService.set_evaluation_result(app=test_app, db=db_session, eval_score=70.0)
-        ScoringService.set_evaluation_result(app=test_app, db=db_session, eval_score=90.0)
+        ScoringService.set_evaluation_result(
+            app=test_app, db=db_session, eval_score=70.0
+        )
+        ScoringService.set_evaluation_result(
+            app=test_app, db=db_session, eval_score=90.0
+        )
 
         rows = (
             db_session.query(EvaluationResult)
@@ -154,7 +158,9 @@ class TestSetEvaluationResult:
 
     def test_rejects_fraud_failed_state(self, db_session, test_app, eval_session):
         """scoring_status == FAILED must not be silently re-scored."""
-        ScoringService.set_evaluation_result(app=test_app, db=db_session, eval_score=80.0)
+        ScoringService.set_evaluation_result(
+            app=test_app, db=db_session, eval_score=80.0
+        )
         es = (
             db_session.query(EvaluationResult)
             .filter(EvaluationResult.evaluation_session_id == eval_session.id)
@@ -176,8 +182,11 @@ class TestSetEvaluationResult:
             app=test_app, db=db_session, eval_score=150.0
         )
         assert result.rubric_score == 100.0
-        # Canonical final_score: cv=0, rubric=100, cov=100 (default): 0*0.25 + 100*0.50 + 100*0.25 = 75.0
-        assert result.final_score == 75.0
+        # No measured coverage is supplied -> coverage stays 0 (it is never
+        # fabricated as 100). Canonical final_score: cv=0, rubric=100, cov=0:
+        # 0*0.25 + 100*0.50 + 0*0.25 = 50.0
+        assert result.rubric_coverage_pct == 0.0
+        assert result.final_score == 50.0
 
 
 class TestSetEvaluationResultEndpoints:

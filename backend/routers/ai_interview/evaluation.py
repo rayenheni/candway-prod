@@ -88,6 +88,104 @@ def _build_rubric_context_for_app(app) -> Optional[str]:
         return None
 
 
+def _aggregate_interview_rubric_evidence(
+    db: Session, application_id: int, interview_session, rubric
+) -> dict:
+    """Aggregate the per-turn rubric evidence of ONE interview session.
+
+    Reads the RubricScoringDetail rows persisted during the interview
+    (source="interview") on the interview session's EvaluationResult and
+    aggregates them against the rubric pinned in that session's snapshot via
+    the canonical aggregator (best score per skill; unassessed skills count 0;
+    coverage = evidenced skills / rubric skills). CV-analysis rows
+    (source="cv") are never mixed into the interview score. With no evidence
+    at all the result is a rubric score of 0 with 0% coverage.
+    """
+    from backend.database import RubricScoringDetail
+    from backend.rubric.rubric_engine import SkillScoreResult
+    from backend.rubric.scoring_aggregator import aggregate_scores
+
+    rows = (
+        db.query(RubricScoringDetail)
+        .join(
+            EvaluationResult,
+            RubricScoringDetail.evaluation_result_id == EvaluationResult.id,
+        )
+        .filter(
+            EvaluationResult.evaluation_session_id == interview_session.id,
+            RubricScoringDetail.source == "interview",
+        )
+        .order_by(RubricScoringDetail.id)
+        .all()
+    )
+
+    all_turn_results: dict = {}
+    for row in rows:
+        score = float(row.score or 0.0)
+        all_turn_results.setdefault(row.id, {})[row.criterion_name] = SkillScoreResult(
+            skill_name=row.criterion_name,
+            skill_id=str(row.criterion_key or ""),
+            # SkillScoreResult annotates the scores as int, but rubric scores
+            # are fractional (0-100 floats) everywhere; keep the exact value.
+            base_score=score,  # type: ignore[arg-type]
+            quality="medium",
+            quality_multiplier=1.0,
+            final_score=score,  # type: ignore[arg-type]
+            confidence_lower=0,
+            confidence_upper=0,
+            evidence_sentences=[],
+            matched_level="",
+            matched_keywords=[],
+            missing_competencies=[],
+            explanation=row.feedback or "",
+        )
+
+    summary = aggregate_scores(
+        application_id=application_id,
+        rubric=rubric,
+        all_answer_results=all_turn_results,
+        seniority=getattr(rubric, "seniority", None) or "mid",
+    )
+    return summary.to_dict()
+
+
+def _stage_interview_evaluation_charge(
+    db: Session, company_id: int, application_id: int
+) -> None:
+    """Stage the one-time company charge for a completed AI-interview evaluation.
+
+    Billed to the owning company's wallet (one charge per application and
+    wallet, idempotent via the wallet-scoped key). The charge is staged in a
+    SAVEPOINT of the evaluation's own transaction and never commits or rolls
+    back that transaction: it persists with the caller's next commit (together
+    with the evaluation result), and when it cannot be made (insufficient
+    credits, no billing user, database error) only the SAVEPOINT is discarded
+    — the computed evaluation result is kept. Best-effort: a company that
+    cannot pay is not charged rather than failing the evaluation.
+    """
+    try:
+        from backend.credit_service import consume_company_credits_in_transaction
+
+        tx = consume_company_credits_in_transaction(
+            db,
+            company_id,
+            5,
+            "ai_interview_evaluation",
+            reference_type="application",
+            reference_id=application_id,
+        )
+        if tx is None:
+            logger.warning(
+                f"[BG EVAL] Company credit charge not made for app {application_id} "
+                "(insufficient credits or no billing user); evaluation result kept"
+            )
+    except Exception as charge_err:
+        logger.warning(
+            f"[BG EVAL] Company credit charge skipped for app "
+            f"{application_id}: {charge_err}"
+        )
+
+
 async def run_background_final_evaluation(application_id: int, company_id: int):
     from backend.database import SessionLocal
 
@@ -220,78 +318,57 @@ async def run_background_final_evaluation(application_id: int, company_id: int):
 
             rubric_result = None
 
+            # ── Rubric-based final scoring (pinned interview snapshot) ──────
+            # The rubric frozen into THIS interview session's config snapshot
+            # is the scoring contract. When it exists, the final interview
+            # score is the aggregation of the per-turn rubric evidence
+            # persisted during the interview (RubricScoringDetail,
+            # source="interview"); a skill with no evidence contributes 0 and
+            # coverage is the measured share of evidenced skills. There is NO
+            # silent fallback to the holistic LLM score when a rubric exists:
+            # an aggregation error fails the evaluation (retryable, see
+            # recover_stale_evaluations) instead of producing a different
+            # kind of score.
+            rubric = None
             try:
-                from backend.database import RubricScoringDetail
-                from backend.rubric.config_reader import EvaluationConfigReader
-                from backend.rubric.scoring_aggregator import aggregate_scores
+                from backend.rubric.config_reader import (
+                    ConfigurationMissingError,
+                    EvaluationConfigReader,
+                )
 
-                reader = EvaluationConfigReader(_es)
-                parsed_rubric = reader.get_rubric()
-                rubric = None
-                if parsed_rubric.raw_json:
+                try:
+                    parsed_rubric = EvaluationConfigReader(_es).get_rubric()
+                except ConfigurationMissingError:
+                    # Legacy session without a frozen snapshot: no pinned
+                    # rubric exists, so the holistic evaluation path applies.
+                    parsed_rubric = None
+                if parsed_rubric is not None and parsed_rubric.raw_json:
                     from backend.rubric.rubric_schema import JobRubric
 
                     rubric = JobRubric(**parsed_rubric.raw_json)
-                if rubric:
-                    all_turn_results = {}
-                    scoring_rows = (
-                        db.query(RubricScoringDetail)
-                        .join(
-                            EvaluationResult,
-                            RubricScoringDetail.evaluation_result_id
-                            == EvaluationResult.id,
-                        )
-                        .join(
-                            EvaluationSession,
-                            EvaluationResult.evaluation_session_id
-                            == EvaluationSession.id,
-                        )
-                        .filter(EvaluationSession.application_id == application_id)
-                        .all()
+
+                if rubric is not None:
+                    rubric_result = _aggregate_interview_rubric_evidence(
+                        db, application_id, _es, rubric
                     )
-                    for row in scoring_rows:
-                        rid = getattr(row, "id", 0) or 0
-                        if rid not in all_turn_results:
-                            all_turn_results[rid] = {}
-                        from backend.rubric.rubric_engine import SkillScoreResult
-
-                        sr = SkillScoreResult(
-                            skill_name=row.criterion_name,
-                            skill_id="",
-                            base_score=row.score,
-                            quality="medium",
-                            quality_multiplier=1.0,
-                            final_score=row.score,
-                            confidence_lower=0,
-                            confidence_upper=0,
-                            evidence_sentences=[],
-                            matched_level="",
-                            matched_keywords=[],
-                            missing_competencies=[],
-                            explanation=row.feedback or "",
-                        )
-                        all_turn_results[rid][row.criterion_name] = sr
-
-                    if all_turn_results:
-                        summary = aggregate_scores(
-                            interview_id=application_id,
-                            application_id=application_id,
-                            rubric=rubric,
-                            all_answer_results=all_turn_results,
-                            seniority=getattr(_sc, "rubric_seniority", "mid")
-                            if _sc
-                            else "mid",
-                        )
-
-                        rubric_result = summary.to_dict()
-                        logger.info(
-                            f"[BG EVAL] Rubric score for app {application_id}: {summary.overall_score}"
-                        )
+                    logger.info(
+                        f"[BG EVAL] Rubric score for app {application_id}: "
+                        f"{rubric_result['overall_score']} "
+                        f"(coverage {rubric_result['overall_coverage_pct']}%)"
+                    )
             except Exception as rub_err:
                 logger.error(
-                    f"[BG EVAL] Rubric aggregation failed for app {application_id}: {rub_err}",
+                    f"[BG EVAL] Rubric aggregation failed for app {application_id}: "
+                    f"{rub_err} — marking evaluation failed (no LLM fallback when "
+                    f"a rubric is configured)",
                     exc_info=True,
                 )
+                sync_evaluation_state(db, app, evaluation_state="failed")
+                _latest = app._latest_eval_session()
+                if _latest:
+                    _latest.status = "failed"
+                db.commit()
+                return
 
             if rubric_result:
                 result = {
@@ -405,10 +482,14 @@ async def run_background_final_evaluation(application_id: int, company_id: int):
                 )
                 .first()
             )
-            now_claim_naive = now_claim.replace(tzinfo=None) if now_claim.tzinfo else now_claim
+            now_claim_naive = (
+                now_claim.replace(tzinfo=None) if now_claim.tzinfo else now_claim
+            )
             session_started_naive = (
                 session_check.started_at.replace(tzinfo=None)
-                if session_check and session_check.started_at and session_check.started_at.tzinfo
+                if session_check
+                and session_check.started_at
+                and session_check.started_at.tzinfo
                 else (session_check.started_at if session_check else None)
             )
 
@@ -510,26 +591,16 @@ async def run_background_final_evaluation(application_id: int, company_id: int):
                 insights = derive_dashboard_insights_from_skills(final_metrics)
                 sync_cv_document(db, app, analysis_json={"insights": insights})
 
-                # AI-interview final evaluation is billed to the owning company's
-                # wallet (one-time charge per completed evaluation, not per turn).
-                # Best-effort in a background task — a company without a resolvable
-                # wallet/member is not charged rather than failing the evaluation.
-                try:
-                    from backend.credit_service import consume_company_credits
-
-                    consume_company_credits(
-                        db,
-                        company_id,
-                        5,
-                        "ai_interview_evaluation",
-                        reference_type="application",
-                        reference_id=application_id,
-                    )
-                except Exception as charge_err:
-                    logger.warning(
-                        f"[BG EVAL] Company credit charge skipped for app "
-                        f"{application_id}: {charge_err}"
-                    )
+                # Persist the evaluation result BEFORE notifications, together
+                # with the one-time company charge when it can be made. The
+                # charge is staged in a SAVEPOINT: an insufficient-credit (or
+                # any other) charge failure rolls back only that SAVEPOINT and
+                # can never discard the computed score. Flush first so an error
+                # persisting the result itself fails the evaluation (except
+                # handler) instead of being mistaken for a charge failure.
+                db.flush()
+                _stage_interview_evaluation_charge(db, company_id, application_id)
+                db.commit()
 
                 email_service = getattr(
                     __import__("backend.email_service", fromlist=["email_service"]),
@@ -564,7 +635,9 @@ async def run_background_final_evaluation(application_id: int, company_id: int):
                             scoring_summary={
                                 "final_score": canonical_final_score,
                                 "skill_metrics": final_metrics,
-                                "recommendation": get_recommendation(canonical_final_score, 0.0),
+                                "recommendation": get_recommendation(
+                                    canonical_final_score, 0.0
+                                ),
                             },
                             feedback={
                                 "score": canonical_final_score,
@@ -620,10 +693,14 @@ async def run_background_final_evaluation(application_id: int, company_id: int):
                 )
                 .first()
             )
-            now_claim_naive = now_claim.replace(tzinfo=None) if now_claim.tzinfo else now_claim
+            now_claim_naive = (
+                now_claim.replace(tzinfo=None) if now_claim.tzinfo else now_claim
+            )
             session_started_naive = (
                 session_check.started_at.replace(tzinfo=None)
-                if session_check and session_check.started_at and session_check.started_at.tzinfo
+                if session_check
+                and session_check.started_at
+                and session_check.started_at.tzinfo
                 else (session_check.started_at if session_check else None)
             )
 
@@ -658,6 +735,12 @@ async def run_background_final_evaluation(application_id: int, company_id: int):
                 exc_info=True,
             )
             try:
+                # Discard whatever this failed attempt left uncommitted (e.g. a
+                # half-written result, or a transaction a failed flush/commit
+                # made unusable) so the session can reliably be marked failed
+                # (retryable, see recover_stale_evaluations) and no partial
+                # score is committed alongside the failure.
+                db.rollback()
                 session_check = (
                     db.query(EvaluationSession)
                     .filter(
@@ -666,10 +749,14 @@ async def run_background_final_evaluation(application_id: int, company_id: int):
                     )
                     .first()
                 )
-                now_claim_naive = now_claim.replace(tzinfo=None) if now_claim.tzinfo else now_claim
+                now_claim_naive = (
+                    now_claim.replace(tzinfo=None) if now_claim.tzinfo else now_claim
+                )
                 session_started_naive = (
                     session_check.started_at.replace(tzinfo=None)
-                    if session_check and session_check.started_at and session_check.started_at.tzinfo
+                    if session_check
+                    and session_check.started_at
+                    and session_check.started_at.tzinfo
                     else (session_check.started_at if session_check else None)
                 )
                 if session_check and (
@@ -1008,6 +1095,74 @@ async def report_fraud(
 
 STALE_PENDING_THRESHOLD_SECONDS = 180  # 3 minutes
 STALE_RUNNING_THRESHOLD_SECONDS = 600  # 10 minutes (> 300s eval timeout)
+# Failed final evaluations of FINISHED interviews (status "failed" while the
+# interview is still "evaluating") are retried by the recovery cron with a
+# backoff (every failure refreshes updated_at) and a bounded retry window
+# measured from the session creation, so a permanently failing evaluation
+# stops retrying (at most ~window/backoff attempts) and stays "failed".
+FAILED_RETRY_BACKOFF_SECONDS = 900  # 15 minutes between attempts
+FAILED_RETRY_MAX_AGE_SECONDS = 6 * 3600  # give up 6h after session creation
+
+
+def _reset_retryable_failed_evaluations(db: Session, now: datetime) -> set:
+    """CAS-reset retryable failed final evaluations to 'pending'.
+
+    Only the LATEST session of an application is eligible (an older failed
+    attempt must never trigger an evaluation of a newer interview), only
+    while the interview is still 'evaluating' (not completed / expired), only
+    after the backoff and only inside the retry window. Returns the
+    (application_id, company_id) pairs that were reset by THIS call — a
+    concurrent recovery pass cannot reset the same session twice.
+    """
+    from sqlalchemy import func, select
+    from sqlalchemy.orm import aliased
+
+    backoff_cutoff = now - timedelta(seconds=FAILED_RETRY_BACKOFF_SECONDS)
+    max_age_cutoff = now - timedelta(seconds=FAILED_RETRY_MAX_AGE_SECONDS)
+
+    newer = aliased(EvaluationSession)
+    latest_id = (
+        select(func.max(newer.id))
+        .where(newer.application_id == EvaluationSession.application_id)
+        .correlate(EvaluationSession)
+        .scalar_subquery()
+    )
+    eligible = (
+        EvaluationSession.status == "failed",
+        EvaluationSession.interview_state == "evaluating",
+        EvaluationSession.updated_at < backoff_cutoff,
+        EvaluationSession.created_at >= max_age_cutoff,
+    )
+    candidates = (
+        db.query(
+            EvaluationSession.id,
+            EvaluationSession.application_id,
+            EvaluationSession.company_id,
+        )
+        .filter(*eligible, EvaluationSession.id == latest_id)
+        .all()
+    )
+
+    reset_pairs = set()
+    for sid, app_id, company_id in candidates:
+        rows_updated = (
+            db.query(EvaluationSession)
+            .filter(EvaluationSession.id == sid, *eligible)
+            .update(
+                {"status": "pending", "updated_at": now},
+                synchronize_session=False,
+            )
+        )
+        if rows_updated > 0 and app_id:
+            reset_pairs.add((app_id, company_id))
+
+    if reset_pairs:
+        db.commit()
+        logger.info(
+            f"[EVAL RECOVERY] Reset {len(reset_pairs)} failed evaluation(s) "
+            f"to 'pending' for retry"
+        )
+    return reset_pairs
 
 
 async def recover_stale_evaluations(
@@ -1015,16 +1170,29 @@ async def recover_stale_evaluations(
     pending_threshold_seconds: int = STALE_PENDING_THRESHOLD_SECONDS,
     running_threshold_seconds: int = STALE_RUNNING_THRESHOLD_SECONDS,
 ) -> int:
-    """Recover orphaned EvaluationSessions stuck in 'pending' or 'running'.
+    """Recover orphaned EvaluationSessions stuck in 'pending', 'running' or
+    'failed' (finished interview whose final evaluation failed).
 
+    0. Retryable failed evaluations (latest session of the application,
+       status 'failed', interview_state still 'evaluating', last attempt older
+       than the backoff, session younger than the retry window) are reset to
+       'pending' via atomic conditional UPDATE (CAS).
     1. Identify stale 'running' sessions (>10 min) and reset them to 'pending'
        via atomic conditional UPDATE (CAS).
-    2. Collect all sessions requiring recovery (stale pending OR reset running).
-    3. Invoke run_background_final_evaluation() for each.
+    2. Collect all sessions requiring recovery (stale pending OR reset running
+       OR reset failed).
+    3. Invoke run_background_final_evaluation() for each. Its own
+       pending->running CAS claim guarantees a single evaluation run; the
+       result is upserted on the session's single EvaluationResult and the
+       company charge happens only on success (wallet-scoped idempotent key),
+       so repeated recovery never duplicates results or charges.
     """
     now = datetime.now(UTC)
     running_cutoff = now - timedelta(seconds=running_threshold_seconds)
     pending_cutoff = now - timedelta(seconds=pending_threshold_seconds)
+
+    # 0. Failed evaluations of finished interviews: bounded, backed-off retry.
+    retry_app_pairs = _reset_retryable_failed_evaluations(db, now)
 
     # 1. Find candidate stale running sessions
     stale_running_candidates = (
@@ -1088,6 +1256,8 @@ async def recover_stale_evaluations(
 
     # Also include the reset running sessions so they evaluate in this pass
     to_evaluate.update(reset_app_pairs)
+    # ...and the failed evaluations reset for a retry.
+    to_evaluate.update(retry_app_pairs)
 
     if not to_evaluate:
         return reset_count
@@ -1103,4 +1273,3 @@ async def recover_stale_evaluations(
             )
 
     return reset_count + recovered_count
-

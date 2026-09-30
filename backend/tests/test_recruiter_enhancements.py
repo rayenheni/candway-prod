@@ -23,7 +23,6 @@ import os
 import pytest
 
 # Mock environment before any backend imports
-os.environ["DATABASE_URL"] = "sqlite:///:memory:"
 os.environ["SECRET_KEY"] = "test_secret_key_for_jwt_encoding_12345"
 os.environ["ALGORITHM"] = "HS256"
 os.environ["ACCESS_TOKEN_EXPIRE_MINUTES"] = "30"
@@ -47,22 +46,11 @@ from backend.dependencies import pwd_context
 from backend.main import app
 
 # Force test engine
+# Use the shared test engine that backend/tests/conftest.py installs on
+# backend.database. Do NOT swap in a private engine here: this module is
+# imported at collection time, so rebinding backend.database.engine /
+# SessionLocal would leak into every other test module in the run.
 test_engine = backend.database.engine
-if test_engine.url.database != ":memory:":
-    from sqlalchemy import create_engine
-    from sqlalchemy.orm import sessionmaker
-    from sqlalchemy.pool import StaticPool
-
-    test_engine = create_engine(
-        "sqlite:///:memory:",
-        connect_args={"check_same_thread": False},
-        poolclass=StaticPool,
-    )
-    backend.database.engine = test_engine
-    backend.database.SessionLocal = sessionmaker(
-        autocommit=False, autoflush=False, bind=test_engine
-    )
-    backend.dependencies.SessionLocal = backend.database.SessionLocal
 
 
 def _get_csrf_token(client):
@@ -223,6 +211,8 @@ def application(client, auth, recruiter, job, batch):
         status="applied",
         job_id=job.id,
         batch_id=batch.id,
+        # Applications are tenant-scoped; recruiter lookups filter on it.
+        company_id=job.company_id,
         assigned_to=recruiter.id,
         source="LinkedIn",
         interview_state="not_started",
@@ -244,6 +234,7 @@ def interview(client, auth, application, recruiter):
     db = backend.database.SessionLocal()
     i = Interview(
         application_id=application.id,
+        company_id=application.company_id,
         type="technical",
         status="scheduled",
         scheduled_time=None,
@@ -290,15 +281,48 @@ class TestQuickActions:
         assert resp.json()["action"] == "reject"
         assert resp.json()["new_status"] == "rejected"
 
-    def test_archive_action(self, client, auth, application):
+    def test_archive_action_soft_deletes_and_undo_restores(
+        self, client, auth, application
+    ):
+        # "archived" is not an application status (ck_application_status):
+        # archiving keeps the pipeline status and hides the application via
+        # deleted_at. Undo restores the exact previous state.
+        db = backend.database.SessionLocal()
+        try:
+            original = (
+                db.query(Application).filter(Application.id == application.id).one()
+            ).status
+        finally:
+            db.close()
+
         resp = client.post(
             "/api/v1/recruiter/enhancements/quick-action",
             json={"action": "archive", "app_id": application.id},
             headers=auth,
         )
-        assert resp.status_code == 200
-        assert resp.json()["action"] == "archive"
-        assert resp.json()["new_status"] == "archived"
+        assert resp.status_code == 200, resp.text
+        data = resp.json()
+        assert data["archived"] is True
+        assert data["new_status"] == original
+        db = backend.database.SessionLocal()
+        try:
+            fresh = db.query(Application).filter(Application.id == application.id).one()
+            assert fresh.status == original
+            assert fresh.deleted_at is not None
+        finally:
+            db.close()
+
+        resp = client.post(
+            f"/api/v1/recruiter/enhancements/undo/{data['undo_id']}", headers=auth
+        )
+        assert resp.status_code == 200, resp.text
+        db = backend.database.SessionLocal()
+        try:
+            fresh = db.query(Application).filter(Application.id == application.id).one()
+            assert fresh.status == original
+            assert fresh.deleted_at is None
+        finally:
+            db.close()
 
     def test_invalid_action(self, client, auth, application):
         resp = client.post(
@@ -879,13 +903,38 @@ class TestInterviewDebrief:
         )
         assert resp.status_code == 404
 
-    def test_debrief_generates(self, client, auth, interview):
+    def test_debrief_requires_credits(self, client, auth, interview):
+        # The AI summary is a paid feature (consume_credits_or_402); an
+        # unfunded recruiter gets the standard 402 payload.
         resp = client.post(
             f"/api/v1/recruiter/enhancements/debrief/{interview.id}",
             headers=auth,
         )
-        assert resp.status_code == 200
+        assert resp.status_code == 402
+        assert resp.json()["detail"]["error"] == "insufficient_credits"
+
+    def test_debrief_generates(self, client, auth, interview, recruiter, monkeypatch):
+        from backend.credit_service import grant_credits
+
+        db = backend.database.SessionLocal()
+        try:
+            owner = db.query(User).filter(User.id == recruiter.id).one()
+            grant_credits(db, owner, 10, provider="test", provider_ref="debrief")
+        finally:
+            db.close()
+
+        async def fake_llm(*args, **kwargs):
+            return "<h3>Overview</h3>"
+
+        monkeypatch.setattr("backend.ai.llm.call_groq_cascade", fake_llm)
+
+        resp = client.post(
+            f"/api/v1/recruiter/enhancements/debrief/{interview.id}",
+            headers=auth,
+        )
+        assert resp.status_code == 200, resp.text
         data = resp.json()
+        assert data["ai_summary"] == "<h3>Overview</h3>"
         assert "candidate_name" in data
         assert "role" in data
         assert "interview_type" in data
@@ -895,6 +944,54 @@ class TestInterviewDebrief:
         assert "strengths" in data
         assert "concerns" in data
         assert "recommendations" in data
+
+    @pytest.mark.parametrize(
+        "llm_result",
+        [None, {"error": "AI budget exceeded", "score": 0}, "   "],
+        ids=["provider_down", "refused", "blank"],
+    )
+    def test_debrief_refunds_credit_when_ai_returns_nothing(
+        self, client, auth, interview, recruiter, monkeypatch, llm_result
+    ):
+        # call_groq_cascade never raises on failure; it returns None or an
+        # {"error": ...} payload. The recruiter must not pay for that.
+        from backend.credit_service import grant_credits
+        from backend.models.finance.credits import CreditWallet
+
+        db = backend.database.SessionLocal()
+        try:
+            owner = db.query(User).filter(User.id == recruiter.id).one()
+            grant_credits(db, owner, 10, provider="test", provider_ref="debrief-fail")
+            before = (
+                db.query(CreditWallet.balance)
+                .filter(CreditWallet.user_id == recruiter.id)
+                .scalar()
+            )
+        finally:
+            db.close()
+
+        async def failing_llm(*args, **kwargs):
+            return llm_result
+
+        monkeypatch.setattr("backend.ai.llm.call_groq_cascade", failing_llm)
+
+        resp = client.post(
+            f"/api/v1/recruiter/enhancements/debrief/{interview.id}",
+            headers=auth,
+        )
+        assert resp.status_code == 200, resp.text
+        assert resp.json()["ai_summary"] is None
+
+        db = backend.database.SessionLocal()
+        try:
+            after = (
+                db.query(CreditWallet.balance)
+                .filter(CreditWallet.user_id == recruiter.id)
+                .scalar()
+            )
+        finally:
+            db.close()
+        assert after == before
 
 
 # ============================================================================

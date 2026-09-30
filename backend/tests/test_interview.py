@@ -241,8 +241,7 @@ class TestInterviewSecurity:
         # With a 10-request limit, requests after the first 10 should be
         # rate limited.
         assert all(
-            code == status.HTTP_429_TOO_MANY_REQUESTS
-            for code in status_codes[10:]
+            code == status.HTTP_429_TOO_MANY_REQUESTS for code in status_codes[10:]
         ), f"Expected requests 11-15 to be 429, got: {status_codes[10:]}"
 
 
@@ -383,8 +382,14 @@ class TestInterviewPersistence:
         assert test_application.interview_progress == 0
         assert test_application.interview_last_saved is None
         assert test_application.interview_log == []
+        # Reset opens a brand-new EvaluationSession; the previous one is kept
+        # untouched for audit (see candidate/interviews.py reset_interview).
         db_session.refresh(es)
-        assert es.proctoring_violations == []
+        assert es.proctoring_violations == '[{"type":"tab"}]'
+        latest = test_application._latest_eval_session()
+        assert latest is not None and latest.id != es.id
+        assert latest.proctoring_violations == []
+        assert latest.interview_state == "not_started"
 
     @_requires_groq
     def test_stale_tracking_opened_at_is_ignored_for_fresh_interview(
@@ -496,7 +501,6 @@ class TestInterviewPersistence:
         assert captured_languages and all(
             lang == "French" for lang in captured_languages
         )
-
 
         db_session.refresh(test_application)
         assert test_application.language == "French"

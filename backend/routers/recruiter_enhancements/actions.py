@@ -60,6 +60,7 @@ async def quick_action(
     previous_state = {
         "status": app.status,
         "updated_at": app.updated_at.isoformat() if app.updated_at else None,
+        "deleted_at": app.deleted_at.isoformat() if app.deleted_at else None,
     }
 
     if data.action == "invite":
@@ -78,7 +79,10 @@ async def quick_action(
     elif data.action == "reject":
         app.status = "rejected"
     elif data.action == "archive":
-        app.status = "archived"
+        # Archiving is a reversible soft delete. "archived" is not an
+        # application status (ck_application_status), so keep the pipeline
+        # status and hide the application via deleted_at, which every
+        # recruiter list already filters on.
         app.deleted_at = _utcnow()
     else:
         raise HTTPException(status_code=400, detail=f"Unknown action: {data.action}")
@@ -97,7 +101,9 @@ async def quick_action(
         target_type="application",
         target_id=app.id,
         previous_state_json=json.dumps(previous_state),
-        new_state_json=json.dumps({"status": app.status}),
+        new_state_json=json.dumps(
+            {"status": app.status, "archived": app.deleted_at is not None}
+        ),
         expires_at=_utcnow() + timedelta(seconds=10),
     )
     db.add(undo)
@@ -119,6 +125,7 @@ async def quick_action(
         "action": data.action,
         "app_id": app.id,
         "new_status": app.status,
+        "archived": app.deleted_at is not None,
         "undo_id": undo.id,
         "undo_expires_in": 10,
     }
@@ -153,7 +160,14 @@ def undo_action(
         try:
             app = get_application_for_recruiter(undo.target_id, recruiter, db)
             app.status = previous.get("status", app.status)
-            if app.status != "archived":
+            prev_deleted = previous.get("deleted_at")
+            if prev_deleted:
+                # Legacy Column() typing: mypy sees Column[datetime], the
+                # instance attribute is a plain datetime at runtime.
+                app.deleted_at = datetime.fromisoformat(prev_deleted)  # type: ignore[assignment]
+            elif "deleted_at" in previous or undo.action_type == "archive":
+                # Not archived before the action (or an undo record written
+                # before deleted_at was captured): make it visible again.
                 app.deleted_at = None
         except HTTPException:
             raise HTTPException(status_code=404, detail="Application not found")
@@ -320,6 +334,15 @@ async def generate_interview_debrief(
             ],
             temperature=0.3,
         )
+        # call_groq_cascade never raises: on provider failure it returns
+        # None, and on rate-limit/budget refusal an {"error": ...} payload.
+        # Those must refund the credit like an exception would.
+        if (
+            not ai_summary
+            or (isinstance(ai_summary, dict) and ai_summary.get("error"))
+            or (isinstance(ai_summary, str) and not ai_summary.strip())
+        ):
+            raise RuntimeError("AI provider returned no usable debrief summary")
         debrief["ai_summary"] = ai_summary
     except HTTPException:
         raise
@@ -328,7 +351,9 @@ async def generate_interview_debrief(
             try:
                 rollback_credits(db, credit_tx)
             except Exception:
-                pass
+                logger.exception(
+                    "Credit rollback failed for debrief of interview %s", interview_id
+                )
         logger.error(f"AI debrief generation failed: {e}")
         debrief["ai_summary"] = None
 

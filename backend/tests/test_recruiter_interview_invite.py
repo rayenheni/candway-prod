@@ -120,9 +120,7 @@ def prior_analyzed_app(db_session, test_user, test_company, candidate_profile):
     return app
 
 
-def _apply(
-    client, auth_headers, job_id, monkeypatch, captured=None, ai_error=None
-):
+def _apply(client, auth_headers, job_id, monkeypatch, captured=None, ai_error=None):
     """POST apply with deterministic, mocked AI extraction."""
 
     async def fake_extract_cv_details(text, role, rubric_context):
@@ -155,9 +153,7 @@ def _apply(
     return client.post(f"/api/v1/candidate/jobs/{job_id}/apply", headers=auth_headers)
 
 
-def _seed_app_with_score(
-    db_session, user, company, job, score, status="screening"
-):
+def _seed_app_with_score(db_session, user, company, job, score, status="screening"):
     """Seed an application directly with a CV score (for qualified/denial tests)."""
     app = Application(
         user_id=user.id,
@@ -197,7 +193,13 @@ def _seed_app_with_score(
 
 
 def test_apply_does_not_create_interview_session(
-    client, auth_headers, job, candidate_profile, prior_analyzed_app, db_session, monkeypatch
+    client,
+    auth_headers,
+    job,
+    candidate_profile,
+    prior_analyzed_app,
+    db_session,
+    monkeypatch,
 ):
     resp = _apply(client, auth_headers, job.id, monkeypatch)
     assert resp.status_code == 200
@@ -221,7 +223,13 @@ def test_apply_does_not_create_interview_session(
 
 
 def test_pre_invite_resume_is_denied(
-    client, auth_headers, job, candidate_profile, prior_analyzed_app, db_session, monkeypatch
+    client,
+    auth_headers,
+    job,
+    candidate_profile,
+    prior_analyzed_app,
+    db_session,
+    monkeypatch,
 ):
     resp = _apply(client, auth_headers, job.id, monkeypatch)
     assert resp.status_code == 200
@@ -236,8 +244,63 @@ def test_pre_invite_resume_is_denied(
     assert body["can_resume"] is False
 
 
+def test_resume_of_active_uninvited_job_interview_is_gated(
+    client,
+    auth_headers,
+    job,
+    candidate_profile,
+    prior_analyzed_app,
+    db_session,
+    monkeypatch,
+):
+    """Regression: resume_interview referenced an undefined
+    _ALLOWED_INTERVIEW_START_STATUSES (NameError -> 500) whenever a job/campaign
+    interview was active (in_progress/paused/flagged)."""
+    resp = _apply(client, auth_headers, job.id, monkeypatch)
+    assert resp.status_code == 200
+    app_id = resp.json()["application_id"]
+
+    db_session.add(
+        EvaluationSession(
+            application_id=app_id,
+            company_id=job.company_id,
+            status="in_progress",
+            interview_state="in_progress",
+        )
+    )
+    db_session.commit()
+
+    denied = client.post(
+        "/api/v1/ai/interview/resume",
+        headers=auth_headers,
+        json={"application_id": app_id},
+    )
+    assert denied.status_code == 200, denied.text
+    assert denied.json()["can_resume"] is False
+    assert "not been scheduled" in denied.json()["reason"]
+
+    app = db_session.get(Application, app_id)
+    app.status = "invited"
+    db_session.commit()
+
+    invited = client.post(
+        "/api/v1/ai/interview/resume",
+        headers=auth_headers,
+        json={"application_id": app_id},
+    )
+    assert invited.status_code == 200, invited.text
+    assert "not been scheduled" not in invited.json().get("reason", "")
+
+
 def test_single_invite_sets_status_invited(
-    client, auth_headers, recruiter_headers, job, candidate_profile, prior_analyzed_app, db_session, monkeypatch
+    client,
+    auth_headers,
+    recruiter_headers,
+    job,
+    candidate_profile,
+    prior_analyzed_app,
+    db_session,
+    monkeypatch,
 ):
     resp = _apply(client, auth_headers, job.id, monkeypatch)
     assert resp.status_code == 200
@@ -260,7 +323,14 @@ def test_single_invite_sets_status_invited(
 
 
 def test_post_invite_candidate_can_start(
-    client, auth_headers, recruiter_headers, job, candidate_profile, prior_analyzed_app, db_session, monkeypatch
+    client,
+    auth_headers,
+    recruiter_headers,
+    job,
+    candidate_profile,
+    prior_analyzed_app,
+    db_session,
+    monkeypatch,
 ):
     resp = _apply(client, auth_headers, job.id, monkeypatch)
     assert resp.status_code == 200
@@ -271,9 +341,12 @@ def test_post_invite_candidate_can_start(
         headers=recruiter_headers,
     )
 
-    es = db_session.query(EvaluationSession).filter(
-        EvaluationSession.application_id == app_id
-    ).order_by(EvaluationSession.id.desc()).first()
+    es = (
+        db_session.query(EvaluationSession)
+        .filter(EvaluationSession.application_id == app_id)
+        .order_by(EvaluationSession.id.desc())
+        .first()
+    )
     es.interview_state = "in_progress"
     db_session.commit()
 
@@ -489,3 +562,34 @@ def test_cross_company_recruiter_denial(
     app = db_session.query(Application).filter(Application.id == app_id).first()
     assert app.status == "screening"
 
+
+def test_ranked_candidates_with_scored_applications(
+    client, recruiter_headers, job, test_user, test_company, db_session
+):
+    """GET /recruiter/jobs/{id}/candidates/ranked must work once applicants
+    have evaluation sessions (regression: NameError `scores_map` -> 500)."""
+    import backend.database as _db_mod
+
+    _seed_app_with_score(db_session, test_user, test_company, job, 55)
+    other = _db_mod.User(
+        email="ranked.second@example.com",
+        name="Ranked Second",
+        hashed_password="$2b$12$abcdefghijklmnopqrstuv",  # inert placeholder
+        role="candidate",
+        email_verified=True,
+    )
+    db_session.add(other)
+    db_session.flush()
+    _seed_app_with_score(db_session, other, test_company, job, 91)
+
+    resp = client.get(
+        f"/api/v1/recruiter/jobs/{job.id}/candidates/ranked",
+        headers=recruiter_headers,
+    )
+    assert resp.status_code == 200, resp.text
+    body = resp.json()
+    candidates = body.get("candidates", body.get("items", body))
+    assert isinstance(candidates, list) and len(candidates) == 2
+    # Scores come from each session's eager-loaded EvaluationResult (the fix
+    # for the undefined `scores_map`), ranked best first.
+    assert [c["final_score"] for c in candidates] == [91.0, 55.0]

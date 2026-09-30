@@ -33,7 +33,7 @@ class TestScoreDriftMonitor:
 
         health = check_population_health(db_session)
         assert health["total_applications"] >= 1
-        assert health["has_application_score"] == 0
+        assert health["has_evaluation_result"] == 0
 
 
 class TestRubricCache:

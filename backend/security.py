@@ -442,8 +442,9 @@ class CSRFMiddleware:
                 path = decoded_value.split("?")[0]
 
         is_exempt = any(path.startswith(p) for p in self.exempt_paths)
-        logger.warning(
-            f"CSRF_MW: path={path!r} method={scope.get('method')} exempt={is_exempt}"
+        # Per-request trace: debug only (it was a WARNING on every request).
+        logger.debug(
+            "CSRF_MW: path=%r method=%s exempt=%s", path, scope.get("method"), is_exempt
         )
         if is_exempt:
             await self.app(scope, receive, send)
