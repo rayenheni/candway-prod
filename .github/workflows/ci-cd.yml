@@ -247,7 +247,13 @@ jobs:
     name: Deploy
     needs: [test, frontend-lint, migration-check, performance-tests]
     runs-on: ubuntu-latest
-    if: github.ref == 'refs/heads/main' && github.event_name == 'push'
+    # DISABLED: automatic deployment on push to main is turned off.
+# This job deploys a Docker stack (git reset --hard + scripts/deploy.sh
+# in /opt/candway), which is not how production is deployed. Production
+# deploys are manual until a reviewed deploy path replaces this job.
+# Previous condition, restore only in a reviewed change:
+#   if: github.ref == 'refs/heads/main' && github.event_name == 'push'
+    if: false
     steps:
       - uses: actions/checkout@v4
         with:
